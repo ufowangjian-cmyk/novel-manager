@@ -35,3 +35,9 @@ venv/
 Thumbs.db
 .DS_Store
 *.log
+
+# ========== 本地凭据 ==========
+# 临时 token 文件，绝不提交；放项目根目录或 _local_backup 都安全
+.pat
+*.pat
+*.token
