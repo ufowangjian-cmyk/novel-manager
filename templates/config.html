@@ -455,12 +455,16 @@ italic_default=False) %}
                         {{ icon('refresh-cw', 'sm') }} 启动扫描
                     </h3>
                     <div class="switch-grid single compact">
-                        <label class="switch" title="首次启动建议开启，之后可以关闭以加快启动速度">
+                        <label class="switch" title="启动时只做增量扫描；只有在没有缓存时才会全量扫描">
                             <span class="switch-text">{{ icon('refresh-cw', 'sm') }} 启动时自动扫描小说目录</span>
                             <input type="checkbox" id="auto_scan_on_start" name="auto_scan_on_start" {% if
                                 config.auto_scan_on_start %}checked{% endif %}>
                             <span class="switch-track" aria-hidden="true"></span>
                         </label>
+                    </div>
+                    <div class="form-hint">
+                        {{ icon('refresh-cw', 'sm') }} 启动时做<b>增量扫描</b>：只检查新增和修改过的文件，没变动的直接跳过；<br>
+                        {{ icon('alert-triangle', 'sm') }} 仅在<b>没有缓存</b>时（首次部署、缓存文件丢失）才会自动改为<b>全量扫描</b>。
                     </div>
 
 
