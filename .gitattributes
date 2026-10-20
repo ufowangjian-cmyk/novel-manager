@@ -1,0 +1,24 @@
+# 统一换行符：仓库内一律 LF，避免 Windows 用户 clone 后把 shell 脚本转成 CRLF
+# 导致在 NAS/Linux 上执行报 "/bin/bash^M: bad interpreter"
+* text=auto eol=lf
+
+# 明确指定脚本类型，防止被识别错
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.md    text eol=lf
+
+# 二进制文件不做换行转换
+*.woff2 binary
+*.woff  binary
+*.ttf   binary
+*.webp  binary
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
