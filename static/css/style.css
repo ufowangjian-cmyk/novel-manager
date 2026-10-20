@@ -788,6 +788,62 @@ td:nth-child(6) a {
     color: var(--color-text-light-gray);
 }
 
+/* 空状态引导：书架为空 / 筛选无结果 */
+.empty-table .empty-state {
+    padding: 26px 20px;
+}
+.empty-state-icon {
+    line-height: 1;
+    margin-bottom: 14px;
+    color: var(--color-primary-dark);
+}
+.empty-state-icon svg {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    vertical-align: middle;
+}
+.empty-state-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-primary-title);
+    margin-bottom: 10px;
+}
+.empty-state-tip {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--color-text-gray);
+    max-width: 460px;
+    margin: 0 auto 20px;
+}
+.empty-state-tip b {
+    color: var(--color-primary-link);
+    font-weight: 600;
+}
+.empty-state-btn {
+    display: inline-block;
+    padding: 9px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--color-text-white);
+    background: var(--color-primary-dark);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.25s, transform 0.25s;
+}
+.empty-state-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+.empty-state-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+}
+
 /* 括号内容样式（桌面端 + 移动端） */
 .bracket-content {
     color: var(--color-text-olive);

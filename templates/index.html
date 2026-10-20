@@ -623,7 +623,26 @@
 
                 {% if novels|length == 0 %}
                 <tr>
-                    <td colspan="7" class="empty-table">{{ icon('file-text', 'sm') }} 没有找到匹配的小说</td>
+                    <td colspan="7" class="empty-table">
+                        {% if total_count == 0 %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">{{ icon('book-open') }}</div>
+                            <div class="empty-state-title">书架还是空的</div>
+                            <div class="empty-state-tip">
+                                程序还没有读取过小说目录。点下面的按钮开始，
+                                或者打开右上角 <b>工具箱</b> → <b>扫描管理</b> → <b>全量扫描</b>
+                            </div>
+                            <button class="empty-state-btn" onclick="this.disabled=true;this.textContent='正在扫描，请稍候…';startScan(true)">立即全量扫描</button>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">{{ icon('search') }}</div>
+                            <div class="empty-state-title">没有找到匹配的小说</div>
+                            <div class="empty-state-tip">当前筛选条件下没有结果，试试放宽条件或清空筛选</div>
+                            <a class="empty-state-btn" href="/">清空筛选</a>
+                        </div>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endif %}
             </tbody>
