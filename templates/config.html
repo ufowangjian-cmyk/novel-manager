@@ -1,0 +1,860 @@
+{% extends "base.html" %}
+
+{% from "_icons.html" import icon %}
+{% block title %}配置管理 - 摸鱼读物{% endblock %}
+{% block body_class %}page-config{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/config.css') }}">
+{% endblock %}
+{% block head_extra %}
+<meta id="app-data" data-user-role="{{ session.user_role }}" data-user-key="{{ session.user_key }}"
+    data-is-admin="{{ 'true' if session.user_role == 'admin' else 'false' }}">
+{% endblock %}
+
+{% block content %}
+
+{# —— 字体设置（管理员「阅读默认值」专用）：与「我的阅读偏好」共用同一套字体清单 —— #}
+{% set font_list = [
+('system-ui', '系统默认'),
+("'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', '霞鹜文楷内置', sans-serif", '📱 霞鹜文楷（内置）'),
+("'CEJK01-9128-W04', '仓耳今楷01-9128-W04', '仓耳今楷内置', serif", '📱 仓耳今楷（内置）'),
+("'HarmonyOS Sans SC', '鸿蒙黑体-HarmonyOS Sans SC', '鸿蒙黑体内置', sans-serif", '📱 鸿蒙黑体（内置）'),
+("'WEILAIYUANMedium', '未来圆SC Medium', 'WeiLaiYuanSC', '未来圆内置', sans-serif", '📱 未来圆（内置）'),
+("'HYWenHei-55W', '汉仪文黑-55W', '汉仪文黑内置', sans-serif", '📱 汉仪文黑（内置）'),
+("'LantingXiHei-GBK', '兰亭羲之黑内置', sans-serif", '📱 兰亭羲之黑（内置）'),
+("'FZDaBiaoSong', '方正大标宋内置', serif", '📱 方正大标宋（内置）'),
+("'FZFangSong', '方正仿宋内置', serif", '📱 方正仿宋（内置）'),
+("'FZKaiTi', '方正楷体内置', serif", '📱 方正楷体（内置）'),
+] %}
+
+{# 管理员的字体条目：按 config 当前值回填 selected / aria-pressed。
+follow_label 非空时，首项为「跟随正文」（空值 = 跟随正文）；
+bold_id / italic_id 显式给出对应配置键（正文 font_family → body_bold，无统一替换规则）；
+bold_default / italic_default 用于 config 尚未写入该键时回显真实的硬默认值，
+避免管理员未改动就被迫把 title_bold 等从 True 覆写成 False。 #}
+{% macro admin_font_field(label, id, default_val, follow_label=None, bold_id=None, italic_id=None, bold_default=False,
+italic_default=False) %}
+<div class="form-group">
+    <label>{{ icon('type', 'sm') }} {{ label }}</label>
+    <div class="set-font-ctrl">
+        <select id="{{ id }}" name="{{ id }}">
+            {% if follow_label %}
+            <option value="" {% if not (config[id] if config[id] is defined else default_val) %}selected{% endif %}>{{
+                follow_label }}</option>
+            {% endif %}
+            {% for val, lab in font_list %}
+            <option value="{{ val }}" {% if (config[id] if config[id] is defined else default_val)==val %}selected{%
+                endif %}>{{ lab }}</option>
+            {% endfor %}
+        </select>
+        <button type="button"
+            class="set-bi {{ 'on' if (config[bold_id] if config[bold_id] is defined else bold_default) else '' }}"
+            data-style="bold" id="{{ bold_id }}"
+            aria-pressed="{{ 'true' if (config[bold_id] if config[bold_id] is defined else bold_default) else 'false' }}"
+            onclick="toggleConfigBi(this)">B</button>
+        <button type="button"
+            class="set-bi {{ 'on' if (config[italic_id] if config[italic_id] is defined else italic_default) else '' }}"
+            data-style="italic" id="{{ italic_id }}"
+            aria-pressed="{{ 'true' if (config[italic_id] if config[italic_id] is defined else italic_default) else 'false' }}"
+            onclick="toggleConfigBi(this)">I</button>
+    </div>
+</div>
+{% endmacro %}
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<div class="page-container">
+    <!-- 头部 -->
+    <div class="header">
+        <h1>
+            <span>{{ icon('settings', 'sm') }}</span>
+            {% if session.user_role == 'admin' %}配置管理{% else %}我的设置{% endif %}
+        </h1>
+        <div class="header-desc">
+            {% if session.user_role == 'admin' %}
+            站点全局设置：用户管理、阅读默认值与扫描/标签规则。保存后即刻生效，仅扫描间隔等后台任务需重启容器。
+            {% else %}
+            在这里调整你自己的阅读偏好，保存后立即生效，不影响其他用户。
+            {% endif %}
+        </div>
+        <div class="button-group">
+            {% if session.user_role == 'admin' %}
+            <a href="/tag_manager" class="btn-nav">
+                {{ icon('tag', 'sm') }} 标签管理
+            </a>
+            {% endif %}
+            <a href="/" class="btn-nav btn-back-home">
+                {{ icon('home', 'sm') }} 返回首页
+            </a>
+        </div>
+    </div>
+
+    <!-- 配置表单 -->
+    <form id="configForm">
+
+        {% if session.user_role == 'admin' %}
+        <!-- ===== 管理员专属区域（置顶）=====
+                 分组标题条只是标识，不再折叠：这块内容管理员每次进来都要用，
+                 默认收起反而多一次点击。 -->
+        <div class="config-section-divider">
+            <span class="divider-icon">{{ icon('lock', 'sm') }}</span>
+            <span class="divider-title">管理员专属</span>
+            <span class="divider-hint">内存管理 · 用户管理 · 记录管理 · 全局维护</span>
+        </div>
+
+        <div class="admin-section" id="adminSection">
+            <div class="admin-section-note">
+                {{ icon('lock', 'sm') }} 以下功能仅管理员可见，各自即时生效，<b>不需要</b>点「保存全部配置」。
+            </div>
+
+            <!-- 内存管理 -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('trash-2') }}</span>
+                    <h2>内存管理</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="memory-management">
+                        <div class="memory-info" id="memoryInfo">
+                            <div class="memory-stats">
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('bar-chart-3', 'sm') }} 当前内存占用</span>
+                                    <span class="stat-value" id="currentMemory">-- MB</span>
+                                </div>
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('tag', 'sm') }} 标签缓存</span>
+                                    <span class="stat-value" id="tagCacheCount">--</span>
+                                </div>
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('book-open', 'sm') }} 章节缓存</span>
+                                    <span class="stat-value" id="chapterCacheCount">--</span>
+                                </div>
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('image', 'sm') }} 图片缓存</span>
+                                    <span class="stat-value" id="imageCacheCount">--</span>
+                                </div>
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('library', 'sm') }} 阅读缓存</span>
+                                    <span class="stat-value" id="lineCacheCount">--</span>
+                                </div>
+                                <div class="memory-stat-item">
+                                    <span class="stat-label">{{ icon('hash', 'sm') }} 指纹缓存</span>
+                                    <span class="stat-value" id="workIdCacheCount">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="memory-actions"
+                            style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-warning" onclick="forceCleanupMemory(false)"
+                                id="cleanupBtn">
+                                {{ icon('trash-2', 'sm') }} 释放内存
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="forceCleanupMemory(true)"
+                                id="deepCleanupBtn">
+                                {{ icon('zap', 'sm') }} 彻底清理
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="refreshMemoryInfo()">
+                                {{ icon('refresh-cw', 'sm') }} 刷新状态
+                            </button>
+                        </div>
+
+                        <div class="cleanup-result" id="cleanupResult" role="status" aria-live="polite"></div>
+
+                        <div class="memory-hint">
+                            <span class="memory-hint-line">{{ icon('lightbulb', 'sm') }}
+                                说明：清理会删掉大部分缓存以释放内存，但会<b>保留少量热缓存</b>（标签 ≤100 · 章节 ≤30 · 图片 ≤100 · 指纹
+                                ≤200），所以清理后上面的数字<b>不会归零</b>，这是正常的。</span>
+                            <span class="memory-hint-line">{{ icon('zap', 'sm') }}
+                                <b>彻底清理</b>会把热缓存也一并清空（包括图片缓存和指纹缓存），内存降得最彻底，代价是之后首次访问小说/详情页会重新解析、稍慢一点。</span>
+                            <span class="memory-hint-line">{{ icon('hash', 'sm') }} <b>指纹缓存</b>（去重扫描时计算的作品指纹，上限 2000 +
+                                800 条）过去从不参与清理，现在已纳入。</span>
+                            <span class="memory-hint-line">{{ icon('library', 'sm') }}
+                                <b>阅读缓存</b>（打开小说时产生的正文缓存）是占用内存的主要部分，任何模式都会完全清空。</span>
+                            <span class="memory-hint-line">{{ icon('book-open', 'sm') }} 书库数据（约 5000
+                                本小说的标题、作者、标签等）属于常驻数据，<b>不参与清理</b>，清理不会影响浏览书库。</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('users') }}</span>
+                    <h2>用户管理</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="form-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <label>{{ icon('users', 'sm') }} 管理所有用户</label>
+                            <button type="button" class="btn btn-success" onclick="showAddUserModal()"
+                                style="padding: 4px 12px; font-size: 12px;">
+                                {{ icon('plus', 'sm') }} 添加用户
+                            </button>
+                        </div>
+                        <div id="userListContainer" class="user-list-container">
+                            <div class="form-hint">加载用户列表...</div>
+                        </div>
+                        {# ⚠️ 这两条提示必须留在 .form-group 内部：
+                        用户列表的满宽靠 `.card-content > .form-group:only-child`
+                        跨列规则实现。一旦 form-group 在 card-content 里多了兄弟元素，
+                        这条规则失效，用户列表会塌回 260px 的网格列（竖排窄条）。
+                        .form-hint 是 flex 容器，<br> 不换行，所以拆成两条。 #}
+                        <div class="form-hint" style="margin-top: 10px;">
+                            {{ icon('key', 'sm') }} 改密码：点用户行的「编辑」，填「新密码」即可（留空则不修改）。
+                        </div>
+                        <div class="form-hint" style="margin-top: 2px;">
+                            {{ icon('alert-triangle', 'sm') }} 忘记管理员密码？删除服务器上的 data/config.json 文件，重启后恢复无密码状态。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户记录管理 -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('bar-chart-3') }}</span>
+                    <h2>用户记录管理</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="user-records-header">
+                        <span class="form-hint">{{ icon('bar-chart-3', 'sm') }} 只统计每位用户读了多少本，不展示具体书目</span>
+                        <div class="user-records-actions">
+                            <button type="button" class="btn btn-warning" onclick="clearAllUserRecords()">
+                                {{ icon('alert-triangle', 'sm') }} 清除所有记录
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="refreshUserRecords()">
+                                {{ icon('refresh-cw', 'sm') }} 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div id="userRecordsContainer" class="user-records-container">
+                        <div class="loading-tags" style="text-align: center; padding: 30px;">
+                            <div class="loading-small"></div>
+                            <span style="margin-left: 10px;">加载用户记录...</span>
+                        </div>
+                    </div>
+                    <div class="form-hint">
+                        {{ icon('lightbulb', 'sm') }} 提示：出于隐私考虑，这里只显示阅读数量与最近阅读时间，不显示具体书目。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阅读默认值（全局，作为新用户的初始值） -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('compass') }}</span>
+                    <h2>阅读默认值（新用户初始值）</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="form-hint" style="margin-bottom: 14px;">
+                        {{ icon('globe', 'sm') }} 这里的值作为<b>全局默认值</b>：用户没有在「我的阅读偏好」里单独设置过的项，就用这里的值。
+                        修改后需点下方「保存全部配置」，用户已有的个人设置不会被覆盖。
+                    </div>
+
+                    {# 五个字段并成一行（密度对齐「列表与显示」）：原先拆成两组
+                    inline + 一个满宽的「默认主题」，每项都占半屏，既浪费横向
+                    空间，也和下方紧凑字段不成体系。 #}
+                    <div class="form-group-inline compact">
+                        <div class="form-group">
+                            <label title="单位：像素 (px)，建议 16-24">{{ icon('pencil', 'sm') }} 默认字体大小</label>
+                            <input type="number" id="font_size" name="font_size" value="{{ config.font_size }}" min="12"
+                                max="48" step="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="建议 1.5-2.0">{{ icon('ruler', 'sm') }} 默认行高</label>
+                            <input type="number" id="line_height" name="line_height" value="{{ config.line_height }}"
+                                min="1.2" max="2.5" step="0.1">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="网文一般保留缩进">{{ icon('summary', 'sm') }} 首行缩进</label>
+                            <select id="indent_paragraph" name="indent_paragraph">
+                                <option value="true" {% if config.indent_paragraph %}selected{% endif %}>缩进两字符（默认）
+                                </option>
+                                <option value="false" {% if not config.indent_paragraph %}selected{% endif %}>不缩进（顶格）
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="单位：rem，0 表示段落紧贴">{{ icon('list', 'sm') }} 默认段间距</label>
+                            <input type="number" id="paragraph_spacing" name="paragraph_spacing"
+                                value="{{ config.paragraph_spacing }}" min="0" max="3" step="0.1">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="选择阅读页面的颜色主题">{{ icon('palette', 'sm') }} 默认主题</label>
+                            <select id="theme" name="theme" onchange="onThemeChange()">
+                                <option value="dark" {% if config.theme=='dark' %}selected{% endif %}>🌙 暗色主题</option>
+                                <option value="light" {% if config.theme=='light' %}selected{% endif %}>☀️ 亮色主题</option>
+                                <option value="auto" {% if config.theme=='auto' %}selected{% endif %}>🔄 跟随系统</option>
+                            </select>
+                        </div>
+                    </div>
+                    <h3>
+                        {{ icon('bar-chart-3', 'sm') }} 杂项设置
+                    </h3>
+                    {# 布尔项统一用开关（.switch），输入框仍是原生 checkbox，
+                    config.js 的 el.checked 读取逻辑完全不变。compact：按内容宽度排，
+                    不撑满整行（对齐「列表与显示」的密度）。 #}
+                    <div class="switch-grid compact">
+                        <label class="switch" title="关闭后需要手动记录阅读位置">
+                            <span class="switch-text">{{ icon('save', 'sm') }} 默认自动保存阅读进度</span>
+                            <input type="checkbox" id="auto_save_progress" name="auto_save_progress" {% if
+                                config.auto_save_progress %}checked{% endif %}>
+                            <span class="switch-track" aria-hidden="true"></span>
+                        </label>
+
+                        <label class="switch">
+                            <span class="switch-text">{{ icon('bar-chart-3', 'sm') }} 默认显示字数统计</span>
+                            <input type="checkbox" id="show_word_count" name="show_word_count" {% if
+                                config.show_word_count %}checked{% endif %}>
+                            <span class="switch-track" aria-hidden="true"></span>
+                        </label>
+                    </div>
+
+                    <h3>
+                        {{ icon('type', 'sm') }} 字体设置
+                    </h3>
+                    <div class="form-hint" style="margin-bottom: 12px;">
+                        {{ icon('info', 'sm') }} 设定新用户默认的<b>字体与加粗/斜体</b>。各元素「跟随正文」表示沿用正文字体；此处未单独设置过的项，用户仍可在「我的阅读偏好」里覆盖。
+                    </div>
+                    <div class="font-grid">
+                        {{ admin_font_field('正文字体', 'font_family', 'system-ui', bold_id='body_bold',
+                        italic_id='body_italic') }}
+                        {{ admin_font_field('标题字体', 'book_font_family', '', '跟随正文', bold_id='book_bold',
+                        italic_id='book_italic', bold_default=True) }}
+                        {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随正文',
+                        bold_id='double_quote_bold', italic_id='double_quote_italic') }}
+                        {{ admin_font_field('单引号字体', 'single_quote_font_family', '', '跟随正文',
+                        bold_id='single_quote_bold', italic_id='single_quote_italic') }}
+                        {{ admin_font_field('圆括号字体', 'bracket_font_family', '', '跟随正文', bold_id='bracket_bold',
+                        italic_id='bracket_italic') }}
+                        {{ admin_font_field('方头括号字体', 'square_bracket_font_family', '', '跟随正文',
+                        bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True) }}
+                        {{ admin_font_field('方括号字体', 'square_bracket_1_font_family', '', '跟随正文',
+                        bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic') }}
+                        {{ admin_font_field('空心括号字体', 'hollow_bracket_font_family', '', '跟随正文',
+                        bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True) }}
+                        {{ admin_font_field('书名号字体', 'book_font_family', '', '跟随正文', bold_id='book_bold',
+                        italic_id='book_italic', bold_default=True) }}
+                    </div>{# /.font-grid #}
+                </div>
+            </div>
+
+            <!-- 列表与显示（原「其他配置」卡的「显示配置」部分拆出） -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('file') }}</span>
+                    <h2>列表与显示</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="form-hint" style="margin-bottom: 10px;">
+                        {{ icon('info', 'sm') }} 这里是<b>新用户的初始值</b>；用户在「我的阅读偏好」里设过的项会覆盖它。
+                    </div>
+                    <div class="form-group-inline compact">
+                        <div class="form-group">
+                            <label title="选择主页默认的排序方式">{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label>
+                            <select id="default_sort_by" name="default_sort_by">
+                                <option value="title" {% if config.default_sort_by=='title' %}selected{% endif %}>书名
+                                    (A-Z)</option>
+                                <option value="author" {% if config.default_sort_by=='author' %}selected{% endif %}>作者
+                                    (A-Z)</option>
+                                <option value="date" {% if config.default_sort_by=='date' %}selected{% endif %}>发表日期
+                                    (最新)</option>
+                                <option value="word_count" {% if config.default_sort_by=='word_count' %}selected{% endif
+                                    %}>字数 (最多)</option>
+                                <option value="site" {% if config.default_sort_by=='site' %}selected{% endif %}>发表网站
+                                    (A-Z)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="选择主页默认的排序方向">{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }}
+                                默认排序方向</label>
+                            <select id="default_sort_order" name="default_sort_order">
+                                <option value="asc" {% if config.default_sort_order=='asc' %}selected{% endif %}>升序
+                                    (A-Z, 从小到大)</option>
+                                <option value="desc" {% if config.default_sort_order=='desc' %}selected{% endif %}>降序
+                                    (Z-A, 从大到小)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="小说列表每页显示多少本，建议 50-200">{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label>
+                            <input type="number" id="per_page" name="per_page" value="{{ config.per_page }}" min="20"
+                                max="500" step="10">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="阅读时每页显示多少字，建议 5000-10000">{{ icon('book-open', 'sm') }} 每页显示字数</label>
+                            <input type="number" id="words_per_page" name="words_per_page"
+                                value="{{ config.words_per_page }}" min="1000" max="50000" step="1000">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="小说列表中最多显示多少个标签，多余的会折叠">{{ icon('tag', 'sm') }} 最大标签显示数</label>
+                            <input type="number" id="max_tags_display" name="max_tags_display"
+                                value="{{ config.max_tags_display }}" min="1" max="10" step="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="选择日期显示格式">{{ icon('calendar', 'sm') }} 日期格式</label>
+                            <select id="date_format" name="date_format">
+                                <option value="YYYY-MM-DD" {% if config.date_format=='YYYY-MM-DD' %}selected{% endif %}>
+                                    2024-01-01</option>
+                                <option value="YYYY/MM/DD" {% if config.date_format=='YYYY/MM/DD' %}selected{% endif %}>
+                                    2024/01/01</option>
+                                <option value="YYYY年MM月DD日" {% if config.date_format=='YYYY年MM月DD日' %}selected{% endif
+                                    %}>2024年01月01日</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 扫描配置（原「其他配置」卡的同名小节拆出） -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('refresh-cw') }}</span>
+                    <h2>扫描配置</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    <div class="form-group-inline compact">
+                        <div class="form-group">
+                            <label>{{ icon('clock', 'sm') }} 自动扫描间隔</label>
+                            <input type="number" id="scan_interval_hours" name="scan_interval_hours"
+                                value="{{ config.scan_interval_hours }}" min="0" max="168" step="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="单位：MB，超过此大小的文件将被跳过；示例: 100（只扫描100MB以下的文件）">{{ icon('database', 'sm') }}
+                                最大文件大小</label>
+                            <input type="number" id="max_file_size_mb" name="max_file_size_mb"
+                                value="{{ config.max_file_size_mb }}" min="1" max="500" step="1">
+                        </div>
+                    </div>
+                    <div class="form-hint">
+                        {{ icon('lightbulb', 'sm') }} 扫描间隔单位：小时，0 表示不自动扫描
+                        <span class="example">示例: 24 (每天扫描一次)</span><br>
+                        {{ icon('zap', 'sm') }} 注：修改后，需重启容器生效！
+                    </div>
+                    <h3>
+                        {{ icon('refresh-cw', 'sm') }} 启动扫描
+                    </h3>
+                    <div class="switch-grid single compact">
+                        <label class="switch" title="首次启动建议开启，之后可以关闭以加快启动速度">
+                            <span class="switch-text">{{ icon('refresh-cw', 'sm') }} 启动时自动扫描小说目录</span>
+                            <input type="checkbox" id="auto_scan_on_start" name="auto_scan_on_start" {% if
+                                config.auto_scan_on_start %}checked{% endif %}>
+                            <span class="switch-track" aria-hidden="true"></span>
+                        </label>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- 标签自动化（原「其他配置」卡的同名小节拆出） -->
+            <div class="config-card">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <span class="card-icon">{{ icon('tag') }}</span>
+                    <h2>标签自动化</h2>
+                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+                </div>
+                <div class="card-content">
+                    {# 每个开关各自带一条说明（.switch-desc）：原先两个开关共用底部一段
+                    长 form-hint，而那段 90% 只讲「派生标签」，第一个开关的说明被塞在
+                    title tooltip 里（触屏看不到），读起来就是两件事糊在一起。 #}
+                    <div class="switch-grid compact">
+                        <div class="switch-item">
+                            <label class="switch">
+                                <span class="switch-text">{{ icon('bookmark', 'sm') }} 自动按关键词打标签</span>
+                                <input type="checkbox" id="auto_tag_enabled" name="auto_tag_enabled" {% if
+                                    config.auto_tag_enabled %}checked{% endif %}>
+                                <span class="switch-track" aria-hidden="true"></span>
+                            </label>
+                            <div class="switch-desc">书名/简介命中关键词时自动打标签；<br>关闭后仅保留元数据与配置标签。</div>
+                        </div>
+
+                        <div class="switch-item">
+                            <label class="switch">
+                                <span class="switch-text">{{ icon('puzzle', 'sm') }} 启用派生标签</span>
+                                <input type="checkbox" id="enable_derived_tags" name="enable_derived_tags" {% if
+                                    config.enable_derived_tags %}checked{% endif %}>
+                                <span class="switch-track" aria-hidden="true"></span>
+                            </label>
+                            <div class="switch-desc">由已有标签推导组合标签；<br>关闭后仅保留手工与关键词标签。</div>
+                        </div>
+                    </div>
+
+                    {# .form-hint 已改为普通文本流（不是 flex），两句拆开更清楚。
+                       注意：早前 .form-hint 是 flex 时 <br> 不换行，现在可以了，
+                       但拆成两个元素在窄屏下的断行更可控。 #}
+                    <div class="form-hint">
+                        {{ icon('library', 'sm') }} 关键词与派生规则的增删改，请到
+                        <a href="/tag_manager" style="color: inherit; text-decoration: underline;">标签管理</a> 页面操作。
+                    </div>
+                    <div class="form-hint" style="margin-top: -8px;">
+                        {{ icon('refresh-cw', 'sm') }} 规则改动需重新扫描才对已有书籍生效。
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.admin-section -->
+        {% endif %}
+
+        {# 原「安全配置」卡片已移除（2026-10-19）：
+        1) 「启用登录验证」开关是早期方案的残留——这个站点本来就该强制登录，
+        不该留一个能把鉴权关掉的开关。config.json 里 require_auth 恒为 true。
+        2) 「修改我的密码」挪进「用户管理」——改密码是管理动作，普通用户不需要，
+        管理员在用户管理里编辑任意用户即可（modal_edit_password 字段）。
+        后端未改：/config/save 仍兼容 password 字段（改当前登录用户自己的密码），
+        只是前端不再提供这个入口。 #}
+
+        <!-- 阅读体验（个人偏好：每个用户各自一份，走 /api/save_preferences） -->
+        <div class="config-card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('book-open') }}</span>
+                <h2>我的阅读偏好</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
+                <div class="form-hint" style="margin-bottom: 14px;">
+                    {{ icon('user', 'sm') }} 这一组是<b>你自己的</b>阅读设置，保存后立即生效，不影响其他用户。
+                    管理员设定的「管理员专属」区域里的值是全局默认，只作为新用户的初始值。
+                </div>
+
+                {# 五个字段并成一行（密度对齐「列表与显示」）：原先两组 inline 各 2 项，
+                每项被 flex 拉到半屏宽。 #}
+                <div class="form-group-inline compact">
+                    <div class="form-group">
+                        <label title="单位：px，建议 16-24">{{ icon('pencil', 'sm') }} 字体大小</label>
+                        <input type="number" id="pref_font_size" name="pref_font_size" min="12" max="48" step="1"
+                            placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="建议 1.5-2.0">{{ icon('ruler', 'sm') }} 行高</label>
+                        <input type="number" id="pref_line_height" name="pref_line_height" min="1.2" max="2.5"
+                            step="0.1" placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="网文一般保留缩进">{{ icon('summary', 'sm') }} 首行缩进</label>
+                        {# 原来这个下拉用的 id 与上方「阅读默认值」的那个重复，
+                        getElementById 永远只拿到上面那个，本页这个等于摆设；
+                        改成 pref_ 前缀后由 PREF_FIELDS 正常接管（JS 已支持 SELECT）。 #}
+                        <select id="pref_indent_paragraph" name="pref_indent_paragraph">
+                            <option value="">跟随默认</option>
+                            <option value="true">缩进两字符</option>
+                            <option value="false">不缩进（顶格）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label title="单位：rem，0 表示段落紧贴">{{ icon('list', 'sm') }} 段间距</label>
+                        <input type="number" id="pref_paragraph_spacing" name="pref_paragraph_spacing" min="0" max="3"
+                            step="0.1" placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="选择阅读页面的颜色主题">{{ icon('palette', 'sm') }} 主题</label>
+                        <select id="pref_theme" name="pref_theme">
+                            <option value="">跟随默认</option>
+                            <option value="dark">🌙 暗色主题</option>
+                            <option value="light">☀️ 亮色主题</option>
+                            <option value="auto">🔄 跟随系统</option>
+                        </select>
+                    </div>
+                </div>
+                <h3>
+                    {{ icon('type', 'sm') }} 字体设置
+                </h3>
+                {# font_opts 是一段被 capture 的 <option> 片段，供下方「正文字体」「标题字体」
+                    两个 select 复用。⚠️ 它只是赋值，不会输出任何 DOM，
+                    所以这里**不能**包 <div class="form-group"> ——
+                        原文件在此处多开了一个 form-group 却没有闭合，
+                        导致整个配置页的 div 层级错位：
+                        1) 「我的阅读偏好」卡片被撑开，把后面的「显示配置」
+                        「扫描配置」「标签自动化」全包了进去；
+                        2) 管理员专属区块的闭合也跟着错位。
+                        删掉这个多余的 form-group 即修复。 #}
+                        {% set font_opts %}
+                <option value="">跟随默认</option>
+                <option value="system-ui">系统默认</option>
+                <option value="'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', '霞鹜文楷内置', sans-serif">📱 霞鹜文楷（内置）</option>
+                <option value="'CEJK01-9128-W04', '仓耳今楷01-9128-W04', '仓耳今楷内置', serif">📱 仓耳今楷（内置）</option>
+                <option value="'HarmonyOS Sans SC', '鸿蒙黑体-HarmonyOS Sans SC', '鸿蒙黑体内置', sans-serif">📱 鸿蒙黑体（内置）</option>
+                <option value="'WEILAIYUANMedium', '未来圆SC Medium', 'WeiLaiYuanSC', '未来圆内置', sans-serif">📱 未来圆（内置）
+                </option>
+                <option value="'HYWenHei-55W', '汉仪文黑-55W', '汉仪文黑内置', sans-serif">📱 汉仪文黑（内置）</option>
+                <option value="'LantingXiHei-GBK', '兰亭羲之黑内置', sans-serif">📱 兰亭羲之黑（内置）</option>
+                <option value="'FZDaBiaoSong', '方正大标宋内置', serif">📱 方正大标宋（内置）</option>
+                <option value="'FZFangSong', '方正仿宋内置', serif">📱 方正仿宋（内置）</option>
+                <option value="'FZKaiTi', '方正楷体内置', serif">📱 方正楷体（内置）</option>
+                {% endset %}
+                {# 下面 9 个字体条目（正文/标题/各类括号/书名号）用 .font-grid 包裹：
+                桌面端两列排布、移动端一列（见 config.css 的 .font-grid 规则）。
+                原先每项都撑满整行，桌面宽度下浪费大量横向空间。 #}
+                <div class="font-grid">
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 正文字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_font_family" name="pref_font_family">{{ font_opts }}</select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_body_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_body_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 标题字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_title_font_family" name="pref_title_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_title_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_title_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 双引号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_double_quote_font_family" name="pref_double_quote_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_double_quote_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_double_quote_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 单引号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_single_quote_font_family" name="pref_single_quote_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_single_quote_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_single_quote_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 圆括号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_bracket_font_family" name="pref_bracket_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_bracket_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_bracket_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 方头括号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_square_bracket_font_family" name="pref_square_bracket_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_square_bracket_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_square_bracket_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 方括号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_square_bracket_1_font_family" name="pref_square_bracket_1_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_square_bracket_1_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_square_bracket_1_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 空心括号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_hollow_bracket_font_family" name="pref_hollow_bracket_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_hollow_bracket_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_hollow_bracket_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ icon('type', 'sm') }} 书名号字体</label>
+                        <div class="set-font-ctrl">
+                            <select id="pref_book_font_family" name="pref_book_font_family">
+                                <option value="">跟随正文</option>
+                                {{ font_opts }}
+                            </select>
+                            <button type="button" class="set-bi" data-style="bold" id="pref_book_bold"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">B</button>
+                            <button type="button" class="set-bi" data-style="italic" id="pref_book_italic"
+                                aria-pressed="false" onclick="toggleConfigBi(this)">I</button>
+                        </div>
+                    </div>
+                </div>{# /.font-grid #}
+                <h3>
+                    {{ icon('bar-chart-3', 'sm') }} 杂项设置
+                </h3>
+                <div class="switch-grid compact">
+                    <label class="switch" title="关闭后需要手动记录阅读位置">
+                        <span class="switch-text">{{ icon('save', 'sm') }} 自动保存阅读进度</span>
+                        <input type="checkbox" id="pref_auto_save_progress" name="pref_auto_save_progress">
+                        <span class="switch-track" aria-hidden="true"></span>
+                    </label>
+
+                    <label class="switch">
+                        <span class="switch-text">{{ icon('bar-chart-3', 'sm') }} 显示字数统计</span>
+                        <input type="checkbox" id="pref_show_word_count" name="pref_show_word_count">
+                        <span class="switch-track" aria-hidden="true"></span>
+                    </label>
+                </div>
+
+                <h3>{{ icon('file', 'sm') }} 列表与显示</h3>
+                <div class="form-hint" style="margin-bottom: 10px;">
+                    {{ icon('info', 'sm') }} 你个人看到的列表排序、分页与日期格式。留空/选「跟随默认」则用管理员设的全局值。
+                </div>
+                <div class="form-group-inline compact">
+                    <div class="form-group">
+                        <label title="主页列表默认按什么排序">{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label>
+                        <select id="pref_default_sort_by" name="pref_default_sort_by">
+                            <option value="">跟随默认</option>
+                            <option value="title">书名 (A-Z)</option>
+                            <option value="author">作者 (A-Z)</option>
+                            <option value="date">发表日期 (最新)</option>
+                            <option value="word_count">字数 (最多)</option>
+                            <option value="site">发表网站 (A-Z)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label title="选择主页默认的排序方向">{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }} 默认排序方向</label>
+                        <select id="pref_default_sort_order" name="pref_default_sort_order">
+                            <option value="">跟随默认</option>
+                            <option value="asc">升序 (A-Z)</option>
+                            <option value="desc">降序 (Z-A)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label title="小说列表每页显示多少本，建议 50-200">{{ icon('library', 'sm') }} 每页显示数量</label>
+                        <input type="number" id="pref_per_page" name="pref_per_page" min="20" max="500" step="10"
+                            placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="阅读时每页显示多少字，建议 5000-10000">{{ icon('book-open', 'sm') }} 每页显示字数</label>
+                        <input type="number" id="pref_words_per_page" name="pref_words_per_page" min="1000" max="50000"
+                            step="1000" placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="列表中最多显示几个标签，多余的会折叠">{{ icon('tag', 'sm') }} 最大标签显示数</label>
+                        <input type="number" id="pref_max_tags_display" name="pref_max_tags_display" min="1" max="10"
+                            step="1" placeholder="跟随默认">
+                    </div>
+
+                    <div class="form-group">
+                        <label title="列表里日期的显示格式">{{ icon('calendar', 'sm') }} 日期格式</label>
+                        <select id="pref_date_format" name="pref_date_format">
+                            <option value="">跟随默认</option>
+                            <option value="YYYY-MM-DD">2024-01-01</option>
+                            <option value="YYYY/MM/DD">2024/01/01</option>
+                            <option value="YYYY年MM月DD日">2024年01月01日</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 10px;">
+                    <button type="button" class="btn btn-success" onclick="saveMyPreferences()">
+                        {{ icon('save', 'sm') }} 保存我的阅读偏好
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetMyPreferences()">
+                        {{ icon('corner-up-left', 'sm') }} 恢复默认
+                    </button>
+                </div>
+            </div>
+        </div>
+        {# ⚠️ 上面这个
+</div> 是「我的阅读偏好」config-card 的闭合标签，不能删。
+原文件缺这一个闭合，导致该卡片把后续的「显示配置」「扫描配置」
+「标签自动化」三个管理区块整个包进了自己的 card-content 里，
+表现就是三个区块被折叠/嵌套在偏好卡片内部。 #}
+
+{# 「其他配置」卡已拆成「列表与显示 / 扫描配置 / 标签自动化」三张独立卡，
+统一归入上方「管理员专属」区块（2026-10-19）。 #}
+
+</form>
+
+<!-- 底部按钮 -->
+{% if session.user_role == 'admin' %}
+<div class="button-group" style="margin-top: 20px; justify-content: center;">
+    <button class="btn btn-success" onclick="saveAllConfig()">
+        {{ icon('save', 'sm') }} 保存全部配置
+    </button>
+    <button class="btn btn-warning" onclick="reloadConfig()">
+        {{ icon('refresh-cw', 'sm') }} 重载配置
+    </button>
+    <button class="btn btn-secondary" onclick="exportConfig()">
+        {{ icon('upload', 'sm') }} 导出配置
+    </button>
+    <button class="btn btn-secondary" onclick="importConfig()">
+        {{ icon('download', 'sm') }} 导入配置
+    </button>
+</div>
+{% else %}
+{# display:block 让 <br> 真正换行，且 text-align:center 才生效
+（.form-hint 默认是 flex，两者都会失效） #}
+<div class="form-hint" style="margin-top: 20px; text-align: center; display: block;">
+    {{ icon('lightbulb', 'sm') }} 你只能修改自己的阅读偏好；全局配置由管理员维护，密码也由管理员在「用户管理」里重设。
+    <br>阅读偏好改完请点上方卡片里的「{{ icon('save', 'sm') }} 保存我的阅读偏好」。
+</div>
+{% endif %}
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/config.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initPage();
+        // 配置页专属初始化：我的阅读偏好
+        loadMyPreferences();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+:root {
+  /* 田园绿主题色系 */
+  --login-green-primary: #4caf50;
+  --login-green-primary-dark: #2e7d32;
+  --login-green-primary-light: #81c784;
+  --login-green-bg-start: #6b8c42;
+  --login-green-bg-end: #4a6b2f;
+  --login-green-gradient-start: #6b8c42;
+  --login-green-gradient-end: #4a6b2f;
+
+  /* 背景色 */
+  --login-bg-overlay: rgba(255, 255, 255, 0.95);
+  --login-bg-error: #f0f7e6;
+  --login-bg-user-item: #f5f9f0;
+
+  /* 文字颜色 */
+  --login-text-primary: #2c3e2f;
+  --login-text-secondary: #4a6741;
+  --login-text-muted: #6b8c5c;
+  --login-text-light: #8ba888;
+  --login-text-error: #7cb342;
+
+  /* 边框颜色 */
+  --login-border-light: #d4e8c2;
+  --login-border-focus: #6b8c42;
+
+  /* 按钮相关 */
+  --login-btn-text: #ffffff;
+  --login-btn-shadow: rgba(75, 107, 47, 0.4);
+
+  /* 角色标签 */
+  --login-role-admin-bg: #6b8c42;
+  --login-role-user-bg: #7cb342;
+  --login-role-text: #ffffff;
+  --login-role-bg-light: #e8f5e3;
+}* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}body {
+  font-family: 'Segoe UI', '微软雅黑', sans-serif;
+  background: linear-gradient(135deg, var(--login-green-bg-start) 0%, var(--login-green-bg-end) 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}.container {
+  background: var(--login-bg-overlay);
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}h1 {
+  text-align: center;
+  margin-bottom: 10px;
+  color: var(--login-text-primary);
+  font-size: 28px;
+  font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}.reader-subtitle {
+  color: rgba(117, 5, 5, 0.8);
+  font-size: 0.55em;
+  font-weight: 400;
+  margin-left: 5px;
+  font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}.subtitle {
+  text-align: center;
+  color: var(--login-text-secondary);
+  margin-bottom: 30px;
+  font-size: 14px;
+}.form-group {
+  margin-bottom: 20px;
+}label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--login-text-secondary);
+  font-weight: 500;
+}input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--login-border-light);
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}input:focus {
+  outline: none;
+  border-color: var(--login-border-focus);
+  box-shadow: 0 0 0 3px rgba(107, 140, 66, 0.1);
+}button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--login-green-gradient-start) 0%, var(--login-green-gradient-end) 100%);
+  color: var(--login-btn-text);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px var(--login-btn-shadow);
+}.error {
+  background: var(--login-bg-error);
+  color: var(--login-text-error);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}.hint {
+  font-size: 12px;
+  color: var(--login-text-muted);
+  margin-top: 5px;
+  text-align: center;
+}.footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--login-text-light);
+}.user-list h3 {
+  font-size: 14px;
+  color: var(--login-text-secondary);
+  margin-bottom: 10px;
+}.user-role {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--login-role-bg-light);
+}.user-role.admin {
+  background: var(--login-role-admin-bg);
+  color: var(--login-role-text);
+}.user-role.user {
+  background: var(--login-role-user-bg);
+  color: var(--login-role-text);
+}/* 登录页标题图标样式 */.title-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}.title-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}.title-svg {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}@media (max-width: 480px) {.title-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .title-svg {
+    height: 34px;
+  }}/* ============================================
+   深色模式（新增）
+   ------------------------------------------------------------
+   登录页原先完全没有深色适配，是全站唯一不支持深色主题的页面。
+   这里只覆盖登录页自己的 --login-* 令牌；深色底色/文字沿用 tokens.css 的 --dark-*。
+   ============================================ */body.dark-mode {
+  --login-bg-overlay: rgba(30, 42, 30, 0.95);
+  --login-bg-error: rgba(180, 100, 100, 0.15);
+  --login-bg-user-item: rgba(255, 255, 255, 0.04);
+  --login-text-primary: var(--dark-text-primary);
+  --login-text-secondary: var(--dark-primary-lighter);
+  --login-text-muted: var(--dark-text-secondary);
+  --login-text-light: var(--dark-text-tertiary);
+  --login-text-error: #f0a0a0;
+  --login-border-light: var(--dark-border-primary);
+  --login-border-focus: var(--dark-primary-light);
+  --login-role-bg-light: rgba(255, 255, 255, 0.06);
+  --login-btn-shadow: rgba(0, 0, 0, 0.5);
+}body.dark-mode .reader-subtitle {
+  color: var(--dark-primary-lighter);
+}

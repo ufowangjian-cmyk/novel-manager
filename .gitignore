@@ -1,0 +1,37 @@
+# ========== 运行时数据 ==========
+# 含用户表、密码哈希（scrypt）、会话密钥 secret_key、
+# 书库扫描缓存 novel_cache.json、每用户阅读记录 reading_records/
+# 这些一旦公开等于泄露账号与隐私，永远不要提交
+data/
+
+# ========== 版权受限素材 ==========
+# 中文字体多为商业授权（方正 / 汉仪 / 仓耳今楷 / 兰亭羲之黑 / 未来圆），
+# 公开分发有版权风险。可自由分发的替代字体见 README。
+static/fonts/
+# 头图与表情包来源网络，授权不明
+static/images/
+static/emojis/
+
+# ========== 本地配置 ==========
+# 含内网真实路径 / 密码，用 .env.example 与 docker-compose.example.yml 代替
+.env
+docker-compose.yml
+
+# 本机原始文件的备份（含真实路径，仅留作本地参考）
+_local_backup/
+
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# ========== 编辑器 / 系统垃圾 ==========
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+*.log

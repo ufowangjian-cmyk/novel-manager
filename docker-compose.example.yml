@@ -1,0 +1,65 @@
+services:
+  novel-manager:
+    # build 段让 compose 能自己构建镜像：
+    #   context: .  表示以本文件所在目录为构建上下文（读取同目录的 Dockerfile）
+    #   image: ...  指定构建出来的镜像名，与下面 image 字段一致
+    # 这样 `docker compose build` / `docker compose up -d --build` 都能直接工作，
+    # 不再需要手工执行 docker build。
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: novel-manager
+    container_name: novel-manager
+    hostname: novel-manager
+    restart: always
+    # init: true —— 由 Docker 注入 docker-init (tini) 作为 PID 1，负责回收僵尸进程。
+    # 因此 Dockerfile 里不再安装 tini、也不再设 ENTRYPOINT（避免两层 init 嵌套）。
+    # ⚠️ 若把这一行去掉，容器将没有 PID 1 回收器，长期运行可能累积僵尸进程。
+    init: true
+    ports:
+      - "5000:5000"
+    volumes:
+      # 书库：只读挂载，容器内固定为 /novels（DOCKER_ENV=true 会强制该路径）
+      - "${NOVEL_DIR:-./novels}:/novels:ro"
+      # 项目目录：整目录挂载，改代码后 docker restart 即生效，无需重建镜像
+      - "${APP_DIR:-.}:/app"
+    environment:
+      - DOCKER_ENV=true
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      # 会话签名密钥：留空则自动生成并保存到 data/secret_key
+      - SECRET_KEY=${SECRET_KEY:-}
+      # 仅在用户表为空时用于初始化管理员账号
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-}
+    # --max-requests / --max-requests-jitter：每处理约 500±100 个请求平滑回收 worker，
+    # 把长期运行累积的 Python/glibc 内存碎片还给系统（单 worker 重启约百毫秒，低并发无感）。
+    command: gunicorn -w 1 --threads 4 --max-requests 500 --max-requests-jitter 100 -b "[::]:5000" --timeout 120 --worker-class sync novel_manager:app
+    # [::] 双栈绑定：容器内同时监听 IPv6 和 IPv4（bindv6only=0）。
+    # 改 0.0.0.0 会导致 Docker 发布的 [::]:5000（IPv6）转发到容器后被拒——
+    # 外网 IPv6 客户端连上再遭断，卡顿几秒才回退 IPv4。引号防 sh glob 展开 [::]。
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/login')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+# IPv6: Docker 28 下自定义网络必须显式声明 enable_ipv6 才会分配 IPv6 地址，
+# 不会自动继承 daemon.json 的 "ipv6": true（只有默认 bridge 网络会继承）。
+# 双栈写法：ipam.config 下写两个 subnet 条目，一个 IPv4 一个 IPv6。
+# （注意：ipv6_subnet 不是合法字段，会被 compose 校验拒绝。）
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.32.0.0/16
+        - subnet: fd00:cafe:3::/64

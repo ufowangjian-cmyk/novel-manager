@@ -1,0 +1,112 @@
+/* ============================================
+   文件失效提示页（原 novel_missing.html 的内联 <style>，移到这里统一管理）
+   ============================================ */
+        /* ============================================
+           文件缺失页 - 页面专属样式
+           通用变量与按钮见 style.css
+           ============================================ */
+        .missing-container {
+            max-width: 640px;
+            margin: 80px auto;
+            padding: 40px 30px;
+            background: var(--color-bg-card);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--opacity-black-10);
+            text-align: center;
+            border: 1px solid var(--color-border-primary);
+        }
+
+        .missing-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .missing-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--color-primary-title);
+            margin-bottom: 15px;
+        }
+
+        .missing-desc {
+            font-size: 1em;
+            color: var(--color-text-slate);
+            line-height: 1.8;
+            margin-bottom: 25px;
+        }
+
+        .missing-path {
+            display: inline-block;
+            background: var(--opacity-black-10);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: var(--color-primary-link);
+            word-break: break-all;
+            margin-bottom: 25px;
+        }
+
+        .missing-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 原因徽章 */
+        .reason-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+        }
+
+        .reason-badge.deleted {
+            background: var(--color-danger-pale);
+            color: var(--color-danger-text);
+        }
+
+        .reason-badge.modified {
+            background: #feebc8;
+            color: #7b341e;
+        }
+
+        .reason-badge.error {
+            background: var(--color-bg-lighter);
+            color: var(--color-text-slate);
+        }
+
+        /* ===== 深色模式适配 ===== */
+        body.dark-mode .missing-container {
+            background: var(--dark-bg-secondary);
+            border-color: var(--dark-border-primary);
+        }
+
+        body.dark-mode .missing-title {
+            color: var(--dark-primary-lighter);
+        }
+
+        body.dark-mode .missing-desc {
+            color: var(--dark-text-secondary);
+        }
+
+        body.dark-mode .missing-path {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--dark-primary-lighter);
+        }
+
+        body.dark-mode .reason-badge.modified {
+            background: #4a3a1a;
+            color: #d4c5a0;
+        }
+    
+
+/* 空状态大图标：font-size 对 SVG 无效，显式给尺寸并保证在 flex 内居中 */
+.missing-icon .ic {
+    width: 56px;
+    height: 56px;
+    vertical-align: middle;
+}
+

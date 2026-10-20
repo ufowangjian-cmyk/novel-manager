@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% from "_icons.html" import icon %}
+{% block title %}登录 - 摸鱼读物{% endblock %}
+{% block body_class %}page-login{% endblock %}
+{# 登录页使用 login.css 自成体系的配色，不加载 style.css（见 base.html 说明） #}
+{% block base_css %}{% endblock %}
+{% block page_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <h1 class="title-with-icon">
+            <img src="{{ url_for('static', filename='images/novel-icon.svg') }}" alt="摸鱼读物图标" class="title-icon">
+            <img src="{{ url_for('static', filename='images/title.svg') }}"
+                 alt="摸鱼读物" class="title-svg">
+            <span class="reader-subtitle">TXT阅读工具</span>
+        </h1>
+        <div class="subtitle">
+            请输入您的密码
+        </div>
+        
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="form-group">
+                <label>{{ icon('lock', 'sm') }} 密码</label>
+                <input type="password" name="password" placeholder="请输入您的密码" autocomplete="off" required>
+            </div>
+            <button type="submit">登录</button>
+        </form>
+        
+        <div class="footer">
+            {{ icon('lightbulb', 'sm') }} 提示：不同密码对应不同账户，阅读记录独立保存
+        </div>
+        
+    </div>
+{% endblock %}

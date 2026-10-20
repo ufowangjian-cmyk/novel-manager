@@ -1,0 +1,279 @@
+/* ============================================
+   设计令牌（Design Tokens）—— 全站唯一来源
+   ------------------------------------------------------------
+   约定：
+     1. 所有颜色 / 间距 / 阴影在这里定义一次；页面样式表只允许“使用”
+        var(--x)，不允许再各自重新定义同名令牌（避免同名不同值）。
+     2. 深色主题统一用 body.dark-mode 覆盖，取值集中在本文件第 3 节。
+     3. 只在单个页面成立的取值，使用页面前缀：--reader-* / --detail-* / --login-*。
+   加载顺序：font.css -> tokens.css -> style.css -> components.css -> 页面样式
+   ============================================ */
+
+/* ============================================
+   1. 全局色板（原 style.css 的 :root，逐条迁移，取值未改动）
+   ============================================ */
+:root {
+    /* 论坛绿色田园风主配色 */
+    --color-bg-primary: #F0F3EA;
+    /* 页面主背景 - 米绿 */
+    --color-bg-card: #E0E8D0;
+    /* 卡片/表格背景 - 草绿 */
+    --color-border-primary: #BDC8A8;
+    /* 边框线 - 灰绿 */
+    --color-primary-dark: #728B47;
+    /* 深绿 - 头部/菜单/主按钮 */
+    --color-primary-light: #A2BC75;
+    /* 浅绿 - 按钮/表头/进度徽章 */
+    --color-primary-link: #4B6D0F;
+    /* 链接色 - 苔绿 */
+    --color-primary-title: #2B4A0A;
+    /* 书名链接色 */
+
+    /* 文字颜色 */
+    --color-text-dark: #000000;
+    --color-text-gray: #666666;
+    --color-text-light-gray: #999999;
+    --color-text-slate: #2d3748;
+    --color-text-slate-light: #475569;
+    --color-text-slate-lighter: #64748b;
+    --color-text-slate-pale: #94a3b8;
+    --color-text-white: #ffffff;
+
+    /* 背景色 */
+    --color-bg-white: #ffffff;
+    --color-bg-light: #f8fafc;
+    --color-bg-lighter: #f1f5f9;
+    --color-bg-hover: #C8D8B0;
+    --color-bg-empty: #fff5f5;
+    --color-bg-search-hover: rgba(102, 126, 234, 0.1);
+
+    /* 功能色 */
+    --color-danger: #dc3545;
+    --color-danger-light: #f56565;
+    --color-danger-pale: #fed7d7;
+    --color-danger-text: #742a2a;
+    --color-success: #48bb78;
+    --color-info: #0096ff;
+
+    /* 扫描管理：增量扫描强调蓝（与「上次扫描」增量徽章一致，便于和全量(绿)区分） */
+    --color-accent-blue: #4a90d9;
+    --color-accent-blue-light: #5aa6e6;
+    --color-accent-blue-dark: #3a7fc8;
+    --color-accent-blue-opacity-30: rgba(74, 144, 217, 0.30);
+    --color-accent-blue-opacity-40: rgba(74, 144, 217, 0.40);
+
+    /* 徽章配色 */
+    --color-badge-tag: #728B47;
+    --color-badge-progress: #A2BC75;
+    --color-badge-site: #BDC8A8;
+    --color-badge-date: #fed7d7;
+    --color-badge-tag-more: #9fc065;
+    --color-badge-date-text: #742a2a;
+
+    /* 透明度 */
+    --opacity-white-15: rgba(255, 255, 255, 0.15);
+    --opacity-white-20: rgba(255, 255, 255, 0.2);
+    --opacity-white-25: rgba(255, 255, 255, 0.25);
+    --opacity-white-30: rgba(255, 255, 255, 0.3);
+    --opacity-white-40: rgba(255, 255, 255, 0.4);
+    --opacity-black-10: rgba(0, 0, 0, 0.1);
+    --opacity-black-15: rgba(0, 0, 0, 0.15);
+    --opacity-black-20: rgba(0, 0, 0, 0.2);
+    --opacity-black-25: rgba(0, 0, 0, 0.25);
+
+    /* 深色模式配色 */
+    --dark-bg-primary: #1a2a1a;
+    --dark-bg-secondary: #1e2a1e;
+    --dark-bg-tertiary: #0f1a0f;
+    --dark-bg-quaternary: #2a3a2a;
+    --dark-border-primary: #334d33;
+    --dark-primary: #5a8f4c;
+    --dark-primary-light: #7d9e6e;
+    --dark-primary-lighter: #9ab87a;
+    --dark-text-primary: #cbd5e1;
+    --dark-text-secondary: #94a3b8;
+    --dark-text-tertiary: #64748b;
+    --dark-badge-tag: #3a2d1a;
+    --dark-badge-tag-text: #d4c5a0;
+    --dark-badge-progress: #1a3a1a;
+    --dark-badge-site: #1a2a3a;
+    --dark-badge-date: #3a1a1a;
+    --dark-badge-date-text: #d4a0a0;
+    --dark-danger: #d47a7a;
+    --dark-danger-bg: #4a2a2a;
+    --dark-success-bg: #1a4a3a;
+    --dark-opacity-black-30: rgba(0, 0, 0, 0.3);
+    --dark-opacity-black-40: rgba(0, 0, 0, 0.4);
+    --dark-opacity-danger-10: rgba(180, 100, 100, 0.1);
+    /* ===== 补充：全局按钮与头部统一变量 ===== */
+    --color-primary: #6B8C42;
+    --color-primary-hover: #4A6B2A;
+    --color-primary-light-bg: #8AAA5E;
+    --color-warning: #D4A86A;
+    --color-warning-hover: #B88A4A;
+    --color-text-on-primary: #ffffff;
+
+    /* 按钮尺寸 */
+    --btn-padding-y: 10px;
+    --btn-padding-x: 22px;
+    --btn-radius: 10px;
+    --btn-font-size: 14px;
+
+    /* 深色模式补充 */
+    --dark-btn-secondary-bg: #2a3a2a;
+    --dark-btn-secondary-border: #3a4d3a;
+    --dark-btn-secondary-text: #cbd5e1;
+    /* ===== 兼容别名（config/tag_manager 使用的变量名）===== */
+    --bg-primary: var(--color-bg-primary);
+    --bg-secondary: var(--color-bg-lighter);
+    --bg-card: var(--color-bg-white);
+    --bg-card-alt: var(--color-bg-light);
+    --bg-card-hover: var(--color-bg-hover);
+    --bg-input: var(--color-bg-white);
+
+    --text-primary: var(--color-text-dark);
+    --text-secondary: var(--color-text-slate);
+    --text-tertiary: var(--color-text-slate-lighter);
+    --text-muted: var(--color-text-slate-pale);
+    --text-white: var(--color-text-white);
+
+    --border-primary: var(--color-border-primary);
+    --border-secondary: var(--color-border-primary);
+    --border-tertiary: var(--color-border-primary);
+    --border-input: var(--color-border-primary);
+    --border-input-focus: var(--color-primary);
+
+    --shadow-sm: 0 2px 8px rgba(74, 107, 42, 0.08);
+    --shadow-md: 0 4px 16px rgba(74, 107, 42, 0.12);
+    --shadow-lg: 0 8px 30px rgba(74, 107, 42, 0.16);
+
+    /* 暖色别名 */
+    --color-warm: var(--color-warning);
+    --color-warm-light: #E8C88A;
+    --color-warm-pale: #F5EDD6;
+    --color-warm-opacity-10: rgba(212, 168, 106, 0.10);
+    --color-warm-opacity-20: rgba(212, 168, 106, 0.20);
+    --color-success-light: #7AAF6A;
+    --color-warning-light: #E8C88A;
+
+    /* 主色透明度别名 */
+    --color-primary-opacity-10: rgba(107, 140, 66, 0.10);
+    --color-primary-opacity-15: rgba(107, 140, 66, 0.15);
+    --color-primary-opacity-20: rgba(107, 140, 66, 0.20);
+    --color-primary-opacity-25: rgba(107, 140, 66, 0.25);
+    --color-primary-opacity-30: rgba(107, 140, 66, 0.30);
+    --color-primary-opacity-40: rgba(107, 140, 66, 0.40);
+
+/* ===== 补齐原先“被引用但从未定义”的令牌（这些引用以前是失效的）===== */
+    --color-primary-darker: #4A6B2A;
+    --color-warm-dark: var(--color-warning-hover);
+    --dark-bg-card: var(--dark-bg-secondary);
+    --dark-bg-card-hover: var(--dark-bg-quaternary);
+    --dark-bg-input: var(--dark-bg-tertiary);
+    --dark-border-secondary: var(--dark-border-primary);
+    --dark-shadow-md: 0 4px 16px var(--dark-opacity-black-40);
+    --dark-text-muted: var(--dark-text-tertiary);
+
+    /* ===== 阅读 / 详情页共用色板（原 reader.css :root + detail.css 的 --shadow-green）===== */
+    --color-text-primary: #000000;
+    --color-text-secondary: #1f2937;
+    --color-text-tertiary: #4b5563;
+    --color-text-quaternary: #4a7a3a;
+
+    --color-bg-secondary: #f0f5ea;
+    --color-bg-tertiary: #e2ebd5;
+    --color-bg-quaternary: #c8d4b5;
+
+    --color-highlight-quote: #c2412c;
+    --color-highlight-quote-single: #e07c1c;
+    --color-highlight-bracket: #2c7652;
+    --color-highlight-square-bracket: #f56c6c;
+    --color-highlight-hollow-bracket: #c084fc;
+    --color-highlight-book: #7cafef;
+    --color-highlight-bold-bracket: #cb6e1f;
+
+    --color-title-level1: #1e5a3e;
+    --color-title-level2: #2c6e4a;
+    --color-title-level3: #3d7a56;
+
+    --color-separator: #d1dac4;
+
+    --color-btn-active: #4a7a3a;
+    --color-btn-hover: #6b9c4a;
+    --color-btn-text-active: #ffffff;
+    --color-btn-text-hover: #ffffff;
+
+    --color-speech-primary: #5a8a3a;
+    --color-speech-speaking: #c2412c;
+    --color-speech-highlight: rgba(90, 138, 58, 0.15);
+    --color-speech-highlight-gradient: rgba(90, 138, 58, 0.05);
+
+    --shadow-green: rgba(114, 139, 71, 0.2);
+
+    /* 阅读页留白 */
+    --padding-content-desktop: 40px 60px;
+    --padding-content-mobile: 20px 16px;
+    --padding-bar: 0 25px;
+    --padding-bottom: 20px 25px;
+
+    --transition-base: all 0.2s ease;
+
+    /* ===== 统一遗留硬编码（原 style.css 散落的实色，集中为令牌，取值未改）===== */
+    --color-text-strong: #333333;
+    --color-text-ink: #1a202c;
+    --color-text-ash: #6b7280;
+    --color-text-olive: #7a8a5e;
+    --color-border-neutral: #dddddd;
+    --color-border-slate: #cbd5e0;
+    --color-border-faint: #f3f3f3;
+    --color-primary-deep: #5a7a3a;
+    --color-primary-gradient-end: #8fbf5a;
+    /* 警示按钮（暖橙实心，btn-warning） */
+    --color-alert: #ed8936;
+    --color-alert-hover: #dd6b20;
+    --color-alert-dark: #c05621;
+    --color-alert-darker: #9c4221;
+    --shadow-alert: 0 2px 8px rgba(237, 137, 54, 0.25);
+    --shadow-alert-hover: 0 6px 20px rgba(237, 137, 54, 0.35);
+    /* 返回主页按钮（琥珀橙实心，.btn-nav.btn-back-home） */
+    --color-amber: #d97706;
+    --color-amber-hover: #b45309;
+    --color-amber-dark: #92400e;
+    --color-amber-light: #f59e0b;
+}
+
+/* ============================================
+   2. 深色主题令牌（原 reader.css body.dark-mode）
+   ============================================ */
+body.dark-mode {
+    --color-text-primary: #f0f3ec;
+    --color-text-secondary: #e2e8f0;
+    --color-text-tertiary: #9ca3af;
+    --color-text-quaternary: #8cbd6e;
+
+    --color-bg-secondary: #1b2418;
+    --color-bg-tertiary: #232f1f;
+    --color-bg-quaternary: #2f3d2a;
+
+    --color-highlight-quote: #ff8a6f;
+    --color-highlight-quote-single: #ffaa5e;
+    --color-highlight-bracket: #5ace9b;
+    --color-highlight-square-bracket: #b02b2b;
+    --color-highlight-hollow-bracket: #8e44ad;
+    --color-highlight-book: #3b73af;
+    --color-highlight-bold-bracket: #f5a623;
+
+    --color-title-level1: #8cbd6e;
+    --color-title-level2: #7bad5c;
+    --color-title-level3: #6a9a4a;
+
+    --color-separator: #3a4a35;
+
+    --color-btn-active: #6a9a4a;
+    --color-btn-hover: #5a8a3a;
+
+    --color-speech-primary: #6a9a4a;
+    --color-speech-speaking: #f87171;
+    --color-speech-highlight: rgba(106, 154, 74, 0.2);
+    --color-speech-highlight-gradient: rgba(106, 154, 74, 0.05);
+}

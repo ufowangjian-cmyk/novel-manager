@@ -1,0 +1,913 @@
+{% extends "base.html" %}
+
+{% block title %}摸鱼读物 - TXT阅读工具{% endblock %}
+{% block body_class %}page-home{% endblock %}
+{% block head_extra %}
+{# data-font-family：当前用户生效的正文字体（全局默认 ← 用户偏好），供下方字体预热使用 #}
+<meta id="app-data" data-pagination-pages="{{ pagination.pages }}"
+        data-font-family="{{ user_prefs.font_family | e }}">
+{% endblock %}
+
+{% from "_icons.html" import icon %}
+
+{% block content %}
+
+<div class="page-container">
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- 头部 - 修改部分开始 -->
+    <div class="header">
+        <div class="header-left">
+            <h1>
+                <img src="{{ url_for('static', filename='images/novel-icon.svg') }}" alt="图标" class="header-icon">
+                {# 「摸鱼读物」用 AI 转曲后的矢量图（static/images/title.svg），
+                彻底不依赖字体文件；纯 <path>、0 个 <text>，任何设备都一致。
+                        高度由 CSS 控制（font-size 对图片无效），等比缩放永远清晰。
+                        副标题走系统字体栈（内置字体不再硬编码，避免静默下载）。 #}
+                        <img src="{{ url_for('static', filename='images/title.svg') }}" alt="摸鱼读物"
+                            class="header-title-svg">
+                        <span class="reader-subtitle">TXT阅读工具</span>
+            </h1>
+            {# stats-row 是透明整行包裹层：移动端用它 flex-basis:100% 把胶囊
+            挤到第二行（直接给胶囊设 basis 会把胶囊本身撑满，踩过坑） #}
+            <div class="stats-row">
+                <div class="stats-badge">
+                    <span class="dir-info">{{ icon('folder-open', 'sm') }}小说目录： {{ novel_dir }}</span>
+                    <span class="sep">|</span>
+                    <span class="count-info">{{ icon('library', 'sm') }} 共 {{ total_count }} 本小说</span>
+                </div>
+            </div>
+
+        </div>
+        <div class="header-right">
+            {# 「菜单」按钮：点开下拉，内含原首页四个功能区块（筛选搜索 / 最近阅读 /
+            扫描管理 / 每日推荐）+ 折叠面板 + 配置 / 标签 / 登出。
+            原「用户名+角色」「登出」「配置」三个独立控件早年已收进此下拉。 #}
+            <div class="user-menu" id="userMenu">
+                <button type="button" class="user-menu-btn" id="userMenuBtn" aria-haspopup="menu" aria-expanded="false"
+                    aria-controls="userMenuDropdown">
+                    <span class="user-menu-btn-icon">{{ icon('menu', 'sm') }}</span>
+                    <span class="user-menu-btn-name">菜单</span>
+                </button>
+                <div class="user-menu-dropdown" id="userMenuDropdown" role="menu">
+                    <div class="user-menu-info">
+                        <span class="user-menu-info-icon">
+                            {% if session.user_role == 'admin' %}{{ icon('crown', 'sm') }}{% else %}{{ icon('user',
+                            'sm') }}{% endif %}
+                        </span>
+                        <span class="user-menu-info-text">
+                            <span class="user-menu-info-name">{{ current_user_display }}</span>
+                            <span class="user-menu-info-role">{% if current_user_role == 'admin' %}管理{% else %}用户{%
+                                endif %}</span>
+                        </span>
+                    </div>
+                    <div class="user-menu-divider"></div>
+                    {# 原首页四个功能区块：已从首页选项卡条搬进本菜单，
+                    点菜单项即切换首页对应的区块并自动收起菜单。 #}
+                    <button type="button" class="tab-btn user-menu-item" data-tab="filter" role="menuitem">{{
+                        icon('search', 'sm') }}<span>筛选搜索</span></button>
+                    <button type="button" class="tab-btn user-menu-item" data-tab="recent" role="menuitem">{{
+                        icon('book-open', 'sm') }}<span>最近阅读</span></button>
+                    <button type="button" class="tab-btn user-menu-item" data-tab="scan" role="menuitem">{{
+                        icon('refresh-cw', 'sm') }}<span>扫描管理</span></button>
+                    <button type="button" class="tab-btn user-menu-item" data-tab="random" role="menuitem">{{
+                        icon('sparkles', 'sm') }}<span>每日推荐</span></button>
+                    <div class="user-menu-divider"></div>
+                    {# 排序（二级菜单）：字段 + 正序/反序，点了就是普通链接跳转，
+                    带上 ?sort=&order= 让后端重排书架（不刷新看不到的东西也不会被动打开）。
+                    ⚠️ 选排序**不要**去动首页区块的显隐/当前区块：曾经在跳转前顺手
+                    setHidden(false) + activeTab='filter'，结果变成"改个排序就把
+                    「筛选与搜索」区块弹出来"，剑哥反馈多余，已去掉。
+                    字段与取值必须落在后端白名单里（novel_manager.py 的 get_sort_key /
+                    /config/save_sort 只认 title/author/site/date/word_count 与 asc/desc）。
+                    放在菜单里而不是页面表头，是为了手机端（不显示表头）也能排序。
+                    注意父项不要写 onclick 之外的关闭逻辑：按钮点了只展开二级菜单，
+                    靠 main.js 里 initUserMenuSort 的 stopPropagation 阻止菜单被收起。 #}
+                    <div class="user-menu-submenu-wrap">
+                        <button type="button" class="user-menu-item user-menu-item--parent" id="userMenuSortToggle"
+                            role="menuitem" aria-haspopup="true" aria-expanded="false"
+                            aria-controls="userMenuSortPanel">
+                            {{ icon('list-ordered', 'sm') }}<span>排序</span>
+                            <span class="user-menu-parent-caret">{{ icon('chevron-down', 'xs') }}</span>
+                        </button>
+                        <div class="user-menu-submenu" id="userMenuSortPanel" role="menu" aria-label="排序方式">
+                            <div class="user-menu-order-switch" role="group" aria-label="排序方向">
+                                <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort={{ sort_by }}&order=asc"
+                                    class="user-menu-order-btn {% if sort_order != 'desc' %}active{% endif %}"
+                                    role="menuitem" title="正序">{{ icon('arrow-up', 'xs') }}<span>升</span></a>
+                                <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort={{ sort_by }}&order=desc"
+                                    class="user-menu-order-btn {% if sort_order == 'desc' %}active{% endif %}"
+                                    role="menuitem" title="反序">{{ icon('arrow-down', 'xs') }}<span>降</span></a>
+                            </div>
+                            {% for value, label in [('title', '书名'), ('author', '作者'), ('site', '网站'), ('date', '日期'),
+                            ('word_count', '字数')] %}
+                            <a href="?{% for key, item in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ item }}&{% endfor %}sort={{ value }}&order={{ sort_order }}"
+                                class="user-menu-subitem {% if sort_by == value %}active{% endif %}" role="menuitem">
+                                <span class="user-menu-subitem-mark">{% if sort_by == value %}{{ icon('check', 'xs')
+                                    }}{% endif %}</span>
+                                <span>{{ label }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="user-menu-divider"></div>
+                    <a href="/config" class="user-menu-item" role="menuitem">
+                        {{ icon('settings', 'sm') }}<span>配置</span>
+                    </a>
+                    {% if session.user_role == 'admin' %}
+                    <a href="/tag_manager" class="user-menu-item" role="menuitem">
+                        {{ icon('tag', 'sm') }}<span>标签</span>
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"
+                        onclick="return confirm('确定要登出吗？');">
+                        {{ icon('door-open', 'sm') }}<span>登出</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 整个选项卡区域。默认整块隐藏（首页加载后是干净的书架），
+             点头部右上角「菜单」里的区块项才会打开对应区块。 -->
+    <div class="tabs-header-wrapper hidden" id="tabsHeaderWrapper">
+        {# 区块头：左侧是当前区块名（跟随「菜单」里选中的区块切换），
+        右上角是一键隐藏按钮——点它连这条头带内容一起收起。
+        想再打开：点头部右上角「菜单」→ 选任一区块（会切到该区块并展开）。 #}
+        <div class="block-header" id="blockHeader">
+            <span class="block-header-title" id="blockHeaderTitle"></span>
+            <button type="button" class="block-hide-btn" id="blockHideBtn" title="隐藏当前区块（可从右上角「菜单」重新打开）"
+                aria-label="隐藏当前区块">{{ icon('x', 'sm') }}</button>
+        </div>
+        <div class="tabs-content-wrapper" id="tabsContentWrapper">
+            <!-- 选项卡内容 - 筛选与搜索 -->
+            <div class="tab-content active" id="tab-filter">
+                <!-- 搜索表单 -->
+                <div class="search-section">
+                    <form method="GET" id="searchForm" class="search-form">
+                        <div class="search-grid">
+                            <div class="search-item">
+                                <label>{{ icon('search', 'sm') }} 全文搜索</label>
+                                <input type="text" name="search" value="{{ search_text }}" placeholder="书名/作者/标签/网站...">
+                            </div>
+                            <div class="search-item">
+                                <label>{{ icon('user', 'sm') }} 作者</label>
+                                <select name="author">
+                                    <option value="">全部作者</option>
+                                    {% for author in authors %}
+                                    <option value="{{ author }}" {% if author==search_author %}selected{% endif %}>{{
+                                        author }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="search-item">
+                                <label>{{ icon('tag', 'sm') }}️ 标签</label>
+                                <select name="tag">
+                                    <option value="">全部标签</option>
+                                    {% for tag in tags %}
+                                    <option value="{{ tag }}" {% if tag==search_tag %}selected{% endif %}>{{ tag }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="search-item">
+                                <label>{{ icon('globe', 'sm') }} 发表网站</label>
+                                <select name="site">
+                                    <option value="">全部网站</option>
+                                    {% for site in sites %}
+                                    <option value="{{ site }}" {% if site==search_site %}selected{% endif %}>{{ site }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="search-actions">
+                                <button type="submit" class="search-btn">筛选</button>
+                                <a href="/" class="reset-btn">重置</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 快捷筛选标签 -->
+                <div class="quick-filters">
+                    <!-- 热门作者 -->
+                    <div class="filter-section collapsed" id="authorSection">
+                        <div class="filter-title" data-section="author">{{ icon('user', 'sm') }} 热门作者</div>
+                        <div class="filter-tags">
+                            <a href="?{% if search_text %}&search={{ search_text }}{% endif %}"
+                                class="filter-tag {% if not search_author %}active{% endif %}">全部</a>
+                            {% for author in authors[:100] %}
+                            <a href="?author={{ author }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                                class="filter-tag {% if author == search_author %}active{% endif %}">
+                                {{ author }}
+                            </a>
+                            {% endfor %}
+                            {% if authors|length > 100 %}
+                            <a href="#" class="show-all" data-type="authors">显示全部 {{ authors|length }} 个作者 {{
+                                icon('arrow-right', 'xs') }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 热门标签 -->
+                    <div class="filter-section collapsed" id="tagSection">
+                        <div class="filter-title" data-section="tag">{{ icon('tag', 'sm') }}️ 热门标签</div>
+                        <div class="filter-tags">
+                            <a href="?{% if search_text %}&search={{ search_text }}{% endif %}"
+                                class="filter-tag {% if not search_tag %}active{% endif %}">全部</a>
+                            {% for tag in tags[:50] %}
+                            <a href="?tag={{ tag }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                                class="filter-tag {% if tag == search_tag %}active{% endif %}">
+                                {{ tag }}
+                            </a>
+                            {% endfor %}
+                            {% if tags|length > 50 %}
+                            <a href="#" class="show-all" data-type="tags">显示全部 {{ tags|length }} 个标签 {{
+                                icon('arrow-right', 'xs') }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 发表网站 -->
+                    <div class="filter-section collapsed" id="siteSection">
+                        <div class="filter-title" data-section="site">{{ icon('globe', 'sm') }} 发表网站</div>
+                        <div class="filter-tags">
+                            <a href="?{% if search_text %}&search={{ search_text }}{% endif %}"
+                                class="filter-tag {% if not search_site %}active{% endif %}">全部</a>
+                            {% for site in sites[:20] %}
+                            <a href="?site={{ site }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}"
+                                class="filter-tag {% if site == search_site %}active{% endif %}">
+                                {{ site }}
+                            </a>
+                            {% endfor %}
+                            {% if sites|length > 20 %}
+                            <a href="#" class="show-all" data-type="sites">显示全部 {{ sites|length }} 个网站 {{
+                                icon('arrow-right', 'xs') }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选项卡内容 - 最近阅读 -->
+            <div class="tab-content" id="tab-recent">
+                <div class="recent-reads-tab" id="recentReadsTab" data-initial-shown="12">
+
+                    <!-- 概览统计 -->
+                    <div class="recent-stats-bar" id="recentStatsBar" {% if not recent_records %}hidden{% endif %}>
+                        <div class="recent-stat">
+                            <span class="recent-stat-value" id="statTotal">{{ recent_stats.total }}</span>
+                            <span class="recent-stat-label">在读书架</span>
+                        </div>
+                        <div class="recent-stat">
+                            <span class="recent-stat-value" id="statToday">{{ recent_stats.today }}</span>
+                            <span class="recent-stat-label">今日读过</span>
+                        </div>
+                        <div class="recent-stat">
+                            <span class="recent-stat-value" id="statInProgress">{{ recent_stats.in_progress }}</span>
+                            <span class="recent-stat-label">读到一半</span>
+                        </div>
+                        <div class="recent-stat">
+                            <span class="recent-stat-value" id="statAvg">{{ recent_stats.avg_progress }}%</span>
+                            <span class="recent-stat-label">平均进度</span>
+                        </div>
+                    </div>
+
+                    <!-- 工具条：搜索 + 排序 -->
+                    <div class="recent-toolbar" id="recentToolbar" {% if not recent_records %}hidden{% endif %}>
+                        <div class="recent-search-box">
+                            <span class="recent-search-icon">{{ icon('search', 'sm') }}</span>
+                            <input type="text" id="recentSearchInput" class="recent-search-input"
+                                placeholder="搜索书名 / 作者 / 章节..." autocomplete="off">
+                            <button type="button" class="recent-search-clear" id="recentSearchClear" title="清空搜索"
+                                hidden>{{ icon('x', 'sm') }}</button>
+                        </div>
+                        <div class="recent-toolbar-right">
+                            <label class="recent-sort-label" for="recentSortSelect">排序</label>
+                            <select id="recentSortSelect" class="recent-sort-select">
+                                <option value="time">最近阅读</option>
+                                <option value="progress">进度高低</option>
+                                <option value="title">书名</option>
+                            </select>
+                            <span class="recent-count" id="recentCountLabel">共 {{ recent_total }} 条</span>
+                            <form method="post" action="{{ url_for('clear_records') }}" style="display: inline;"
+                                onsubmit="return confirm('确定要清除自己的阅读记录吗？')">
+                                <button type="submit" class="clear-records-btn">{{ icon('trash-2', 'sm') }}️
+                                    清除全部</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 记录列表（服务端首屏渲染，之后由 JS 接管） -->
+                    <div class="recent-groups" id="recentGroups">
+                        {# 分组图标与 static/js/main.js 的 GROUP_META 保持一致：
+                        两边都输出 Lucide SVG，避免首屏是 emoji、重渲染后又变成 SVG。
+                        后端只提供 group.icon 名称，标签文字也由这里统一渲染。 #}
+                        {% for group in recent_groups %}
+                        <section class="recent-group" data-group="{{ group.slug }}">
+                            <h4 class="recent-group-title">
+                                {{ icon(group.icon, 'sm') }} {{ group.label }}
+                                <span class="recent-group-count">{{ group.records|length }}</span>
+                            </h4>
+                            <div class="recent-grid">
+                                {% for record in group.records %}
+                                {% include "_recent_card.html" %}
+                                {% endfor %}
+                            </div>
+                        </section>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 搜索无结果 -->
+                    <div class="recent-no-match" id="recentNoMatch" hidden>
+                        <div class="empty-icon">{{ icon('search', 'sm') }}</div>
+                        <div class="empty-text">没有匹配的阅读记录</div>
+                        <div class="empty-tip">换个关键词试试</div>
+                    </div>
+
+                    <!-- 加载更多 -->
+                    <div class="recent-load-more-wrap" id="recentLoadMoreWrap" hidden>
+                        <button type="button" class="recent-load-more-btn" id="recentLoadMoreBtn">
+                            {{ icon('arrow-down', 'sm') }} 加载更多记录
+                        </button>
+                    </div>
+
+                    <!-- 空状态 -->
+                    <div class="empty-recent" id="recentEmptyState" {% if recent_records %}hidden{% endif %}>
+                        <div class="empty-icon">{{ icon('file-text', 'sm') }}</div>
+                        <div class="empty-text">暂无阅读记录</div>
+                        <div class="empty-tip">开始阅读小说后，记录会显示在这里</div>
+                        <div class="empty-tip" style="color: #667eea; margin-top: 10px;">
+                            {{ icon('lightbulb', 'sm') }} 不同用户的阅读记录是独立的哦
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 扫描管理选项卡 -->
+            <div class="tab-content" id="tab-scan">
+                <div class="scan-section">
+                    <div class="scan-info">
+                        <h3>{{ icon('folder-open', 'sm') }} 文件扫描</h3>
+                        <p>扫描小说目录，自动更新书架数据</p>
+                    </div>
+                    <div class="scan-buttons">
+                        {% if session.user_role == 'admin' %}
+                        <button class="scan-btn scan-inc" id="scanBtn" data-full="false">{{ icon('refresh-cw', 'sm') }}
+                            增量扫描</button>
+                        <button class="scan-btn" id="scanFullBtn" data-full="true">{{ icon('rotate-cw', 'sm') }}
+                            全量扫描</button>
+                        {% else %}
+                        <div class="scan-tip">{{ icon('lock', 'sm') }} 只有管理员可以触发扫描</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 进度条区域 -->
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressMessage">正在扫描...</span>
+                            <span id="progressTime"></span>
+                        </div>
+                    </div>
+
+
+                    <div class="scan-tip">
+                        {{ icon('lightbulb', 'sm') }} 提示：增量扫描只检查新增或修改的文件，速度更快；全量扫描会重新读取所有文件。
+                    </div>
+
+
+                    <!-- 缓存概览 -->
+                    <div class="cache-overview">
+                        <div class="cache-overview-title">📊 当前缓存概览</div>
+                        <div class="stat-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.total_novels }}</div>
+                                <div class="stat-label">缓存小说</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" title="{{ cache_stats.total_words }} 字">{{ cache_stats.total_words_text }}</div>
+                                <div class="stat-label">总字数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.image_novels }}</div>
+                                <div class="stat-label">配图</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.video_novels }}</div>
+                                <div class="stat-label">视频</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.audio_novels }}</div>
+                                <div class="stat-label">音频</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.authors }}</div>
+                                <div class="stat-label">作者</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.tags }}</div>
+                                <div class="stat-label">标签</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ cache_stats.sites }}</div>
+                                <div class="stat-label">来源网站</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 上次扫描 -->
+                    <div class="last-scan">
+                        {% if scan_stats and scan_stats.last_scan_time %}
+                        <div class="last-scan-title">🕒 上次扫描</div>
+                        <div class="last-scan-detail">
+                            <span
+                                class="last-scan-badge {{ 'badge-full' if scan_stats.last_scan_type == 'full' else 'badge-inc' }}">
+                                {{ '全量扫描' if scan_stats.last_scan_type == 'full' else '增量扫描' }}
+                            </span>
+                            <span class="last-scan-time">{{ scan_stats.last_scan_time | timestamp_to_date }}</span>
+                            <span class="last-scan-meta">耗时 {{ scan_stats.last_scan_duration }}s · 共 {{
+                                scan_stats.last_scan_total }} 本</span>
+                        </div>
+                        {% if scan_stats.last_scan_type != 'full' %}
+                        <div class="last-scan-result">
+                            处理 <b>{{ scan_stats.last_scan_scanned }}</b> · 改名 <b>{{ scan_stats.last_scan_renamed }}</b>
+                            · 删除 <b>{{ scan_stats.last_scan_removed }}</b> · 跳过 <b>{{ scan_stats.last_scan_skipped
+                                }}</b>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="last-scan-empty">尚未进行过扫描</div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 每日推荐选项卡 -->
+            <div class="tab-content" id="tab-random">
+                <div class="random-section" id="randomSection">
+                    <div class="random-header">
+                        <h3>{{ icon('sparkles', 'sm') }} 随机推荐好书</h3>
+                        <div class="random-actions">
+                            <span class="random-hint">每次刷新页面随机推荐一本</span>
+                            <button type="button" class="random-refresh-btn" id="randomRefreshBtn">
+                                {{ icon('refresh-cw', 'sm') }} 换一本
+                            </button>
+                        </div>
+                    </div>
+
+                    {# 首屏由服务端渲染，「换一本」再由 JS 替换内容 #}
+                    <div id="randomCardBody">
+                        {% if random_novel %}
+                        {% set novel = random_novel %}
+                        {% include "_random_card.html" %}
+                        {% else %}
+                        <div class="random-empty">
+                            <div class="empty-icon">{{ icon('file-text', 'sm') }}</div>
+                            <div class="empty-text">书库为空</div>
+                            <div class="empty-tip">请先在「扫描管理」里扫描小说目录</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 小说列表 - PC端表格 -->
+    <div class="table-wrapper">
+        <table class="novel-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort=title&order={% if sort_by == 'title' and sort_order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="sortable-th {% if sort_by == 'title' %}active{% endif %}">
+                            书名
+                            {% if sort_by == 'title' %}
+                            <span class="sort-indicator">{% if sort_order == 'asc' %}{{ icon('arrow-up', 'xs') }}{% else
+                                %}{{ icon('arrow-down', 'xs') }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort=author&order={% if sort_by == 'author' and sort_order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="sortable-th {% if sort_by == 'author' %}active{% endif %}">
+                            作者
+                            {% if sort_by == 'author' %}
+                            <span class="sort-indicator">{% if sort_order == 'asc' %}{{ icon('arrow-up', 'xs') }}{% else
+                                %}{{ icon('arrow-down', 'xs') }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>标签</th>
+                    <th>
+                        <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort=word_count&order={% if sort_by == 'word_count' and sort_order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="sortable-th {% if sort_by == 'word_count' %}active{% endif %}">
+                            字数
+                            {% if sort_by == 'word_count' %}
+                            <span class="sort-indicator">{% if sort_order == 'asc' %}{{ icon('arrow-up', 'xs') }}{% else
+                                %}{{ icon('arrow-down', 'xs') }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>连载进度</th>
+                    <th>
+                        <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort=site&order={% if sort_by == 'site' and sort_order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="sortable-th {% if sort_by == 'site' %}active{% endif %}">
+                            发表网站
+                            {% if sort_by == 'site' %}
+                            <span class="sort-indicator">{% if sort_order == 'asc' %}{{ icon('arrow-up', 'xs') }}{% else
+                                %}{{ icon('arrow-down', 'xs') }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value }}&{% endfor %}sort=date&order={% if sort_by == 'date' and sort_order == 'asc' %}desc{% else %}asc{% endif %}"
+                            class="sortable-th {% if sort_by == 'date' %}active{% endif %}">
+                            发表日期
+                            {% if sort_by == 'date' %}
+                            <span class="sort-indicator">{% if sort_order == 'asc' %}{{ icon('arrow-up', 'xs') }}{% else
+                                %}{{ icon('arrow-down', 'xs') }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for novel in novels %}
+                <tr>
+                    <td>
+                        <strong>
+                            <a href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                                class="novel-title">
+                                {{ novel.title }}
+                                {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
+                                    'sm') }}️</span>{% endif %}
+                                {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x',
+                                    'sm') }}</span>{% endif %}
+                            </a>
+                        </strong>
+                        {% include "_reading_status.html" %}
+                    </td>
+                    <td>
+                        {# 主名与马甲都是可点的作者；点任意一个都列出这个人的全部书 #}
+                        {% for link in novel.author_links %}
+                        <a href="?author={{ link.name|urlencode }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                            class="author-link{% if link.is_alias %} author-alias-link{% endif %}" {% if link.is_alias
+                            %}title="马甲（与 {{ novel.author_main }} 是同一人）" {% endif %}>{{ link.name }}</a>{% if not
+                        loop.last %}<span class="author-sep">·</span>{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if novel.tags != '无' %}
+                        {% set tags_list = novel.tags.split(',') %}
+                        {% if tags_list|length > max_tags_display %}
+                        <span class="tags-wrapper" title="完整标签：{{ novel.tags }}">
+                            {% for tag in tags_list[:max_tags_display] %}
+                            <a href="?tag={{ tag }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                                class="tag-badge">
+                                {{ tag }}
+                            </a>
+                            {% endfor %}
+                            <span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span>
+                        </span>
+                        {% else %}
+                        {% for tag in tags_list %}
+                        <a href="?tag={{ tag }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                            class="tag-badge">
+                            {{ tag }}
+                        </a>
+                        {% endfor %}
+                        {% endif %}
+                        {% else %}
+                        <span class="no-tag">无</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if novel.word_count >= 10000 %}
+                        {{ '{:.1f}'.format(novel.word_count / 10000) }}万
+                        {% else %}
+                        {{ novel.word_count }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ',' in novel.progress %}
+                        {% for p in novel.progress.split(',') %}
+                        <span class="progress-badge">{{ p }}</span>
+                        {% endfor %}
+                        {% else %}
+                        <span class="progress-badge">{{ novel.progress }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="?site={{ novel.site }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}"
+                            class="site-link">
+                            {% set display_site = novel.site %}
+                            {% if novel.site|lower in ['sis001', 'eyny', 's8', 'sexinsex'] %}
+                            {% set display_site = novel.site|upper if novel.site.isupper() else novel.site|capitalize %}
+                            {% endif %}
+                            <span class="site-badge">{{ display_site }}</span>
+                        </a>
+                    </td>
+                    <td><span class="date-badge">{{ novel.publish_date or '未知' }}</span></td>
+                </tr>
+                {% endfor %}
+
+                {% if novels|length == 0 %}
+                <tr>
+                    <td colspan="7" class="empty-table">{{ icon('file-text', 'sm') }} 没有找到匹配的小说</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- 移动端卡片列表 -->
+        <div class="mobile-card-list">
+            {% for novel in novels %}
+            <div class="novel-card">
+                <div class="novel-card-title">
+                    <a
+                        href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
+                        {{ novel.title }}
+                        {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
+                            }}️</span>{% endif %}
+                        {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x', 'sm')
+                            }}</span>{% endif %}
+                    </a>
+                    {% include "_reading_status.html" %}
+                </div>
+                <div class="novel-card-meta">
+                    <span class="novel-card-author">{% for link in novel.author_links %}<a
+                            href="?author={{ link.name|urlencode }}"
+                            class="author-link{% if link.is_alias %} author-alias-link{% endif %}">{{ link.name }}</a>{%
+                        if not loop.last %}<span class="author-sep">·</span>{% endif %}{% endfor %}</span>
+                    <span class="novel-card-date">{{ icon('calendar', 'sm') }} {{ novel.publish_date or '未知'
+                        }}</span></span>
+                </div>
+                <div class="novel-card-tags">
+                    {% if novel.tags != '无' %}
+                    {% set tags_list = novel.tags.split(',') %}
+                    {% if tags_list|length > max_tags_display %}
+                    <span title="完整标签：{{ novel.tags }}">
+                        {% for tag in tags_list[:max_tags_display] %}
+                        <span class="tag-badge">{{ tag }}</span>
+                        {% endfor %}
+                        <span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span>
+                    </span>
+                    {% else %}
+                    {% for tag in tags_list %}
+                    <span class="tag-badge">{{ tag }}</span>
+                    {% endfor %}
+                    {% endif %}
+                    {% endif %}
+                </div>
+                <div class="novel-card-footer">
+                    <span>
+                        {% if novel.word_count >= 10000 %}
+                        {{ '{:.1f}'.format(novel.word_count / 10000) }}万字
+                        {% else %}
+                        {{ novel.word_count }}字
+                        {% endif %}
+                    </span>
+                    <span class="progress-badge">{{ novel.progress }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 分页控件 -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-wrapper">
+            <div class="pagination-info">
+                <div class="pagination-stats">
+                    {{ icon('bar-chart-3', 'sm') }} 共 {{ pagination.total }} 本小说
+                    <span class="sep">|</span>
+                    {{ icon('file', 'sm') }}第 {{ pagination.page }}/{{ pagination.pages }} 页
+                </div>
+                <div class="pagination-jump">
+                    <span>跳转到：</span>
+                    <input type="number" id="gotoPage" min="1" max="{{ pagination.pages }}"
+                        value="{{ pagination.page }}">
+                    <button id="gotoPageBtn">前往</button>
+                </div>
+            </div>
+
+            <div class="pagination-links">
+                {% if pagination.page > 1 %}
+                <a href="?page=1{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                    class="pagination-btn">首页</a>
+                <a href="?page={{ pagination.page - 1 }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                    class="pagination-btn">上一页</a>
+                {% endif %}
+
+                <div class="pagination-numbers">
+                    {% set start_page = [1, pagination.page - 5]|max %}
+                    {% set end_page = [pagination.pages, start_page + 10]|min %}
+                    {% set start_page = [1, end_page - 10]|max %}
+
+                    {% if start_page > 1 %}
+                    <span class="pagination-ellipsis">...</span>
+                    {% endif %}
+
+                    {% for p in range(start_page, end_page + 1) %}
+                    <a href="?page={{ p }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                        class="pagination-btn {% if p == pagination.page %}active{% endif %}">
+                        {{ p }}
+                    </a>
+                    {% endfor %}
+
+                    {% if end_page < pagination.pages %} <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                </div>
+
+                {% if pagination.page < pagination.pages %} <a
+                    href="?page={{ pagination.page + 1 }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                    class="pagination-btn">下一页</a>
+                    <a href="?page={{ pagination.pages }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                        class="pagination-btn">末页</a>
+                    {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <!-- 移动端专用分页（桌面端隐藏） -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-mobile-only">
+            <div class="pagination-mobile-info">
+                <span>{{ icon('file', 'sm') }}第 {{ pagination.page }}/{{ pagination.pages }} 页</span>
+                <span>{{ icon('bar-chart-3', 'sm') }}共 {{ pagination.total }} 本</span>
+            </div>
+            <div class="pagination-mobile-buttons">
+                {% if pagination.page > 1 %}
+                <a href="?page={{ pagination.page - 1 }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                    class="mobile-prev">上一页</a>
+                {% else %}
+                <span class="mobile-prev disabled">上一页</span>
+                {% endif %}
+
+                <div class="mobile-page-jump">
+                    <select id="mobileGotoPage" class="mobile-page-select">
+                        {% for p in range(1, pagination.pages + 1) %}
+                        <option value="{{ p }}" {% if p==pagination.page %}selected{% endif %}>第 {{ p }} 页</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if pagination.page < pagination.pages %} <a
+                    href="?page={{ pagination.page + 1 }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}&sort={{ sort_by }}&order={{ sort_order }}"
+                    class="mobile-next">下一页</a>
+                    {% else %}
+                    <span class="mobile-next disabled">下一页</span>
+                    {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+{# common.js 必须先于 main.js：
+main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
+而 icon() 定义在 common.js。顺序反了会抛 ReferenceError，
+导致「今天/昨天/更早」分组标题的图标渲染不出来。 #}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script>
+    // 内置字体预热：挑书阶段就把配置的正文字体下载好（详见 common.js warmupBuiltinFont），
+    // 点进详情页/阅读页立即可用，不经历 swap 闪烁等待。不阻塞首屏，低网自动跳过。
+    (function () {
+        var el = document.getElementById('app-data');
+        var font = (el && el.dataset) ? el.dataset.fontFamily : '';
+        font = font || localStorage.getItem('reader_font_family');
+        if (typeof window.warmupBuiltinFont === 'function') window.warmupBuiltinFont(font);
+    })();
+</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+    (function () {
+        // 快速应用缓存主题（防闪烁）
+        const cached = localStorage.getItem('theme');
+        if (cached === 'dark' || !cached) {
+            document.documentElement.classList.add('dark-mode');
+        } else {
+            document.documentElement.classList.remove('dark-mode');
+        }
+    })();
+    // 传递分页数据到 JS
+    window.paginationPages = parseInt(document.getElementById('app-data').dataset.paginationPages) || 1;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 公共初始化（主题 + 轮播）
+        initPage();
+
+        // 初始化分页
+        if (typeof initPagination === 'function') {
+            initPagination(window.paginationPages);
+        }
+
+        // 初始化选项卡
+        if (typeof initTabs === 'function') {
+            initTabs();
+        }
+
+        // 区块头标题：跟随「菜单」里选中的区块实时同步（点菜单项切换后刷新）
+        function syncBlockTitle() {
+            const active = document.querySelector('.tab-btn.active');
+            const title = document.getElementById('blockHeaderTitle');
+            if (active && title) title.innerHTML = active.innerHTML;
+        }
+        syncBlockTitle();
+        document.addEventListener('click', function (e) {
+            if (e.target.closest && e.target.closest('.tab-btn')) syncBlockTitle();
+        });
+
+        // 处理从 URL hash 跳转到最近阅读
+        if (window.location.hash === '#recent') {
+            const recentTab = document.querySelector('.tab-btn[data-tab="recent"]');
+            if (recentTab) recentTab.click();
+        }
+
+        // 绑定扫描按钮
+        const scanBtn = document.getElementById('scanBtn');
+        const scanFullBtn = document.getElementById('scanFullBtn');
+
+        if (scanBtn) {
+            scanBtn.addEventListener('click', function () {
+                if (typeof startScan === 'function') startScan(false);
+            });
+        }
+        if (scanFullBtn) {
+            scanFullBtn.addEventListener('click', function () {
+                if (typeof startScan === 'function') startScan(true);
+            });
+        }
+
+        // 绑定折叠标题
+        document.querySelector('.quick-filters')?.addEventListener('click', function (e) {
+            const title = e.target.closest('.filter-title');
+            if (title && typeof toggleSection === 'function') {
+                e.stopPropagation();
+                toggleSection(title);
+            }
+        });
+
+        // 绑定"显示全部"按钮
+        document.querySelector('.quick-filters')?.addEventListener('click', function (e) {
+            const showAllBtn = e.target.closest('.show-all');
+            if (showAllBtn) {
+                e.preventDefault();
+                const type = showAllBtn.getAttribute('data-type');
+                if (type === 'authors' && typeof showAllAuthors === 'function') showAllAuthors(e);
+                else if (type === 'tags' && typeof showAllTags === 'function') showAllTags(e);
+                else if (type === 'sites' && typeof showAllSites === 'function') showAllSites(e);
+            }
+        });
+
+        // 清除全部记录：确认逻辑已在表单的 onsubmit 里，避免二次弹窗
+
+        // 绑定分页跳转按钮
+        const gotoPageBtn = document.getElementById('gotoPageBtn');
+        if (gotoPageBtn) {
+            gotoPageBtn.addEventListener('click', function () {
+                if (typeof gotoPage === 'function') gotoPage(window.paginationPages);
+            });
+        }
+
+        // 移动端卡片标签点击跳转
+        document.querySelector('.mobile-card-list')?.addEventListener('click', function (e) {
+            const tag = e.target.closest('.tag-badge');
+            if (tag && !tag.classList.contains('tag-more')) {
+                e.preventDefault();
+                const tagText = tag.textContent;
+                if (tagText && !tagText.startsWith('+')) {
+                    window.location.href = `?tag=${encodeURIComponent(tagText)}`;
+                }
+            }
+        });
+        // 移动端跳转 - 下拉选择直接跳转
+        const mobileGotoSelect = document.getElementById('mobileGotoPage');
+        if (mobileGotoSelect) {
+            mobileGotoSelect.addEventListener('change', function () {
+                const page = parseInt(this.value);
+
+                // 获取当前 URL 的所有参数
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('page', page);
+
+                // 重新跳转
+                window.location.href = '?' + urlParams.toString();
+            });
+        }
+    });
+</script>
+{% endblock %}

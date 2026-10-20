@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% from "_icons.html" import icon %}
+{% block title %}{{ title }} - 小说详情{% endblock %}
+{% block body_class %}page-detail{% endblock %}
+{% block page_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.min.css') }}">
+{% endblock %}
+
+{% block head_extra %}
+{# 简介/预览跟随配置里的正文字体（与阅读页共用 reader_font_family 键）。
+    服务端值优先（跨设备同步），localStorage 兜底；system-ui/未设置时不注入，
+    走 CSS 继承（body 系统栈），避免安卓上找不到 KaiTi 回退默认 serif 的问题。 #}
+<meta id="app-data" data-font-family="{{ user_prefs.font_family | e }}">
+<script>
+    (function () {
+        try {
+            var el = document.getElementById('app-data');
+            var serverFont = (el && el.dataset) ? el.dataset.fontFamily : '';
+            var font = serverFont || localStorage.getItem('reader_font_family');
+            if (font && font !== 'system-ui') {
+                var style = document.createElement('style');
+                style.id = 'boot-detail-font';
+                style.textContent = '.intro-content { font-family: ' + font + ' !important; }';
+                document.head.appendChild(style);
+            }
+        } catch (e) { /* 隐私模式等场景静默跳过，走默认继承 */ }
+    })();
+</script>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="header">
+            <div class="header-main">
+                <h1>{{ title }}</h1>
+                <div class="meta-info">
+                    <div class="meta-item">{{ icon('user', 'sm') }}
+                        {%- if author_links -%}
+                        {%- for link in author_links -%}
+                        <a href="/?author={{ link.name|urlencode }}{% if search_text %}&search={{ search_text|urlencode }}{% endif %}{% if search_tag %}&tag={{ search_tag|urlencode }}{% endif %}{% if search_site %}&site={{ search_site|urlencode }}{% endif %}"
+                            class="meta-author-link{% if link.is_alias %} author-alias-link{% endif %}"
+                            {% if link.is_alias %}title="马甲（与 {{ author_main }} 是同一人）"{% endif %}>{{ link.name }}</a>{% if not loop.last %}<span class="author-sep">·</span>{% endif %}
+                        {%- endfor -%}
+                        {%- else -%}{{ author }}
+                        {%- endif -%}
+                    </div>
+                    <div class="meta-item">{{ icon('calendar', 'sm') }} {{ publish_date }}</div>
+                    <div class="meta-item">
+                        {{ icon('globe', 'sm') }}
+                        {% if link %}
+                        <a href="{% if not link.startswith('http://') and not link.startswith('https://') %}https://{% endif %}{{ link }}"
+                            target="_blank" rel="noopener noreferrer"
+                            style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">
+                            {{ site }}
+                        </a>
+                        {% else %}
+                        <span>{{ site }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="meta-item">{{ icon('pencil', 'sm') }} {{ "{:,}".format(word_count) }}字</div>
+
+                    {% if tags and tags != '无' %}
+                    <div class="meta-item meta-tags" style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        <span style="font-weight: 600; margin-right: 5px;">{{ icon('tag', 'sm') }}</span>
+                        {% for tag in tags.split(',') %}
+                        <a href="/?tag={{ tag }}" class="tag-badge"
+                            style="text-decoration: none; padding: 2px 8px; background: #e2e8f0; color: #4a5568; border-radius: 20px; font-size: 0.9em; transition: all 0.2s;">
+                            {{ tag }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="/?page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                    class="btn-nav btn-back-home">{{ icon('arrow-left', 'sm') }} 返回列表</a>
+            </div>
+        </div>
+
+        <!-- 简介部分：有简介显示简介，没简介显示预览 -->
+        {% if intro and intro != '无简介' %}
+        <div class="detail-card" id="introCard" data-mode="intro">
+            <div class="card-title">{{ icon('book-open', 'sm') }} 内容简介</div>
+            <div class="intro-content">{{ intro }}</div>
+        </div>
+        {% elif preview %}
+        <div class="detail-card" id="introCard" data-mode="preview">
+            <div class="card-title">{{ icon('eye', 'sm') }} 正文预览</div>
+            <div class="intro-content preview-content">{{ preview }}</div>
+            <div class="preview-hint">{{ icon('info', 'sm') }} 本文未提供简介，以上为正文开头</div>
+        </div>
+        {% endif %}
+
+        <div class="detail-card">
+            <div class="card-title">{{ icon('list-tree', 'sm') }} 章节目录</div>
+
+            {% if all_chapters %}
+            <div class="stats">
+                <span>{{ icon('bar-chart-3', 'sm') }} 共 {{ all_chapters|length }} 个章节</span>
+                <span>{{ icon('table-of-contents', 'sm') }} 一级: {{ chapters_level1|length }}</span>
+                <span>{{ icon('chevron-right', 'sm') }} 二级: {{ chapters_level2|length }}</span>
+                <span>{{ icon('list-ordered', 'sm') }} 三级: {{ chapters_level3|length }}</span>
+                {% set empty_total = all_chapters | selectattr('is_empty') | list | length %}
+                {% if empty_total %}
+                <span title="仅章节标题、没有正文的章节，已置为不可点击">{{ icon('square-dashed', 'sm') }} 空章节: {{ empty_total }}</span>
+                {% endif %}
+            </div>
+
+            <div class="chapters-tree">
+                {# 层级图标：统一用 Lucide sprite（/static/icons.svg），随 currentColor 适配明暗主题 #}
+                {% set level_icons = {1: 'table-of-contents', 2: 'chevron-right', 3: 'list-ordered'} %}
+                {% for chapter in all_chapters %}
+                {% set lv = chapter.level %}
+                {% set lv_icon = level_icons.get(lv, 'list') %}
+                {% if chapter.is_empty %}
+                {# 空章节（只有标题没有正文）：渲染成不可点击的占位条目 #}
+                <span class="chapter-item chapter-level{{ lv }} is-empty"
+                    title="本章为空白章节，暂无正文"
+                    aria-disabled="true">
+                    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
+                    <span class="chapter-title">{{ chapter.text }}</span>
+                    <span class="chapter-line">空</span>
+                </span>
+                {% else %}
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="chapter-item chapter-level{{ lv }}">
+                    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
+
+                    <span class="chapter-title">{{ chapter.text }}</span>
+                    <span class="chapter-line">第{{ chapter.line_number }}行</span>
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-chapters">
+                <p>{{ icon('file-text', 'sm') }} 本文暂无章节结构</p>
+                <p style="font-size: 0.9em; color: #a0aec0;">可直接从开头阅读</p>
+            </div>
+            {% endif %}
+
+            <div class="action-buttons">
+                {% if continue_line %}
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="action-btn continue-btn"
+                    title="{% if continue_chapter %}上次读到：{{ continue_chapter }}{% else %}继续上次阅读进度{% endif %}">
+                    {{ icon('play', 'sm') }} 继续阅读{% if continue_chapter %}<span class="continue-chapter">（{{ continue_chapter }}）</span>{% endif %}
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="action-btn secondary">
+                    {{ icon('book-open', 'sm') }} 从头阅读
+                </a>
+
+                {# ===== 已读标记：能定位到这本书（有 work_id）就显示，读过与否都可用 ===== #}
+                {% if detail_work_id %}
+                <button type="button" id="markReadBtn"
+                        class="action-btn mark-read-btn{% if is_finished %} is-finished{% endif %}"
+                        data-work-id="{{ detail_work_id }}"
+                        data-finished="{{ '1' if is_finished else '0' }}"
+                        data-title="{{ title }}"
+                        data-author="{{ author }}"
+                        data-file-path="{{ file_path }}"
+                        data-chapter="{{ continue_chapter }}"
+                        onclick="toggleMarkRead(this)"
+                        title="{% if is_finished %}已标记为已读完，点击取消{% else %}标记这本书为已读完{% endif %}">
+                    {% if is_finished %}{{ icon('circle-check', 'sm') }} 已读完{% else %}{{ icon('square-check', 'sm') }} 标记已读{% endif %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情页只需要 core + viewer -->
+    
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            // ===== 1. 公共初始化（主题 + 轮播）=====
+            initPage();
+
+            // ===== 3. 等待表情映射加载（reader-core.js）=====
+            if (typeof loadEmojiMapping === 'function') {
+                await loadEmojiMapping();
+            }
+
+            // ===== 4. 初始化配图路径（reader-core.js）=====
+            if (typeof initLocalImagesAsync === 'function' && '{{ file_path }}') {
+                await initLocalImagesAsync('{{ file_path }}');
+            }
+
+            // ===== 5. 处理简介/预览内容 =====
+            const introDiv = document.querySelector('.intro-content');
+            if (introDiv) {
+                const introCard = document.getElementById('introCard');
+                const isPreview = introCard && introCard.dataset.mode === 'preview';
+
+                let processed = introDiv.innerHTML;
+
+                if (processed && processed !== '无简介' && processed.trim() !== '') {
+                    // 处理分隔符
+                    processed = processed.replace(/^([-—–~]{3,})$/gm, function (match) {
+                        return '<div class="separator" data-type="line"></div>';
+                    });
+                    processed = processed.replace(/^([*＊]{3,})$/gm, function (match) {
+                        return '<div class="separator" data-type="star">{{ icon('sparkles', 'sm') }} {{ icon('sparkles', 'sm') }} {{ icon('sparkles', 'sm') }} {{ icon('sparkles', 'sm') }} {{ icon('sparkles', 'sm') }}</div>';
+                    });
+                    processed = processed.replace(/^([·•]{3,})$/gm, function (match) {
+                        return '<div class="separator" data-type="dot">· · · · · ·</div>';
+                    });
+
+                    // 1. 转换图片链接
+                    if (typeof convertImageLinks === 'function') {
+                        processed = convertImageLinks(processed);
+                    }
+
+                    // 2. 本地图片转换
+                    if (typeof convertLocalImages === 'function') {
+                        processed = convertLocalImages(processed);
+                    }
+
+                    // {{ icon('flame', 'sm') }} 3. 新增：转换表情（括号表情 + 文字表情）
+                    if (typeof convertTextEmoji === 'function') {
+                        processed = convertTextEmoji(processed);
+                    }
+
+                    // 4. 高亮引号和括号
+                    if (typeof highlightQuotesAndBrackets === 'function') {
+                        processed = highlightQuotesAndBrackets(processed);
+                    }
+
+                    // 5. 换行处理
+                    if (!processed.includes('<br') && !processed.includes('<p') && !processed.includes('<img')) {
+                        processed = processed.replace(/\n/g, '<br>');
+                    }
+
+                    introDiv.innerHTML = processed;
+
+                    // 初始化图片查看器
+                    if (typeof initViewerJS === 'function') {
+                        setTimeout(function () {
+                            initViewerJS('.intro-content');
+                        }, 100);
+                    }
+                } else {
+                    const card = introDiv.closest('.detail-card');
+                    if (card) card.style.display = 'none';
+                }
+            }
+
+            console.log('📄 详情页初始化完成');
+        });
+
+        // ===== 标记「已读 / 未读」=====
+        async function toggleMarkRead(btn) {
+            if (!btn) return;
+
+            const workId = btn.dataset.workId || '';
+            const wasFinished = btn.dataset.finished === '1';
+            const nextFinished = !wasFinished;
+
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = icon('loader', 'sm') + ' 处理中...';
+
+            try {
+                const resp = await fetch('/api/mark_read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        work_id: workId,
+                        finished: nextFinished,
+                        // 没读过的书也能标记：带上书名等信息，供后端创建最小记录
+                        title: btn.dataset.title || '',
+                        author: btn.dataset.author || '',
+                        file_path: btn.dataset.filePath || '',
+                        chapter_text: btn.dataset.chapter || ''
+                    })
+                });
+                const result = await resp.json();
+
+                if (!result.success) {
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification((result.message || '操作失败'), 'error');
+                    }
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 就地更新按钮状态，无需刷新页面
+                btn.dataset.finished = nextFinished ? '1' : '0';
+                btn.classList.toggle('is-finished', nextFinished);
+                btn.innerHTML = nextFinished ? '{{ icon('circle-check', 'sm') }} 已读完' : '{{ icon('square-check', 'sm') }} 标记已读';
+                btn.title = nextFinished ? '已标记为已读完，点击取消' : '标记这本书为已读完';
+
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification(
+                        nextFinished ? '{{ icon('circle-check', 'sm') }} 已标记为已读完' : '{{ icon('x', 'sm') }} 已取消已读标记',
+                        nextFinished ? 'success' : 'info'
+                    );
+                }
+            } catch (err) {
+                console.error('标记已读失败:', err);
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('请求失败：' + err.message, 'error');
+                }
+                btn.innerHTML = originalHTML;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+    </script>
+{% endblock %}

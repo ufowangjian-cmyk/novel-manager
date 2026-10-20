@@ -1,0 +1,22 @@
+{# ============================================
+   图标宏（Lucide sprite）
+   ------------------------------------------------------------
+   用法：
+     {% from "_icons.html" import icon %}
+     {{ icon('search') }}                        默认 16px
+     {{ icon('search', 'lg') }}                  20px
+     {{ icon('search', cls='ic--danger') }}      附加类名
+     {{ icon('trash-2', title='删除') }}          带无障碍标签
+
+   图标清单见 /static/icons.svg（或 static/icons/ 目录）
+   ============================================ #}
+
+{% macro icon(name, size='', cls='', title='') -%}
+{%- set size_cls = ' ic--' ~ size if size else '' -%}
+{%- set extra = ' ' ~ cls if cls else '' -%}
+{%- if title -%}
+<svg class="ic{{ size_cls }}{{ extra }}" role="img" aria-label="{{ title }}"><title>{{ title }}</title><use href="/static/icons.svg#ic-{{ name }}"></use></svg>
+{%- else -%}
+<svg class="ic{{ size_cls }}{{ extra }}" aria-hidden="true"><use href="/static/icons.svg#ic-{{ name }}"></use></svg>
+{%- endif -%}
+{%- endmacro %}

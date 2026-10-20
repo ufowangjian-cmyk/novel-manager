@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    {# 阅读页允许缩放，其它页面用默认值 #}
+    <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1.0, viewport-fit=cover{% endblock %}">
+    <title>{% block title %}摸鱼读物 - TXT阅读工具{% endblock %}</title>
+
+    <!-- ===== PWA ===== -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4a7a3a">
+
+    <!-- Android -->
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="小说">
+    <link rel="apple-touch-icon" href="/static/images/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-192.png">
+
+    <!-- 其他 PWA meta -->
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="icon" href="{{ url_for('static', filename='images/novel-icon.svg') }}" type="image/svg+xml">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/novel-icon.svg') }}" type="image/svg+xml">
+
+    <!-- ===== 样式表：加载顺序固定 =====
+         font.css（内置 Web 字体）-> tokens.css（设计令牌）-> style.css（基础）
+         -> components.css（公共组件：按钮体系 + 配置/标签页共用组件）-> 页面样式
+         登录页有自己完整的一套配色（login.css），用 base_css 块关闭上面两个文件，
+         避免 .container / body 等同名选择器互相打架。
+         ⚠️ font.css 不再固定 <link>：内置字体单文件最大 8.6MB（霞鹜文楷），
+         由下方脚本按「真实低网」条件异步注入——仅在省流模式(saveData)/2g/3g 等慢网跳过；移动端 WiFi、桌面等正常网络会加载（font-display: swap，文字先显示系统字体、字体在后台慢慢下载完再替换，不阻塞首屏）。
+    -->
+    <script>
+    /* Web 字体按网络条件加载。window.LOW_NETWORK 同时供 common.js
+       判断是否压制头部背景图的后台预热（50 张共 11.7MB）。
+       注意：navigator.connection 只有 Chromium 系认（Firefox/iOS 没有），
+       光靠它手机 Firefox 会照下 8.6MB 霞鹜文楷——Lucky 日志 18:22:37
+       实测如此。故补一条移动端 UA 判定，覆盖 Firefox Android / iOS。 */
+    window.LOW_NETWORK = false;
+    (function () {
+        function loadFontCss() {
+            var l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = '/static/css/font.css';
+            document.head.appendChild(l);
+        }
+        function isMobileUA() {
+            var ua = navigator.userAgent || '';
+            if (/Mobi|Android|iPhone|iPod|iPad|Windows Phone|IEMobile|BlackBerry|Opera Mini/i.test(ua)) {
+                return true;
+            }
+            try {
+                // iPadOS 13+ 默认发桌面版 UA（含 Macintosh），用触摸点数兜底
+                if (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)) return true;
+            } catch (e) { /* ignore */ }
+            return false;
+        }
+        // 不再因「移动端 UA」一刀切跳过：移动 WiFi / 4g-5g 也是正常网络，
+        // 理应渐进式加载字体（font.css 仅 1KB 定义，真正的字体文件只在你
+        // 在下拉里选了某个内置字体时才按需下载）。低网保护只保留下方
+        // navigator.connection 的真实条件（省流 / 2g / 3g）。
+        var low = false;
+        try {
+            var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (c) {
+                low = low || c.saveData === true || c.type === 'cellular' ||
+                    /(^|-)(slow-)?2g$/.test(c.effectiveType || '') ||
+                    /(^|-)3g$/.test(c.effectiveType || '');
+            }
+        } catch (e) { /* ignore */ }
+        window.LOW_NETWORK = low;
+        if (!low) {
+            loadFontCss();
+        } else {
+            // 真·低网（省流模式 / 2g / 3g）：默认不加载内置字体（最大单文件 8.6MB 霞鹜文楷），
+            // 文字回退系统字体。想强制加载：浏览器控制台执行
+            // localStorage.setItem('nm_load_fonts', '1') 后刷新页面。
+            try {
+                if (localStorage.getItem('nm_load_fonts') === '1') loadFontCss();
+            } catch (e) { /* ignore */ }
+        }
+    })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    {% block base_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">{% endblock %}
+    {# 图标系统（Lucide sprite）：放在页面样式之前，便于页面按需覆盖 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css') }}">
+    {% block page_css %}{% endblock %}
+
+    {# 头部背景图清单：由 context_processor 注入，所有页面（首页/详情页/配置页…）
+       都能直接取用，避免前端退化成逐张探测下载 #}
+    <script>window.HEADER_BG_IMAGES = {{ header_bg_images | tojson }};</script>
+
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<script>
+    /* 主题防闪烁：首屏渲染前给 html 和 body 同时打上 dark-mode
+       （原先只有配置页做了这一步，且只加在 html 上） */
+    (function () {
+        try {
+            var cached = localStorage.getItem('theme');
+            var isDark = cached === 'dark' ||
+                (cached !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            var targets = [document.documentElement, document.body];
+            for (var i = 0; i < targets.length; i++) {
+                targets[i].classList.toggle('dark-mode', isDark);
+            }
+        } catch (e) { /* 隐私模式下 localStorage 可能不可用 */ }
+    })();
+</script>
+
+{% block content %}{% endblock %}
+
+{% block scripts %}{% endblock %}
+</body>
+
+</html>

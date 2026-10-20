@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ title }} - {{ current_chapter.text if current_chapter else '阅读' }}{% endblock %}
+{% block viewport %}width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes{% endblock %}
+{% block body_class %}page-reader{% endblock %}
+{% block page_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.min.css') }}">
+{% endblock %}
+{% block head_extra %}
+<meta id="app-data" 
+        data-total-lines="{{ total_lines }}"
+        data-current-line="{{ current_chapter.line_number if current_chapter else 0 }}"
+        data-save-success="{{ 'true' if save_success is defined and save_success else 'false' }}"
+        data-font-size="{{ user_prefs.font_size or 24 }}"
+        data-font-family="{{ user_prefs.font_family | e }}"
+        data-line-height="{{ user_prefs.line_height or 1.8 }}"
+        data-indent-paragraph="{{ 'true' if user_prefs.indent_paragraph else 'false' }}"
+        data-paragraph-spacing="{{ user_prefs.paragraph_spacing if user_prefs.paragraph_spacing is not none else 0.8 }}"
+        data-reader-theme="{{ user_prefs.reader_theme or 'default' }}"
+        data-title-font-family="{{ user_prefs.title_font_family | e }}"
+        data-double-quote-font-family="{{ user_prefs.double_quote_font_family | e }}"
+        data-single-quote-font-family="{{ user_prefs.single_quote_font_family | e }}"
+        data-bracket-font-family="{{ user_prefs.bracket_font_family | e }}"
+        data-square-bracket-font-family="{{ user_prefs.square_bracket_font_family | e }}"
+        data-square-bracket-1-font-family="{{ user_prefs.square_bracket_1_font_family | e }}"
+        data-hollow-bracket-font-family="{{ user_prefs.hollow_bracket_font_family | e }}"
+        data-body-bold="{{ user_prefs.body_bold | e }}"
+        data-body-italic="{{ user_prefs.body_italic | e }}"
+        data-title-bold="{{ user_prefs.title_bold | e }}"
+        data-title-italic="{{ user_prefs.title_italic | e }}"
+        data-double-quote-bold="{{ user_prefs.double_quote_bold | e }}"
+        data-double-quote-italic="{{ user_prefs.double_quote_italic | e }}"
+        data-single-quote-bold="{{ user_prefs.single_quote_bold | e }}"
+        data-single-quote-italic="{{ user_prefs.single_quote_italic | e }}"
+        data-bracket-bold="{{ user_prefs.bracket_bold | e }}"
+        data-bracket-italic="{{ user_prefs.bracket_italic | e }}"
+        data-square-bracket-bold="{{ user_prefs.square_bracket_bold | e }}"
+        data-square-bracket-italic="{{ user_prefs.square_bracket_italic | e }}"
+        data-square-bracket-1-bold="{{ user_prefs.square_bracket_1_bold | e }}"
+        data-square-bracket-1-italic="{{ user_prefs.square_bracket_1_italic | e }}"
+        data-hollow-bracket-bold="{{ user_prefs.hollow_bracket_bold | e }}"
+        data-hollow-bracket-italic="{{ user_prefs.hollow_bracket_italic | e }}"
+        data-book-bold="{{ user_prefs.book_bold | e }}"
+        data-book-italic="{{ user_prefs.book_italic | e }}"
+        data-book-font-family="{{ user_prefs.book_font_family | e }}">
+<script>
+        // <head> 里先注入 <style> 防止闪烁
+        (function () {
+            const appData = document.getElementById('app-data')?.dataset || {};
+            const savedFont = appData.fontFamily || localStorage.getItem('reader_font_family');
+            const savedSize = appData.fontSize || localStorage.getItem('reader_font_size');
+            const savedLineHeight = appData.lineHeight || localStorage.getItem('reader_line_height');
+            const savedIndent = appData.indentParagraph;
+            const savedSpacing = appData.paragraphSpacing;
+            if (savedFont && savedFont !== 'system-ui') {
+                const style = document.createElement('style');
+                style.id = 'boot-reader-font';
+                style.textContent = `.reading-content { font-family: ${savedFont} !important; }`;
+                document.head.appendChild(style);
+            }
+            if (savedSize) {
+                const style = document.createElement('style');
+                style.id = 'boot-reader-size';
+                style.textContent = `.reading-content { font-size: ${savedSize}px !important; }`;
+                document.head.appendChild(style);
+            }
+            // 段落排版（首行缩进 + 段间距）：用变量注入，避免覆盖 reader.css 的结构规则
+            if (savedLineHeight || savedIndent !== undefined || savedSpacing) {
+                const style = document.createElement('style');
+                style.id = 'boot-reader-layout';
+                let css = ':root {';
+                if (savedLineHeight) {
+                    css += ` --reader-line-height: ${savedLineHeight};`;
+                }
+                if (savedIndent === 'false') {
+                    css += ' --reader-text-indent: 0;';
+                }
+                const spacing = parseFloat(savedSpacing);
+                if (!isNaN(spacing)) {
+                    css += ` --reader-paragraph-spacing: ${spacing}rem;`;
+                }
+                css += ' }';
+                style.textContent = css;
+                document.head.appendChild(style);
+            }
+            // 背景主题：必须在首屏就定下来，等 JS 再切会先闪一下默认底色。
+            // 服务端已按偏好渲染 data-reader-theme，这里只兜底「未登录/localStorage 有值」的情况。
+            const savedTheme = appData.readerTheme || localStorage.getItem('reader_theme');
+            if (savedTheme && savedTheme !== 'default') {
+                const apply = () => {
+                    const box = document.querySelector('.reader-container') || document.body;
+                    if (box) box.setAttribute('data-reader-theme', savedTheme);
+                };
+                if (document.body) apply();
+                else document.addEventListener('DOMContentLoaded', apply, { once: true });
+            }
+        })();
+        const filePath = '{{ file_path }}';
+    </script>
+{% endblock %}
+{% block content %}
+    <div class="reader-container" data-reader-theme="{{ user_prefs.reader_theme or 'default' }}">
+        {# ===== 顶部栏：极简一行（UAA 风格）=====
+           图标统一用 Lucide sprite（24x24 网格、2px 描边、光学重心一致），
+           避免 emoji 因字体差异导致大小/基线不齐。 #}
+        {# ===== 阅读进度条：最顶部一条细线，沉浸模式下也保留 =====
+           后端已传 all_chapters / current_chapter / page / total_pages /
+           total_lines / start_line / is_virtual_chapter，全部够用。
+           注意：chapter_index 后端**没有**传，所以这里在模板里自己数出来，
+           不依赖不存在的变量（用 |default 兜底成 0 只是保险，不是主路径）。
+           进度 = 章节粒度为主 + 章内页码微调，翻页时也会前进。
+           虚拟章节（全文阅读模式）只有 1 个章节，退回按行号位置计算。 #}
+        {% set _chapter_total = all_chapters | length %}
+        {# 用 namespace 累加：Jinja2 中 {% set %} 在 for 循环内是块作用域，
+           直接写 {% set _cur_idx = ... %} 循环外拿不到（永远是初始值 0）。 #}
+        {% set _ns = namespace(idx=0, found=false) %}
+        {% if current_chapter %}
+            {% for ch in all_chapters %}
+                {% if not _ns.found and ch.line_number == current_chapter.line_number %}
+                    {% set _ns.idx = loop.index0 %}
+                    {% set _ns.found = true %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% set _cur_idx = _ns.idx %}
+        {% if is_virtual_chapter or _chapter_total <= 1 %}
+            {# 全文阅读模式：按行号算全书位置 #}
+            {% set _pct = (start_line | default(0)) / (total_lines | default(1) * 1.0) * 100 if total_lines else 0 %}
+            {% set _tip = '全文阅读 · %.1f%%' % _pct %}
+        {% else %}
+            {% set _pct = (_cur_idx + (page | default(1)) / (total_pages | default(1) or 1)) / _chapter_total * 100 %}
+            {% set _tip = '第 %d 章 · 共 %d 章 · %.1f%%' % (_cur_idx + 1, _chapter_total, _pct) %}
+        {% endif %}
+        {% set _pct = [[_pct, 0] | max, 100] | min %}
+        {# round(2) 必须有：27.5 算出来是 27.500000000000004，
+           直接写进 style 会留下浮点噪声 #}
+        {% set _pct = _pct | round(2) %}
+        <div class="reader-progress" id="readerProgress" role="progressbar"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ _pct }}"
+             title="{{ _tip }}" aria-label="{{ _tip }}">
+            <div class="reader-progress-bar" style="width: {{ _pct }}%"></div>
+        </div>
+        <div class="top-bar" id="readerTop">
+            <a href="/?page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                class="reader-ic" title="返回书库" aria-label="返回书库">{{ icon('home', 'lg') }}</a>
+            {# 顶栏中部显示当前章节名（原为书名）。全文阅读模式下 current_chapter.text 即「全文阅读」，
+               非虚拟章节无匹配时后端已兜底到第一章，这里再兜底一次避免顶栏空白。 #}
+            {% set _chapter_label = '全文阅读' if is_virtual_chapter else (current_chapter.text if current_chapter else '正文') %}
+            <span class="reader-book-title" title="{{ _chapter_label }}">{{ _chapter_label }}</span>
+            <div class="reader-top-actions">
+                <a href="{{ url_for('novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="reader-ic" title="返回详情页" aria-label="返回详情页">{{ icon('book-open', 'lg') }}</a>
+                <button class="reader-ic" onclick="readerSearchOpen()" title="全书搜索 (Ctrl+Shift+F / F3)"
+                    aria-label="全书搜索">{{ icon('search', 'lg') }}</button>
+                <button class="reader-ic speech-btn" id="speechBtn" onclick="speakCurrentPage()"
+                    title="朗读本章" aria-label="朗读本章">
+                    <span class="speech-ic speech-ic--play">{{ icon('volume-2', 'lg') }}</span>
+                    <span class="speech-ic speech-ic--stop">{{ icon('square', 'lg') }}</span>
+                </button>
+                <button class="reader-ic" onclick="openSetDrawer()" title="阅读设置" aria-label="阅读设置">{{ icon('settings', 'lg') }}</button>
+            </div>
+        </div>
+        {# ===== 沉浸模式：点正文中间呼出/隐藏工具栏 ===== #}
+        <div class="reader-immersive-hint" id="immersiveHint">点击正文中间可隐藏 / 显示工具栏</div>
+        <!-- 📑 目录抽屉 -->
+        <div class="toc-drawer-mask" id="tocDrawerMask" onclick="closeTocDrawer()"></div>
+        <aside class="toc-drawer" id="tocDrawer">
+            <div class="toc-drawer-header">
+                <span class="toc-drawer-title ic-text">{{ icon('list', 'sm') }}目录</span>
+            </div>
+            <div class="toc-drawer-stats">
+                共 {{ all_chapters|length }} 章
+            </div>
+            <div class="toc-drawer-body" id="tocDrawerBody">
+                {% for chapter in all_chapters %}
+                {% if chapter.is_empty %}
+                {# 空章节（只有标题没有正文）：不可点击 #}
+                <span class="toc-item toc-level{{ chapter.level }} is-empty"
+                    data-line="{{ chapter.line_number }}"
+                    data-empty="1"
+                    title="本章为空白章节，暂无正文"
+                    aria-disabled="true">
+                    {{ chapter.text }}<span class="toc-empty-badge">空</span>
+                </span>
+                {% else %}
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="toc-item toc-level{{ chapter.level }}"
+                    data-line="{{ chapter.line_number }}"
+                    data-text="{{ chapter.text }}">
+                    {{ chapter.text }}
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div class="toc-drawer-footer">
+                <a href="{{ url_for('novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                    class="toc-drawer-detail-btn" title="查看详情"><span class="ic-text">{{ icon('book-open', 'sm') }}详情</span></a>
+                <button class="toc-drawer-close" onclick="closeTocDrawer()" aria-label="关闭">{{ icon('x', 'sm') }}</button>
+            </div>
+        </aside>
+        <!-- 🔍 全书搜索栏（默认隐藏）。与浏览器 Ctrl+F（仅当前页）分工不同 -->
+        <div class="reader-search-bar" id="readerSearchBar">
+            <input type="text" id="readerSearchInput" placeholder="全书搜索…（Ctrl+Shift+F / F3）"
+                autocomplete="off" enterkeyhint="search" aria-label="全书搜索">
+            <button onclick="readerSearchClose()" title="关闭" aria-label="关闭搜索">{{ icon('x', 'sm') }}</button>
+        </div>
+        <!-- 搜索结果面板 -->
+        <div class="search-results-panel" id="searchResultsPanel"></div>
+        {# ===== 📖 阅读设置抽屉（原 top-controls 全部收进这里）===== #}
+        <div class="set-drawer-mask" id="setDrawerMask" onclick="closeSetDrawer()"></div>
+        <aside class="set-drawer" id="setDrawer" role="dialog" aria-modal="true" aria-label="阅读设置">
+            <div class="set-head">
+                <span class="set-grip" aria-hidden="true"></span>
+                <div class="set-head-row">
+                    <span class="set-title">阅读设置</span>
+                    <button type="button" class="set-reset" onclick="resetReaderSettings()">恢复默认</button>
+                    <button type="button" class="set-close" onclick="closeSetDrawer()" aria-label="关闭">{{ icon('x', 'sm') }}</button>
+                </div>
+            </div>
+            <div class="set-body">
+                {# ---- 背景主题 ---- #}
+                <div class="set-row">
+                    <div class="set-lab">背景主题</div>
+                    <div class="set-themes" id="setThemes">
+                        <button type="button" class="set-theme" data-rt="default" title="跟随站点"></button>
+                        <button type="button" class="set-theme" data-rt="paper" title="羊皮纸"></button>
+                        <button type="button" class="set-theme" data-rt="white" title="纯白"></button>
+                        <button type="button" class="set-theme" data-rt="green" title="护眼绿"></button>
+                        <button type="button" class="set-theme" data-rt="sepia" title="暖黄"></button>
+                        <button type="button" class="set-theme" data-rt="gray" title="青灰"></button>
+                        <button type="button" class="set-theme" data-rt="night" title="夜间"></button>
+                    </div>
+                </div>
+                {# ---- 字号 ---- #}
+                <div class="set-row">
+                    <div class="set-lab">字号</div>
+                    <div class="set-size">
+                        <button type="button" onclick="stepFontSize(-2)" aria-label="减小字号">A−</button>
+                        <span class="set-val" id="setSizeVal">{{ user_prefs.font_size or 24 }}</span>
+                        <button type="button" onclick="stepFontSize(2)" aria-label="增大字号">A+</button>
+                    </div>
+                </div>
+                {# ---- 字体（分元素：正文/标题 + reader-core 全部高亮符号各自可配）---- #}
+                {% set font_opts %}
+                        <option value="system-ui">系统默认</option>
+                        <option value="'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', '霞鹜文楷内置', sans-serif">{{ icon('type', 'sm') }} 霞鹜文楷（内置）</option>
+                        <option value="'CEJK01-9128-W04', '仓耳今楷01-9128-W04', '仓耳今楷内置', serif">{{ icon('type', 'sm') }} 仓耳今楷（内置）</option>
+                        <option value="'HarmonyOS Sans SC', '鸿蒙黑体-HarmonyOS Sans SC', '鸿蒙黑体内置', sans-serif">{{ icon('type', 'sm') }} 鸿蒙黑体（内置）</option>
+                        <option value="'WEILAIYUANMedium', '未来圆SC Medium', 'WeiLaiYuanSC', '未来圆内置', sans-serif">{{ icon('type', 'sm') }} 未来圆（内置）</option>
+                        <option value="'HYWenHei-55W', '汉仪文黑-55W', '汉仪文黑内置', sans-serif">{{ icon('type', 'sm') }} 汉仪文黑（内置）</option>
+                        <option value="'LantingXiHei-GBK', '兰亭羲之黑内置', sans-serif">{{ icon('type', 'sm') }} 兰亭羲之黑（内置）</option>
+                        <option value="'FZDaBiaoSong', '方正大标宋内置', serif">{{ icon('type', 'sm') }} 方正大标宋（内置）</option>
+                        <option value="'FZFangSong', '方正仿宋内置', serif">{{ icon('type', 'sm') }} 方正仿宋（内置）</option>
+                        <option value="'FZKaiTi', '方正楷体内置', serif">{{ icon('type', 'sm') }} 方正楷体（内置）</option>
+                {% endset %}
+                <div class="set-row">
+                    <div class="set-lab">正文字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="fontFamilySelect" class="set-select" onchange="setFontFamily(this.value)">{{ font_opts }}</select>
+                        <button type="button" class="set-bi" data-scope="body" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="body" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">标题字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="titleFontSelect" class="set-select" onchange="setScopeFont('title', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="title" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="title" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">双引号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="doubleQuoteFontSelect" class="set-select" onchange="setScopeFont('double_quote', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="double_quote" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="double_quote" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">单引号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="singleQuoteFontSelect" class="set-select" onchange="setScopeFont('single_quote', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="single_quote" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="single_quote" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">圆括号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="bracketFontSelect" class="set-select" onchange="setScopeFont('bracket', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="bracket" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">方头括号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="squareBracketFontSelect" class="set-select" onchange="setScopeFont('square_bracket', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="square_bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="square_bracket" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">方括号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="squareBracket1FontSelect" class="set-select" onchange="setScopeFont('square_bracket_1', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="square_bracket_1" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="square_bracket_1" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">空心括号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="hollowBracketFontSelect" class="set-select" onchange="setScopeFont('hollow_bracket', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="hollow_bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="hollow_bracket" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+                <div class="set-row">
+                    <div class="set-lab">书名号字体</div>
+                                        <div class="set-font-ctrl">
+                        <select id="bookFontSelect" class="set-select" onchange="setScopeFont('book', this.value)">
+                        <option value="">跟随正文</option>
+                        {{ font_opts }}
+                    </select>
+                        <button type="button" class="set-bi" data-scope="book" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
+                        <button type="button" class="set-bi" data-scope="book" data-style="italic" aria-pressed="false" onclick="toggleScopeStyle(this)">I</button>
+                    </div>
+                </div>
+
+                {# ---- 行高 ---- #}
+                <div class="set-row">
+                    <div class="set-lab">行高</div>
+                    <div class="set-slider">
+                        <input type="range" id="setLineHeight" min="1.2" max="2.6" step="0.1"
+                            value="{{ user_prefs.line_height or 1.8 }}" oninput="setLineHeight(this.value)">
+                        <span class="set-val" id="setLineHeightVal">{{ user_prefs.line_height or 1.8 }}</span>
+                    </div>
+                </div>
+                {# ---- 段间距 ---- #}
+                <div class="set-row">
+                    <div class="set-lab">段间距</div>
+                    <div class="set-slider">
+                        <input type="range" id="setParaSpacing" min="0" max="2" step="0.1"
+                            value="{{ user_prefs.paragraph_spacing if user_prefs.paragraph_spacing is not none else 0.8 }}"
+                            oninput="setParagraphSpacing(this.value)">
+                        <span class="set-val" id="setParaSpacingVal">{{ user_prefs.paragraph_spacing if user_prefs.paragraph_spacing is not none else 0.8 }}</span>
+                    </div>
+                </div>
+                {# ---- 首行缩进 ---- #}
+                <div class="set-row set-toggle">
+                    <span class="set-lab2">首行缩进</span>
+                    <button type="button" class="set-switch{% if user_prefs.indent_paragraph %} on{% endif %}" id="setIndent"
+                        role="switch" aria-label="首行缩进"
+                        aria-checked="{{ 'true' if user_prefs.indent_paragraph else 'false' }}"
+                        onclick="toggleIndent(this)"></button>
+                </div>
+                {# ---- 按住拖动翻页（抓手）---- #}
+                <div class="set-row set-toggle">
+                    <span class="set-lab2">按住拖动翻页</span>
+                    <button type="button" class="set-switch{% if user_prefs.drag_scroll is not defined or user_prefs.drag_scroll %} on{% endif %}" id="setDragScroll"
+                        role="switch" aria-label="按住拖动翻页"
+                        aria-checked="{{ 'true' if (user_prefs.drag_scroll is not defined or user_prefs.drag_scroll) else 'false' }}"
+                        onclick="toggleDragScroll(this)"></button>
+                </div>
+                {# ---- 圈选文字（与按住拖动翻页互斥）---- #}
+                <div class="set-row set-toggle">
+                    <span class="set-lab2">圈选文字</span>
+                    <button type="button" class="set-switch{% if user_prefs.text_select %} on{% endif %}" id="setTextSelect"
+                        role="switch" aria-label="圈选文字"
+                        aria-checked="{{ 'true' if user_prefs.text_select else 'false' }}"
+                        onclick="toggleTextSelect(this)"></button>
+                </div>
+                {# ---- 朗读（开关已移到顶栏，这里只留语速/音调）---- #}
+                <div class="set-row set-row--speech">
+                    <div class="set-lab">朗读</div>
+                    <div class="speech-controls">
+                        <select id="speechRateSelect" class="set-select set-select--sm" onchange="setSpeechRate(this.value)" aria-label="语速">
+                            <option value="0.5">0.5x 慢速</option>
+                            <option value="0.8">0.8x 较慢</option>
+                            <option value="1.0" selected>1.0x 正常</option>
+                            <option value="1.2">1.2x 较快</option>
+                            <option value="1.5">1.5x 快速</option>
+                            <option value="2.0">2.0x 极速</option>
+                        </select>
+                        <select id="speechPitchSelect" class="set-select set-select--sm" onchange="setSpeechPitch(this.value)" aria-label="音调">
+                            <option value="0.5">0.5 低沉</option>
+                            <option value="0.8">0.8 较低</option>
+                            <option value="1.0" selected>1.0 正常</option>
+                            <option value="1.2">1.2 较高</option>
+                            <option value="1.5">1.5 高亢</option>
+                            <option value="2.0">2.0 尖锐</option>
+                        </select>
+                    </div>
+                </div>
+                {# ---- 跳行 ---- #}
+                <div class="set-row" id="setJumpRow">
+                    <div class="set-lab">跳转行号</div>
+                    <div class="line-jump">
+                        <input type="number" id="jumpLine" class="jump-input" placeholder="行号" min="1"
+                            max="{{ total_lines }}" value="{{ start_line }}">
+                        <button type="button" class="jump-btn" onclick="jumpToLine()">跳转</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <div class="content-wrapper" id="contentWrapper">
+            {# 是否有正文由后端 page_has_content() 判定（排除章节标题和分隔符） #}
+            <div class="reading-content" id="readingContent">
+                {% for line in content_lines %}
+                {% if line.strip() %}
+                <div class="content-line">{{ line|safe }}</div>
+                {% else %}
+                <div class="empty-line"></div>
+                {% endif %}
+                {% endfor %}
+        </div>
+        {% if not has_content %}
+        <div style="text-align: center; padding: 40px 20px;">
+            <img src="{{ url_for('static', filename='images/header-bg-' + range(1, 51)|random|string + '.webp') }}"
+                alt="暂无内容"
+                style="max-width: 100%; width: 100%; height: auto; border-radius: 12px; opacity: 0.8; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="margin-top: 16px; color: #999; font-size: 14px;">本章节无正文内容</div>
+        </div>
+        {% endif %}
+    </div>
+    {# ===== 最后一章结尾显示"返回列表"按钮 ===== #}
+    {% if not next_chapter and not next_page %}
+    <div class="back-to-list-wrapper">
+        <a href="{{ url_for('index') }}?page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+            class="back-to-list-btn">
+            <span class="ic-text">{{ icon('list', 'sm') }}返回列表</span>
+        </a>
+    </div>
+    {% endif %}
+    {# ===== 悬浮跳顶/跳底（滚动一定距离后出现）===== #}
+    <div class="reader-jump" id="readerJump" hidden>
+        <button type="button" id="jumpTopBtn" onclick="jumpToTop()" aria-label="回到最顶">{{ icon('chevrons-up', 'sm') }}</button>
+        <button type="button" id="jumpBottomBtn" onclick="jumpToBottom()" aria-label="到最底">{{ icon('chevrons-down', 'sm') }}</button>
+    </div>
+    <div class="bottom-bar transparent" id="readerBottom">
+        <div>
+            <!-- 上一页/上一章（同理合并） -->
+            {% if prev_page %}
+                <!-- 有上一页：显示上一页 -->
+                {% set chapter_line = current_chapter.line_number if current_chapter else 1 %}
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ prev_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                class="chapter-switch-btn page-nav" title="上一页" aria-label="上一页">{{ icon('chevron-left', 'lg') }}</a>
+            {% elif prev_chapter %}
+                <!-- 没有上一页，但有上一章：显示上一章 -->
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=prev_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                class="chapter-switch-btn chapter-nav" title="上一章" aria-label="上一章">{{ icon('chevron-left', 'lg') }}</a>
+            {% else %}
+                <!-- 都没有：禁用 -->
+                <span class="chapter-switch-btn chapter-nav disabled" aria-hidden="true">{{ icon('chevron-left', 'lg') }}</span>
+            {% endif %}
+            <!-- 目录（居中，UAA 底栏样式） -->
+            <button type="button" class="chapter-switch-btn bottom-cat-btn" onclick="openTocDrawer()"
+                title="目录" aria-label="目录">{{ icon('list', 'lg') }}</button>
+            <!-- 页码（如果有分页才显示） -->
+            {% if total_pages > 1 %}
+            <span class="page-indicator">{{ page }}/{{ total_pages }}</span>
+            {% endif %}
+            <!-- 下一页/下一章（合并） -->
+            {% if next_page %}
+                <!-- 有下一页：显示下一页 -->
+                {% set chapter_line = current_chapter.line_number if current_chapter else 1 %}
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ next_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                class="chapter-switch-btn page-nav" title="下一页" aria-label="下一页">{{ icon('chevron-right', 'lg') }}</a>
+            {% elif next_chapter %}
+                <!-- 没有下一页，但有下一章：显示下一章 -->
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=next_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                class="chapter-switch-btn chapter-nav" title="下一章" aria-label="下一章">{{ icon('chevron-right', 'lg') }}</a>
+            {% else %}
+                <!-- 都没有：禁用 -->
+                <span class="chapter-switch-btn chapter-nav disabled" aria-hidden="true">{{ icon('chevron-right', 'lg') }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if file_size > 10 * 1024 * 1024 %}
+    <div style="text-align: center; font-size: 0.8rem; color: #999; padding: 5px;">
+        {{ icon('file', 'sm') }} 大文件 ({{ (file_size / 1024 / 1024)|round(1) }} MB) - 已完整加载
+    </div>
+    {% endif %}
+    <!-- 替换原有的 reader.js 引用 -->
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-init.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-search.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-toc.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/haptic.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
+    <script>
+        // ===== 传递全局变量 =====
+        const TOTAL_LINES = parseInt(document.getElementById('app-data').dataset.totalLines) || 0;
+        // ===== 跳转到指定行 =====
+        function jumpToLine() {
+            const input = document.getElementById('jumpLine');
+            let line = parseInt(input.value);
+            if (isNaN(line) || line < 1) {
+                alert('请输入有效的行号');
+                return;
+            }
+            if (line > TOTAL_LINES) {
+                line = TOTAL_LINES;
+            }
+            if (typeof closeSetDrawer === 'function') closeSetDrawer();
+            window.location.href = '?line=' + line;
+        }
+        // ===== 页面加载初始化 =====
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('📖 阅读页初始化开始...');
+            // 1. 主题（common.js）
+            if (typeof loadAndApplyTheme === 'function') {
+                loadAndApplyTheme();
+                watchSystemTheme();
+            }
+            // 2. 轮播图（common.js）
+            if (typeof initCarousel === 'function') {
+                initCarousel('.header', {
+                    autoSlideshow: true,
+                    intervalTime: 8000
+                });
+            }
+            // 3. 初始化配图路径（reader-core.js）
+            if (typeof filePath !== 'undefined' && filePath && typeof initLocalImagesAsync === 'function') {
+                await initLocalImagesAsync(filePath);
+            }
+            // 4. 加载表情映射（reader-core.js）
+            if (typeof loadEmojiMapping === 'function') {
+                await loadEmojiMapping();
+            }
+            // ===== 5. 先转换内容 =====
+            const readingContent = document.getElementById('readingContent');
+            if (readingContent) {
+                const lines = readingContent.querySelectorAll('.content-line');
+                let convertedCount = 0;
+                lines.forEach(line => {
+                    let text = line.innerHTML;
+                    let originalText = text;
+                    // 5.1 转换图片
+                    if (typeof convertLocalImages === 'function') {
+                        text = convertLocalImages(text);
+                    }
+                    // 5.2 转换视频
+                    if (typeof convertLocalVideos === 'function') {
+                        text = convertLocalVideos(text);
+                    }
+                    // 5.3 转换音频
+                    if (typeof convertLocalAudios === 'function') {
+                        text = convertLocalAudios(text);
+                    }
+                    // 5.4 🔥 转换链接（新增）
+                    if (typeof convertImageLinks === 'function') {
+                        text = convertImageLinks(text);
+                    }
+                    // 5.5 转换表情
+                    if (typeof convertTextEmoji === 'function') {
+                        text = convertTextEmoji(text);
+                    }
+                    // 5.6 高亮
+                    if (typeof highlightQuotesAndBrackets === 'function') {
+                        text = highlightQuotesAndBrackets(text);
+                    }
+                    // 5.7 完结标记
+                    if (typeof convertEndingMark === 'function') {
+                        text = convertEndingMark(text);
+                    }
+                    if (text !== originalText) {
+                        line.innerHTML = text;
+                        convertedCount++;
+                    }
+                });
+                console.log(`✅ 转换完成，${convertedCount} 行有变化`);
+            }
+            // ===== 6. 章节标题美化（放在转换之后）=====
+            if (typeof styleChapterTitles === 'function') {
+                styleChapterTitles();
+            }
+            // 7. 初始化图片查看器（reader-viewer.js）
+            if (typeof initViewerJS === 'function') {
+                setTimeout(() => initViewerJS('#readingContent'), 300);
+            }
+            // 8. 初始化朗读（reader-ui.js）
+            if (typeof initSpeech === 'function') {
+                initSpeech();
+            }
+            // 9. 应用字体设置（reader-ui.js）
+            if (typeof applySavedFontSettings === 'function') {
+                applySavedFontSettings();
+            }
+            // 9.1 加载完成后主动从服务器拉一次最新偏好，覆盖可能被浏览器缓存的
+            // app-data，确保「在配置页改了字体 / 加粗 / 斜体」后，重新打开阅读页一定生效。
+            if (typeof refreshPrefsFromServer === 'function') {
+                refreshPrefsFromServer();
+            }
+            // 10. 初始化键盘快捷键（reader-ui.js）
+            if (typeof initKeyboardShortcuts === 'function') {
+                initKeyboardShortcuts();
+            }
+            // 11. 预加载语音列表
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                if (window.speechSynthesis.onvoiceschanged) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        window.speechSynthesis.getVoices();
+                    };
+                }
+            }
+            // 12. 搜索功能
+            if (typeof initReaderSearch === 'function') {
+                initReaderSearch();
+            }
+            // 12.1 从搜索结果跳转过来时，定位并高亮命中行（需在内容转换之后）
+            if (typeof applySearchHighlight === 'function') {
+                applySearchHighlight();
+            }
+            // 13. 目录抽屉
+            if (typeof initTocDrawer === 'function') {
+                initTocDrawer();
+            }
+            // 14. 翻页震动
+            if (typeof initHaptic === 'function') {
+                initHaptic();
+            }
+            // 15. 阅读设置抽屉 + 背景主题（reader-ui.js）
+            if (typeof initSetDrawer === 'function') {
+                initSetDrawer();
+            }
+            // 16. 沉浸模式 + 浮动跳转按钮（reader-ui.js）
+            if (typeof initImmersive === 'function') {
+                initImmersive();
+            }
+            // 17. 按住拖动翻页（抓手手势，reader-ui.js）
+            // 放在 initImmersive 之后：两者都监听 contentWrapper，
+            // 先建沉浸模式再叠加拖拽更符合阅读器现有约定。
+            if (typeof initDragScroll === 'function') {
+                initDragScroll();
+            }
+            console.log('✅ 阅读页初始化完成');
+        });
+    </script>
+{% endblock %}

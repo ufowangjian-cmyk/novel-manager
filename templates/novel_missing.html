@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% from "_icons.html" import icon %}
+{% block title %}{{ title or '提示' }} - 文件已变更{% endblock %}
+{% block body_class %}page-missing{% endblock %}
+{% block page_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/novel_missing.css') }}">
+{% endblock %}
+{% block head_extra %}
+{% endblock %}
+
+{% block content %}
+
+    <div class="missing-container">
+        <div class="missing-icon">{{ icon('file-text', 'sm') }}</div>
+        <div class="missing-title">{{ page_title }}</div>
+        <div class="reason-badge {{ reason_class }}">{{ reason_text }}</div>
+        <div class="missing-desc">{{ page_desc|safe }}</div>
+        <div class="missing-path">{{ icon('folder-open', 'sm') }} {{ file_path }}</div>
+        <div class="missing-actions">
+            <a href="{{ back_url }}" class="btn btn-primary">{{ icon('home', 'sm') }} 返回首页</a>
+            {% if is_admin %}
+            <button class="btn btn-secondary" onclick="rescan()">{{ icon('refresh-cw', 'sm') }} 立即扫描</button>
+            {% endif %}
+        </div>
+    </div>
+
+    
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 公共初始化（主题）
+            initPage({ carousel: false });
+        });
+
+        function rescan() {
+            fetch('/api/start_scan')
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'started' || d.status === 'already_scanning') {
+                        showNotification('扫描已启动，完成后请刷新首页查看最新列表', 'success');
+                        setTimeout(() => { window.location.href = '/'; }, 1500);
+                    } else {
+                        showNotification('扫描启动失败', 'error');
+                    }
+                })
+                .catch(() => showNotification('请求失败', 'error'));
+        }
+    </script>
+{% endblock %}

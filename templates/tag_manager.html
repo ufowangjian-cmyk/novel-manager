@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% from "_icons.html" import icon %}
+{% block title %}标签管理 - 摸鱼读物{% endblock %}
+{% block body_class %}page-tags{% endblock %}
+{% block page_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tag_manager.css') }}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="page-container">
+        <!-- 头部 - 统一使用 .header -->
+        <div class="header">
+            <h1>
+                <span>{{ icon('tag', 'sm') }}</span>
+                标签管理
+            </h1>
+            <div class="header-desc">
+                维护自动打标签的三套规则：识别关键词、别名映射与派生规则。规则改动只对之后的扫描生效，已入库的书需要重新【{{ icon('rotate-cw', 'sm') }} 全量扫描】才会更新标签。
+            </div>
+            <div class="button-group">
+                <a href="/config" class="btn-nav">
+                    {{ icon('settings', 'sm') }} 配置管理
+                </a>
+                <a href="/" class="btn-nav btn-back-home">
+                    {{ icon('home', 'sm') }} 返回首页
+                </a>
+            </div>
+        </div>
+
+        <!-- 标签管理内容 -->
+        <div class="config-card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('key') }}</span>
+                <h2>识别关键词</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
+                <div class="keyword-list-container" id="keywordListContainer">
+                    <!-- 动态加载关键词列表 -->
+                </div>
+                <div class="add-keyword-group" style="margin-top: 10px; display: flex; gap: 10px;">
+                    <input type="text" id="newKeyword" placeholder="输入新关键词" maxlength="20" style="flex: 1;">
+                    <button class="btn btn-success" onclick="addKeyword()">{{ icon('plus', 'sm') }} 添加</button>
+                </div>
+                <div class="form-hint">
+                    {{ icon('lightbulb', 'sm') }} 程序会从文件名和内容中匹配这些关键词，匹配到的会自动成为标签
+                </div>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('link') }}</span>
+                <h2>别名映射</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
+                <div class="alias-list-container" id="aliasListContainer">
+                    <!-- 动态加载别名列表 -->
+                </div>
+                <div class="add-alias-group" style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="aliasMainTag" placeholder="主标签" maxlength="30" style="flex: 1;">
+                    <span>{{ icon('arrow-right', 'sm') }}</span>
+                    <input type="text" id="aliasTag" placeholder="别名（多个用逗号分隔）" maxlength="200" style="flex: 2;">
+                    <button class="btn btn-success" onclick="addAlias()">{{ icon('plus', 'sm') }} 添加</button>
+                </div>
+                <div class="form-hint">
+                    {{ icon('lightbulb', 'sm') }} 别名会自动转换为主标签，例如：输入"牛头人" {{ icon('arrow-right', 'sm') }} 自动变成"NTR"
+                </div>
+            </div>
+        </div>
+
+        <!-- 别名编辑弹窗 -->
+        <div id="aliasModal" class="modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeAliasModal()"></div>
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3>{{ icon('pencil', 'sm') }} 编辑别名映射</h3>
+                    <button class="modal-close" onclick="closeAliasModal()">{{ icon('x', 'sm') }}</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-field">
+                        <label>主标签</label>
+                        <input type="text" id="modalMainTag" readonly class="modal-input-readonly">
+                        <span class="form-hint">主标签不可修改，如需修改请删除后重新添加</span>
+                    </div>
+                    <div class="modal-field">
+                        <label>别名列表</label>
+                        <textarea id="modalAliases" rows="4" placeholder="多个别名用逗号分隔，例如：牛头人,绿帽,被戴绿帽"
+                            maxlength="500"></textarea>
+                        <span class="form-hint">{{ icon('lightbulb', 'sm') }} 支持中英文逗号、空格分隔</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeAliasModal()">取消</button>
+                    <button class="btn btn-success" onclick="saveAliasFromModal()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('bookmark') }}</span>
+                <h2>派生规则</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
+                <div class="rule-list-container" id="ruleListContainer">
+                    <!-- 动态加载派生规则列表 -->
+                </div>
+                <div class="add-rule-group" style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="sourceTag" placeholder="源标签" maxlength="30" style="flex: 1;">
+                    <span>{{ icon('arrow-right', 'sm') }}</span>
+                    <input type="text" id="derivedTag" placeholder="派生标签（多个用逗号分隔）" maxlength="200" style="flex: 2;">
+                    <button class="btn btn-success" onclick="addDerivedRule()">{{ icon('plus', 'sm') }} 添加</button>
+                </div>
+                <div class="form-hint">
+                    {{ icon('lightbulb', 'sm') }} 当小说有"源标签"时，自动添加"派生标签"，例如：有"母子" {{ icon('arrow-right', 'sm') }} 自动添加"乱伦"
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 20px; justify-content: center;">
+            <button class="btn btn-secondary" onclick="exportTagRules()">{{ icon('upload', 'sm') }} 导出标签规则</button>
+            <button class="btn btn-secondary" onclick="importTagRules()">{{ icon('download', 'sm') }} 导入标签规则</button>
+            <button class="btn btn-warning" onclick="reloadTagRules()">{{ icon('refresh-cw', 'sm') }} 重载规则</button>
+            <button class="btn btn-secondary" onclick="resetTagRules()">{{ icon('rotate-ccw', 'sm') }} 重置为默认</button>
+        </div>
+
+    </div>
+
+    
+{% endblock %}
+
+{% block scripts %}
+{# common.js 必须先于 tag-manager.js：后者渲染的按钮里用了 common.js 提供的 icon() #}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tag-manager.js') }}"></script>
+    <script>
+        // 显示通知（由 common.js 提供）
+        // 显示/隐藏加载动画（由 common.js 提供）
+
+        function toggleCard(header) {
+            const card = header.closest('.config-card');
+            card.classList.toggle('collapsed');
+        }
+
+        // 页面加载时展开所有卡片
+        document.querySelectorAll('.config-card').forEach(card => {
+            card.classList.remove('collapsed');
+        });
+
+        // 页面加载完成后加载标签规则
+        document.addEventListener('DOMContentLoaded', function () {
+            // 公共初始化（主题 + 轮播）
+            initPage();
+
+            if (typeof loadTagRules === 'function') {
+                loadTagRules();
+            }
+        });
+
+        // 导出标签规则
+        function exportTagRules() {
+            fetch('/api/tag/rules/get')
+                .then(res => res.json())
+                .then(rules => {
+                    const dataStr = JSON.stringify(rules, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tag_rules_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showNotification('标签规则已导出', 'success');
+                })
+                .catch(err => {
+                    showNotification('导出失败: ' + err.message, 'error');
+                });
+        }
+
+        // 导入标签规则
+        function importTagRules() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function (e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    try {
+                        const rules = JSON.parse(evt.target.result);
+                        if (!rules.hasOwnProperty('keywords') && !rules.hasOwnProperty('aliases') && !rules.hasOwnProperty('implications')) {
+                            showNotification('文件格式错误：缺少必要字段', 'error');
+                            return;
+                        }
+
+                        fetch('/api/tag/rules/import', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(rules)
+                        })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (result.success) {
+                                    showNotification('标签规则已导入，请点击"重载规则"生效', 'success');
+                                    loadTagRules();
+                                } else {
+                                    showNotification('导入失败: ' + result.message, 'error');
+                                }
+                            });
+                    } catch (error) {
+                        showNotification('导入失败: 文件格式错误', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+    </script>
+{% endblock %}

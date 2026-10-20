@@ -1,0 +1,1864 @@
+/* ============================================
+   配置管理页 - 页面专属变量
+   通用变量见 style.css 的 :root
+   ============================================ */
+:root {
+    /* 页面专属：用户记录管理 */
+    --dark-record-bg-item: rgba(255, 255, 255, 0.04);
+    --dark-record-bg-item-hover: rgba(255, 255, 255, 0.07);
+    --dark-record-bg-detail: rgba(0, 0, 0, 0.25);
+    --dark-record-text-title: #B5CD8A;
+    --dark-record-badge-admin: rgba(107, 140, 66, 0.30);
+    --dark-record-badge-user: rgba(107, 140, 66, 0.15);
+}
+
+/* ============================================
+   2. 页面基础
+   ============================================ */
+.page-config {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 10px;
+    font-family: 'Segoe UI', '微软雅黑', Roboto, sans-serif;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.page-config .page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* ============================================
+   3. 头部 - 与主页统一
+   ============================================ */
+.page-config .header {
+    background: var(--bg-card);
+    /* 白色背景 */
+    border-radius: 16px;
+    padding: 25px 30px;
+    margin-bottom: 25px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-secondary);
+    color: var(--text-primary);
+    /* 深色文字 */
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.page-config .header h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 32px;
+    /* 从 28px 改为 32px */
+    margin: 0 0 8px 0;
+    padding: 0;
+    color: var(--text-white);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.20);
+    /* 京华老宋体改用系统字体，详见 style.css 同名说明 */
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}
+
+/* 标题里的图标跟随标题字号（用 em，各断点自动缩放）。
+   图标包在 <span> 里，icons.css 的 `h1 > .ic`（直接子元素）匹配不到，
+   否则会被 .ic--sm 固定在 14px，在 32px 的标题前显得过小。 */
+.page-config .header h1 .ic {
+    width: 0.85em;
+    height: 0.85em;
+    vertical-align: middle;
+}
+
+.page-config .header .header-desc {
+    color: rgba(255, 255, 255, 0.80);
+    margin: 0 0 18px 0;
+    padding: 0;
+    font-size: 14px;
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}
+
+.page-config .header .button-group {
+    position: relative;
+    z-index: 2;
+}
+
+.card-header:hover {
+    background: var(--bg-card-hover);
+}
+
+/* ============================================
+   6. 表单样式
+   ============================================ */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    transform: scale(1.15);
+    cursor: pointer;
+    accent-color: var(--color-primary);
+}
+
+.form-group .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    line-height: 1.6;
+    /* 刻意不用 flex —— flex 会把连续文字、<b>、<a> 拆成多个独立 flex item：
+       窄屏放不下时会在标签边界处生硬断行（手机上常见「…你自己的」/「阅读设置…」
+       被拆成两段），并且部分环境下 <b> 的加粗会失效。
+       改成普通文本流后，换行按正常文字规则进行，加粗稳定；
+       图标靠 .ic 自带的 vertical-align: -0.125em 与基线对齐。 */
+}
+
+.form-hint .ic {
+    margin-right: 2px;
+}
+
+.form-group-inline {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* 紧凑行内组：每项固定 220px 宽，不再被 flex 平分拉宽。
+   2 个字段时不会各占半屏，密度接近「列表与显示」（6 项平分约 212px）。
+   不加这个类的 .form-group-inline 保持原来的平分行为。 */
+.form-group-inline.compact {
+    gap: 18px;
+}
+
+.form-group-inline.compact .form-group {
+    flex: 0 1 220px;
+    min-width: 180px;
+}
+
+.form-group-inline .form-group {
+    flex: 1;
+    min-width: 160px;
+}
+
+/* ============================================
+   7. 用户记录管理
+   ============================================ */
+.user-records-container {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-secondary);
+}
+
+.user-record-item {
+    background: var(--bg-card);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    overflow: hidden;
+    transition: all 0.2s;
+    border: 1px solid var(--border-tertiary);
+}
+
+.user-record-item:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--color-primary-opacity-20);
+}
+
+.user-record-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.user-record-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.user-record-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.record-badge {
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.record-badge.admin {
+    background: var(--color-primary-opacity-20);
+    color: var(--color-primary-dark);
+}
+
+.record-badge.user {
+    background: var(--color-primary-opacity-10);
+    color: var(--text-secondary);
+}
+
+.record-count-badge {
+    background: var(--bg-secondary);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+/* 最近阅读时间（只有时间，不含书名） */
+.record-last-read {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* 行内紧凑按钮，避免用不存在的 .btn-sm */
+.btn-compact {
+    padding: 6px 12px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.empty-records {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.loading-small {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-secondary);
+    border-top: 2px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   8. 用户管理（管理员）
+   ============================================ */
+.user-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.user-account-item {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border-tertiary);
+    transition: all 0.2s;
+}
+
+.user-account-item:hover {
+    border-color: var(--color-primary-opacity-20);
+    background: var(--bg-card-hover);
+}
+
+.btn-edit-user {
+    background: var(--color-warm);
+    color: var(--text-white);
+
+
+
+
+
+    font-weight: 500;
+
+}
+
+.btn-edit-user:hover {
+    background: var(--color-warm-dark);
+    transform: scale(1.02);
+}
+
+.btn-delete-user {
+    background: var(--color-danger);
+    color: var(--text-white);
+
+
+
+
+
+    font-weight: 500;
+
+}
+
+.btn-delete-user:hover {
+    background: var(--color-danger-light);
+    transform: scale(1.02);
+}
+
+/* ============================================
+   9. 模态框
+   ============================================ */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(26, 36, 21, 0.60);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    animation: modalSlideUp 0.3s ease;
+    border: 1px solid var(--border-secondary);
+}
+
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--color-danger-pale);
+    color: var(--color-danger);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-body input,
+.modal-body select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.modal-body input:focus,
+.modal-body select:focus {
+    outline: none;
+    border-color: var(--border-input-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-15);
+}
+
+.modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-secondary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border-radius: 0 0 16px 16px;
+}
+
+/* ============================================
+   10. 加载遮罩
+   ============================================ */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(26, 36, 21, 0.70);
+    backdrop-filter: blur(4px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.20);
+    border-top-color: var(--color-primary-light);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   11. 通知
+   ============================================ */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 90vw;
+}
+
+.notification {
+    padding: 12px 24px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-md);
+    animation: notificationSlideIn 0.3s ease;
+    cursor: pointer;
+    color: var(--text-white);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.notification.success {
+    background: var(--color-success);
+}
+
+.notification.error {
+    background: var(--color-danger);
+}
+
+.notification.warning {
+    background: var(--color-warning);
+}
+
+.notification.info {
+    background: var(--color-primary);
+}
+
+@keyframes notificationSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes notificationSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   12. 工具类
+   ============================================ */
+hr {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 20px 0;
+}
+
+.empty-hint {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* ============================================
+   13. 深色模式
+   ============================================ */
+body.dark-mode .page-config {
+    background: var(--dark-bg-primary);
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .page-config .header {
+    background: linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 50%, var(--color-primary) 100%);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .page-config .header .header-desc {
+    color: rgba(255, 255, 255, 0.70);
+}
+
+body.dark-mode .config-card {
+    background: var(--dark-bg-card);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .config-card:hover {
+    border-color: var(--color-primary-opacity-30);
+    box-shadow: var(--dark-shadow-md);
+}
+
+body.dark-mode .card-header {
+    background: var(--dark-bg-secondary);
+    border-bottom-color: var(--dark-border-primary);
+}
+
+body.dark-mode .card-header h2 {
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .card-icon,
+body.dark-mode .expand-icon {
+    color: var(--dark-text-secondary);
+}
+
+body.dark-mode .card-content {
+    border-top-color: var(--dark-border-primary);
+}
+
+body.dark-mode .form-group label {
+    color: var(--dark-text-secondary);
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group select {
+    background: var(--dark-bg-input);
+    border-color: var(--dark-border-secondary);
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus {
+    border-color: var(--color-primary-light);
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-20);
+}
+
+body.dark-mode .form-group input[type="checkbox"] {
+    accent-color: var(--color-primary-light);
+}
+
+body.dark-mode .form-hint {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .user-records-container {
+    background: var(--dark-bg-secondary);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .user-record-item {
+    background: var(--dark-bg-card);
+    border-color: var(--dark-border-secondary);
+}
+
+body.dark-mode .user-record-item:hover {
+    background: var(--dark-bg-card-hover);
+    border-color: var(--color-primary-opacity-20);
+}
+
+body.dark-mode .user-record-name {
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .record-badge.admin {
+    background: var(--color-primary-opacity-20);
+    color: var(--dark-text-secondary);
+}
+
+body.dark-mode .record-badge.user {
+    background: var(--color-primary-opacity-10);
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .record-count-badge {
+    background: var(--dark-bg-secondary);
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .record-last-read {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .user-account-item {
+    background: var(--dark-bg-card);
+    border-color: var(--dark-border-secondary);
+}
+
+body.dark-mode .user-account-item:hover {
+    background: var(--dark-bg-card-hover);
+    border-color: var(--color-primary-opacity-20);
+}
+
+body.dark-mode .modal-content {
+    background: var(--dark-bg-card);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .modal-header {
+    background: var(--dark-bg-secondary);
+    border-bottom-color: var(--dark-border-primary);
+}
+
+body.dark-mode .modal-header h3 {
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .modal-body input,
+body.dark-mode .modal-body select {
+    background: var(--dark-bg-input);
+    border-color: var(--dark-border-secondary);
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .modal-footer {
+    background: var(--dark-bg-secondary);
+    border-top-color: var(--dark-border-primary);
+}
+
+body.dark-mode .modal-close:hover {
+    background: rgba(184, 106, 90, 0.20);
+    color: var(--color-danger-light);
+}
+
+body.dark-mode .empty-records {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .empty-hint {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode hr {
+    border-top-color: var(--dark-border-primary);
+}
+
+body.dark-mode .loading-overlay {
+    background: rgba(0, 0, 0, 0.75);
+}
+
+/* ===== 用户记录管理头部 ===== */
+.user-records-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.user-records-header .form-hint {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    flex: 1;
+    min-width: 0;
+}
+
+.user-records-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.user-records-actions .btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ============================================
+   14. 响应式
+   ============================================ */
+@media (max-width: 768px) {
+
+    /* 统一页面 padding（与主页一致） */
+    .page-config {
+        padding: 10px;
+    }
+
+    /* 统一 header padding */
+    .page-config .header {
+        padding: 18px 20px;
+        margin-bottom: 18px;
+    }
+
+    .page-config .header h1 {
+        font-size: 22px;
+    }
+
+    .card-header {
+        padding: 14px 18px;
+    }
+
+    .card-header h2 {
+        font-size: 16px;
+    }
+
+    .card-content {
+        padding: 18px 16px;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        justify-content: center;
+        padding: 10px 16px;
+    }
+
+    .form-group-inline {
+        flex-direction: column;
+    }
+
+    .form-group-inline .form-group {
+        min-width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    .user-record-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .user-record-row {
+        flex-wrap: wrap;
+    }
+
+    /* 底部按钮组 - 移动端两两一组 */
+    .page-config .page-container>.button-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 0 4px;
+    }
+
+    .page-config .page-container>.button-group .btn {
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 13px;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* 确保头部按钮不受影响 */
+    .page-config .header .button-group {
+        display: flex;
+        flex-direction: row !important;
+        justify-content: center !important;
+        flex-wrap: wrap;
+    }
+
+    /* 用户记录管理头部 - 移动端调整 */
+    .user-records-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .user-records-header .form-hint {
+        width: 100%;
+        line-height: 1.6;
+    }
+
+    .user-records-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .user-records-actions .btn {
+        flex: 0 1 auto;
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+
+    /* ===== 用户记录列表项 - 移动端优化 ===== */
+    .user-record-row {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .user-record-info {
+        display: flex !important;
+        flex-direction: row !important;
+        /* 保持水平 */
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .user-record-name {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .record-badge {
+        font-size: 10px;
+        padding: 1px 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .record-count-badge {
+        font-size: 10px;
+        padding: 1px 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-config {
+        padding: 8px;
+        /* 小屏稍微缩小 */
+    }
+
+    .page-config .header {
+        padding: 14px 16px;
+    }
+
+    .page-config .header h1 {
+        font-size: 18px;
+    }
+
+    .card-header {
+        padding: 12px 14px;
+    }
+
+    .card-header h2 {
+        font-size: 14px;
+    }
+
+    .card-content {
+        padding: 14px 12px;
+    }
+
+    .btn {
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .page-config .page-container>.button-group {
+        gap: 8px;
+    }
+
+    .page-config .page-container>.button-group .btn {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    /* 用户记录管理头部 - 超小屏调整 */
+    .user-records-actions .btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+
+    /* 用户记录管理 - 超小屏调整 */
+    .user-record-row {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+
+    .user-record-name {
+        font-size: 12px;
+    }
+
+    .record-badge {
+        font-size: 9px;
+        padding: 1px 8px;
+    }
+
+    .record-count-badge {
+        font-size: 9px;
+        padding: 1px 6px;
+    }
+
+    .user-record-info {
+        gap: 4px;
+    }
+}
+
+/* ============================================
+   16. 内存管理
+   ------------------------------------------------------------
+   .memory-hint 是 .form-hint 的 block 版：.form-hint 用了 display:flex，
+   子节点会变成 flex item 横向排列，<br/> 在 flex 容器里不产生换行，
+   导致说明文字挤成一长条。这里改用 block 让 <br/> 正常生效，
+   每一行用 .memory-hint-line 承载，图标与文字自然基线对齐。
+   ============================================ */
+.memory-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 12px;
+    line-height: 1.7;
+}
+
+.memory-hint-line {
+    display: block;
+    margin-top: 4px;
+}
+
+.memory-hint-line:first-of-type {
+    margin-top: 0;
+}
+
+.memory-hint .ic {
+    vertical-align: -0.125em;
+    margin-right: 2px;
+}
+
+/* 按钮内图标：.btn 是 inline-flex，vertical-align 对 flex item 无效，
+   必须显式回到 middle，否则图标会偏下、不与文字同一行中线 */
+.memory-actions .btn .ic {
+    vertical-align: middle;
+    margin-right: 0;
+}
+
+.memory-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.memory-stat-item {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 14px 18px;
+    border: 1px solid var(--border-tertiary);
+    transition: all 0.2s;
+}
+
+.memory-stat-item:hover {
+    border-color: var(--color-primary-opacity-20);
+}
+
+.memory-stat-item .stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.memory-stat-item .stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'Segoe UI', monospace;
+}
+
+/* 深色模式 */
+body.dark-mode .memory-stat-item {
+    background: var(--dark-bg-secondary);
+    border-color: var(--dark-border-secondary);
+}
+
+body.dark-mode .memory-stat-item .stat-label {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .memory-stat-item .stat-value {
+    color: var(--dark-text-primary);
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+    .memory-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .memory-stat-item {
+        padding: 10px 14px;
+    }
+
+    .memory-stat-item .stat-value {
+        font-size: 16px;
+    }
+}
+
+/* ============================================
+   清理缓存结果（单行紧凑显示）
+   ------------------------------------------------------------
+   原来这段信息塞在 .form-hint 里，5 个指标用 | 分隔，移动端换行后很乱；
+   现在独立成行：只显示“释放条数 + 当前内存”，细节放 title 悬浮提示。
+   ============================================ */
+.cleanup-result {
+    display: none;
+    margin-top: 14px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--color-primary-opacity-10);
+    border: 1px solid var(--color-primary-opacity-20);
+    color: var(--color-primary-dark);
+}
+
+.cleanup-result.show {
+    display: block;
+}
+
+.cleanup-result strong {
+    font-weight: 600;
+}
+
+/* 失败态 */
+.cleanup-result.error {
+    background: var(--color-warm-opacity-10);
+    border-color: var(--color-warm-opacity-20);
+    color: var(--color-warning-hover);
+}
+
+/* 深色模式 */
+body.dark-mode .cleanup-result {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--dark-border-primary);
+    color: var(--dark-primary-lighter);
+}
+
+body.dark-mode .cleanup-result.error {
+    color: #f0a0a0;
+    border-color: rgba(240, 160, 160, 0.35);
+}
+
+/* 清理结果里的补充说明行：
+   解释「为什么还有 N 条没被清掉」，字号更小、颜色更弱，不抢主摘要。 */
+.cleanup-note {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+body.dark-mode .cleanup-note {
+    opacity: 0.7;
+}
+
+/* ============================================
+   管理员专属分组
+   不新增页面，用一条可折叠的分隔条把管理员功能
+   从普通配置里视觉隔离出来（默认收起，保持简洁）。
+   ============================================ */
+.config-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 18px;
+    padding: 14px 22px;
+    background: var(--bg-card);
+    border: 1px dashed var(--border-secondary);
+    border-radius: 14px;
+    /* 纯分组标题，不可点击也不折叠，所以没有 cursor:pointer / hover */
+}
+
+/* 分区标题图标（Lucide SVG）。
+   font-size 对固定尺寸的 SVG 无效，必须显式给 width/height；
+   .config-section-divider 是 flex 容器，align-items:center 负责垂直居中，
+   这里不要再加 vertical-align 偏移。 */
+.divider-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.divider-icon .ic {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+}
+
+.divider-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}
+
+.divider-hint {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    /* 去掉右侧折叠箭头后，提示文字靠右，与左侧标题形成两端对齐，
+       否则整条右侧留大片空白显松散 */
+    text-align: right;
+}
+
+.admin-section {
+    /* 常驻展开：分组标题条不再折叠，所以没有 .collapsed 规则 */
+}
+
+.admin-section-note {
+    margin-bottom: 16px;
+    padding: 10px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--color-primary-opacity-30);
+    border-radius: 8px;
+}
+
+/* 深色模式 */
+body.dark-mode .config-section-divider {
+    background: var(--dark-bg-card);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .divider-title {
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .divider-hint {
+    color: var(--dark-text-secondary);
+}
+
+body.dark-mode .admin-section-note {
+    background: var(--dark-bg-secondary);
+    color: var(--dark-text-secondary);
+}
+
+/* 弹窗右上角 ×：font-size 对 SVG 无效，显式给尺寸并保证在 flex 内居中 */
+.modal-close .ic {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+}
+
+/* ===== 字体设置：下拉 + 加粗/斜体 切换按钮 同一行（与阅读页一致） ===== */
+.set-font-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.set-font-ctrl select {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* B / I 切换按钮。
+   注意：.set-bi 不是 .form-group input/select，吃不到表单控件那条深色规则
+   （body.dark-mode .form-group select）；而 --bg-card/--text-primary 在深色令牌里
+   没有对应覆盖，恒为浅色值。所以这里必须在下方用 body.dark-mode 显式补一套深色值，
+   否则深色模式下按钮会保持「白底黑字」，撞在深绿卡片上。 */
+.set-bi {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 15px;
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.set-bi[data-style="bold"] {
+    font-weight: bold;
+}
+
+.set-bi[data-style="italic"] {
+    font-style: italic;
+    font-weight: 400;
+}
+
+.set-bi:hover {
+    border-color: var(--color-primary);
+    background: var(--bg-card-hover);
+}
+
+/* 激活态：主色渐变 + 白字（与桌面版一致）。
+   toggleConfigBi 会同时维护 .on class 与 aria-pressed，两个选择器都列上以防漏状态。 */
+.set-bi.on,
+.set-bi[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.set-bi.on:hover,
+.set-bi[aria-pressed="true"]:hover {
+    background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+}
+
+/* 键盘焦点环（可访问性） */
+.set-bi:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-30);
+}
+
+/* ===== 深色模式：B/I 按钮跟随深色令牌（按钮底色比下拉略亮，形成轻微层次） ===== */
+body.dark-mode .set-bi {
+    background: var(--dark-bg-secondary);
+    border-color: var(--dark-border-secondary);
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .set-bi:hover {
+    border-color: var(--dark-primary-light);
+    background: var(--dark-bg-card-hover);
+}
+
+body.dark-mode .set-bi.on,
+body.dark-mode .set-bi[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    border-color: var(--color-primary-light);
+    color: #fff;
+}
+
+body.dark-mode .set-bi.on:hover,
+body.dark-mode .set-bi[aria-pressed="true"]:hover {
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+}
+
+body.dark-mode .set-bi:focus-visible {
+    box-shadow: 0 0 0 3px var(--dark-primary-light);
+}
+
+/* ===== 「我的阅读偏好」里 9 个字体条目：桌面两列、移动一列 =====
+   原来每个 .form-group 都独占一整行（撑满卡片宽度），在桌面大屏上
+   大片横向空间被浪费，而每行实际只需要放下「标签 + 下拉 + B + I」。
+   改成 CSS Grid 两列排布，行间距沿用 .form-group 自带的 margin-bottom。
+   默认（桌面）两列；窄屏 768px 以下回退为单列，保持移动端原有的一行一个。
+   用 1fr 1fr 而非 auto-fit，是为了始终严格两列、不会因宽度变化突然变三列。 */
+.font-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+}
+
+/* 网格子项默认 stretch，会让每格里的 select 高度被拉齐；
+   这里让 .form-group 自身保持内容高度即可（margin-bottom 提供行距）。 */
+.font-grid>.form-group {
+    min-width: 0;
+    /* 关键：防止 select 撑破网格列（grid 项默认 min-width:auto） */
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+
+    /* 移动端恢复一行一个 */
+    .font-grid {
+        grid-template-columns: 1fr;
+        column-gap: 0;
+    }
+}
+
+/* ============================================
+   信息密度优化（Docker 版）— 2026-10-19
+   ------------------------------------------------------------
+   目标：压缩垂直空白、桌面多列、移动端保持一列但更紧凑。
+   全部使用已有变量，深浅色主题自动适配；不引入任何硬编码颜色。
+   本段位于文件末尾，覆盖 components.css 与本文前方的同名规则
+   （加载顺序：tokens.css -> style.css -> components.css -> config.css）。
+   ============================================ */
+
+/* ---------- 1. 页面与头部收紧 ---------- */
+.page-config .header {
+    padding: 18px 24px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+}
+.page-config .header h1 {
+    font-size: 26px;
+    margin-bottom: 6px;
+}
+.page-config .header .header-desc {
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* ---------- 2. 卡片整体收紧 ---------- */
+.config-card {
+    margin-bottom: 14px;
+    border-radius: 12px;
+}
+.card-header {
+    padding: 12px 18px;
+}
+.card-header h2 {
+    font-size: 16px;
+}
+/* font-size 对 SVG 图标无效，显式给 .ic 尺寸（components.css 原为 18px） */
+.card-icon {
+    font-size: 20px;
+}
+.card-icon .ic {
+    width: 20px;
+    height: 20px;
+}
+
+/* ---------- 3. 卡片内容改为自适应多列网格 ---------- */
+.card-content {
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px 18px;
+    align-items: start;
+}
+
+/* 网格内单个 form-group 不再需要下边距（间距交给 gap）；
+   min-width:0 防止长 option 文本把网格列撑宽 */
+.card-content > .form-group {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+/* 需要独占整行的块：行内组、字体网格、用户记录区、内存面板、
+   说明块、小节标题、按钮组等，统一跨满列。
+   注意：.user-list-container 在 HTML 里被 .form-group 包裹（非直接子级），
+   「用户管理」卡由其 :only-child 规则跨列。 */
+.card-content > .form-group-inline,
+.card-content > .font-grid,
+.card-content > .switch-grid,
+.card-content > .user-records-container,
+.card-content > .user-records-header,
+.card-content > .memory-management,
+.card-content > .form-group:only-child,
+.card-content > .form-hint,
+.card-content > h3,
+.card-content > hr,
+.card-content > .button-group {
+    grid-column: 1 / -1;
+}
+
+/* 卡片级说明块（card-content 直接子级的 .form-hint）与上方内容保持一点间距 */
+.card-content > .form-hint {
+    margin-top: 10px;
+}
+
+/* ---------- 4. 表单元素瘦身 ---------- */
+.form-group {
+    margin-bottom: 12px;
+}
+.form-group label {
+    margin-bottom: 4px;
+    font-size: 13.5px;
+}
+.form-group input,
+.form-group select {
+    padding: 8px 12px;
+    font-size: 13.5px;
+}
+.form-hint {
+    margin-top: 3px;
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+/* 行内组更紧凑 */
+.form-group-inline {
+    gap: 12px;
+}
+.form-group-inline .form-group {
+    min-width: 180px;
+    margin-bottom: 0;
+}
+
+/* ---------- 5. 字体网格：桌面自适应 3 列，label 与控件同行 ----------
+   参考桌面版 .hl-font-grid：每项内部为「label | 控件」子网格（同行），
+   项高从 ~75px 压到 ~36px；9 个条目从 5 行变 3 行。
+   1400px 卡宽下 3 列 × ~440px，label ~100px + 控件 ~330px 不挤。 */
+.font-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    column-gap: 16px;
+    row-gap: 10px;
+}
+.font-grid > .form-group {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 4px 10px;
+    margin-bottom: 0;
+    min-width: 0;
+}
+.font-grid .form-group label {
+    margin-bottom: 0;
+    justify-self: end;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+/* 卡片内小节标题（h3）：跨满列 + 紧凑间距（替代原内联 style） */
+.card-content > h3 {
+    margin: 12px 0 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ---------- 6. 按钮与底部操作区 ---------- */
+/* .btn 原由 tokens.css 的 --btn-* 驱动（10/22/10/14），此处覆盖为更小尺寸 */
+.btn {
+    padding: 8px 16px;
+    font-size: 13.5px;
+    border-radius: 8px;
+}
+/* .btn-compact 是更小一档（用户记录行内按钮等），不被上面的 .btn 覆盖 */
+.btn-compact {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+.button-group {
+    gap: 10px;
+}
+/* 底部操作组原有内联 margin-top:20px，用 !important 压过内联样式 */
+.page-config .page-container > .button-group {
+    margin-top: 14px !important;
+}
+
+/* ---------- 7. 管理员分组条收紧 ---------- */
+.config-section-divider {
+    margin: 18px 0 12px;
+    padding: 10px 18px;
+    border-radius: 12px;
+}
+.divider-title {
+    font-size: 15px;
+}
+.divider-hint {
+    font-size: 11.5px;
+}
+.admin-section-note {
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+}
+
+/* ---------- 8. 内存统计网格更紧凑 ---------- */
+.memory-stats {
+    gap: 10px;
+}
+.memory-stat-item {
+    padding: 10px 14px;
+}
+.memory-stat-item .stat-value {
+    font-size: 18px;
+}
+.memory-hint {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.6;
+}
+
+/* ---------- 9. 用户记录 / 用户列表项压缩 ---------- */
+.user-record-row {
+    padding: 10px 14px;
+}
+.user-account-item {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+}
+.user-records-header {
+    margin-bottom: 10px;
+}
+
+/* ---------- 10. 用户记录列表：宽屏自适应两列（可选增强） ----------
+   JS 渲染时会在 .user-records-container 内包一层 .user-records-list，
+   网格挂在这层上：不影响容器的 max-height 滚动，也不影响空态/加载态。 */
+.user-records-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 10px;
+}
+.user-records-list .user-record-item {
+    margin-bottom: 0;
+}
+
+/* ---------- 11. 响应式：移动端保持一列并进一步压缩 ---------- */
+@media (max-width: 768px) {
+    .page-config .header {
+        padding: 14px 16px;
+        margin-bottom: 12px;
+    }
+    .page-config .header h1 {
+        font-size: 20px;
+    }
+    .page-config .header .header-desc {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    /* 移动端：卡片内容回归单列，gap 更小 */
+    .card-content {
+        grid-template-columns: 1fr;
+        padding: 14px 14px;
+        gap: 10px;
+    }
+    .card-header {
+        padding: 10px 14px;
+    }
+    .card-header h2 {
+        font-size: 15px;
+    }
+
+    /* 字体网格移动端单列；但 label 仍与控件同行（原来 label 独占一行，
+       9 个字体条目每条都多浪费一整行高度）。label 按内容宽度，控件占剩余。 */
+    .font-grid {
+        grid-template-columns: 1fr;
+        column-gap: 0;
+    }
+    .font-grid > .form-group {
+        /* 用固定 em 宽度而不是 auto：9 个条目的标签字数不一样，
+           auto 会让每行的下拉起点参差不齐 */
+        grid-template-columns: 8em minmax(0, 1fr);
+        gap: 4px 8px;
+        margin-bottom: 10px;
+    }
+    .font-grid .form-group label {
+        justify-self: start;
+    }
+
+    /* 行内组移动端纵向堆叠，间距压缩 */
+    .form-group-inline {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .form-group-inline .form-group {
+        min-width: 100%;
+    }
+
+    /* 紧凑组在窄屏是纵向排列，必须把 flex 基数复位：
+       `flex: 0 1 220px` 在 column 方向下作用于「高度」，会把每个字段
+       撑成 220px 高（条目之间出现大片空白）。这里改回由内容决定高度。 */
+    .form-group-inline.compact {
+        gap: 10px;
+    }
+    .form-group-inline.compact .form-group {
+        flex: 0 0 auto;
+        min-width: 100%;
+    }
+
+    /* 内存统计移动端 2 列 */
+    .memory-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    /* 用户记录列表移动端回归单列 */
+    .user-records-list {
+        grid-template-columns: 1fr;
+    }
+
+    /* 记录/账号列表项纵向更紧凑 */
+    .user-record-row {
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-config {
+        padding: 8px;
+    }
+    .page-config .header {
+        padding: 12px 14px;
+    }
+    .page-config .header h1 {
+        font-size: 18px;
+    }
+    .card-content {
+        padding: 12px 12px;
+        gap: 8px;
+    }
+    .form-group label {
+        font-size: 13px;
+    }
+    .form-group input,
+    .form-group select {
+        padding: 7px 10px;
+        font-size: 13px;
+    }
+    .memory-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    .memory-stat-item {
+        padding: 8px 12px;
+    }
+    .memory-stat-item .stat-value {
+        font-size: 15px;
+    }
+}
+
+/* ---------- 12. 布尔开关（替代原生 checkbox） ----------
+   背景：配置页 8 个「开/关」项原来用浏览器原生 checkbox，只设了
+   accent-color 跟随主题，方块形状 / 白底 / 锐角无法控制，且高度与
+   上下那些满宽 input / select 对不齐，整页看起来是两套观感。
+
+   做法：DOM 里仍然保留原生 <input type="checkbox" id="...">，
+   只做视觉隐藏，另用 .switch-track 画轨道和圆点。
+   这样 config.js 里所有 `document.getElementById(...).checked`
+   的读写逻辑（saveAllConfig / loadMyConfig / saveMyPreferences /
+   loadMyPreferences）一行都不用改。
+
+   结构：
+     <label class="switch">
+       <span class="switch-text">图标 文字</span>
+       <input type="checkbox" id="..." name="...">
+       <span class="switch-track" aria-hidden="true"></span>
+     </label>
+   .switch-grid 负责两列排布，.switch-grid.single 用于单项占满整行。 */
+
+.switch-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+    min-width: 0;
+}
+
+.switch-grid.single {
+    grid-template-columns: 1fr;
+}
+
+/* 紧凑型开关网格：每列固定 230-260px，按内容宽度排布、不再撑满整行，
+   密度对齐「列表与显示」里的字段。
+   必须写在 .switch-grid.single 之后 —— 两者特异性相同，靠顺序覆盖。 */
+.switch-grid.compact {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 260px));
+    justify-content: start;
+}
+
+/* 开关 + 它自己的一条说明（目前只有「标签自动化」的两个开关用）。
+   说明跟开关绑在一起，避免两个开关共用一段长文字、内容还对不上号。 */
+.switch-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.switch-desc {
+    padding: 0 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-tertiary);
+    /* 窄窗口换行时避免末行只剩一两个字（Chrome 117+，不支持的浏览器自动忽略） */
+    text-wrap: pretty;
+}
+
+.switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 42px;
+    padding: 9px 14px;
+    margin: 0;
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.switch:hover {
+    border-color: var(--color-primary);
+}
+
+.switch:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-20);
+}
+
+.switch-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+/* 原生 input 只做视觉隐藏，仍可聚焦、仍被 JS 读取 */
+.switch input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.switch-track {
+    position: relative;
+    flex: none;
+    width: 38px;
+    height: 21px;
+    border-radius: 999px;
+    background: var(--color-bg-tertiary);
+    transition: background .18s ease;
+}
+
+.switch-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .22);
+    transition: transform .18s ease;
+}
+
+.switch input[type="checkbox"]:checked + .switch-track {
+    background: var(--color-primary);
+}
+
+.switch input[type="checkbox"]:checked + .switch-track::after {
+    transform: translateX(17px);
+}
+
+/* 暗色主题 */
+body.dark-mode .switch {
+    background: var(--dark-bg-input);
+    border-color: var(--dark-border-secondary);
+    color: var(--dark-text-secondary);
+}
+
+body.dark-mode .switch-track {
+    /* 暗色下 --color-bg-tertiary(#232f1f) 与卡片底色(#0f1a0f)过近，
+       轨道轮廓糊成一片，改用主色的低透明版，保证关闭态能看出边界 */
+    background: rgba(162, 188, 117, 0.35);
+}
+
+body.dark-mode .switch-desc {
+    color: var(--dark-text-tertiary);
+}
+
+body.dark-mode .switch input[type="checkbox"]:checked + .switch-track {
+    background: var(--color-primary-light);
+}
+
+/* 窄屏回归单列，避免两列挤压长标签文字 */
+@media (max-width: 768px) {
+    .switch-grid,
+    .switch-grid.compact {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,71 @@
+@font-face {
+  font-family: '霞鹜文楷内置';
+  src: url('/static/fonts/LXGWWenKaiMono-Medium.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '未来圆内置';
+  src: url('/static/fonts/WEILAIYUANMedium.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '仓耳今楷内置';
+  src: url('/static/fonts/CEJK01-9128-W04.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '鸿蒙黑体内置';
+  src: url('/static/fonts/HarmonyOS_Sans_SC.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '汉仪文黑内置';
+  src: url('/static/fonts/HYWenHei-55W.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '兰亭羲之黑内置';
+  src: url('/static/fonts/LantingXiHei-GBK.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '方正大标宋内置';
+  src: url('/static/fonts/FZDaBiaoSong.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '方正仿宋内置';
+  src: url('/static/fonts/FZFangSong.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '方正楷体内置';
+  src: url('/static/fonts/FZKaiTi.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

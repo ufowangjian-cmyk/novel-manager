@@ -1,0 +1,47 @@
+{
+    "name": "小说管理器",
+    "short_name": "小说",
+    "description": "个人小说阅读管理器",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "lang": "zh-CN",
+    "dir": "ltr",
+    "categories": ["books", "productivity"],
+    "icons": [
+        {
+            "src": "/static/images/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/images/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/images/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "继续阅读",
+            "short_name": "继续",
+            "url": "/",
+            "icons": [
+                {
+                    "src": "/static/images/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

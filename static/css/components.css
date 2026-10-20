@@ -1,0 +1,163 @@
+/* ============================================
+   config.html / tag_manager.html 共用组件
+   ------------------------------------------------------------
+   这两页原本各自复制了一份完全相同的规则（.config-card / .card-* / .modal-* 等），
+   现统一放到本文件，由两页共同加载。
+   加载顺序：tokens.css -> style.css -> components.css -> config.css / tag_manager.css
+   （页面自己的样式表在其后，仍可覆盖本文件）
+   ============================================ */.card-content {
+    padding: 24px 28px;
+    border-top: 1px solid var(--border-secondary);
+}.card-header {
+    background: var(--bg-secondary);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+    border-bottom: 1px solid var(--border-secondary);
+}.card-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+    color: var(--text-primary);
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}/* .card-header 是 flex 容器，align-items:center 已负责垂直居中；
+   图标不要再用 vertical-align / font-size 干预，否则会被推偏。
+   （font-size 只对 emoji 有效，对固定尺寸的 SVG 无效） */.card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}/* 标题栏图标统一 18px，与 18px 的 h2 视觉等重 */.card-icon .ic {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}.config-card.collapsed .card-content {
+    display: none;
+}.config-card.collapsed .expand-icon {
+    transform: rotate(-90deg);
+}.config-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-opacity-30);
+}.expand-icon {
+    font-size: 18px;
+    transition: transform 0.3s;
+    color: var(--text-tertiary);
+}.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.3s;
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--border-input-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-15);
+}.form-hint .example {
+    color: var(--color-warm);
+    font-family: monospace;
+    background: var(--color-warm-opacity-10);
+    padding: 0 8px;
+    border-radius: 4px;
+}/* ============================================
+   5. 配置卡片 - 与主页卡片统一
+   ============================================ */.config-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    margin-bottom: 25px;
+    overflow: hidden;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}/* ============================================
+   按钮体系（统一层）
+   ------------------------------------------------------------
+   原来 20+ 个按钮类各自写 padding / border-radius / font-size，
+   同一页面里就会出现 8px / 20px / 30px / 40px 四种圆角混用。
+   现在收敛为：
+     1) 公共行为基类：cursor / border / 字体继承 / 过渡 / 文字居中
+     2) 5 个尺寸档：xs、pill-sm、md、pill-md、chip
+     3) 各页面样式表只保留“颜色、状态、位置”等专属声明
+   个别外观特殊的按钮（选项卡、图标按钮、固定尺寸工具按钮）不参与收敛，见文件末尾说明。
+   ============================================ *//* --- 1. 公共行为基类 --- */.clear-records-btn,
+.btn-edit-user,
+.btn-delete-user,
+.font-btn,
+.jump-btn,
+.speech-btn,
+.scan-btn,
+.search-btn,
+.reset-btn,
+.open-image-folder-btn,
+.btn-nav,
+.chapter-switch-btn,
+.back-to-list-btn,
+.action-btn,
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    line-height: 1.4;
+    box-sizing: border-box;
+    text-align: center;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: var(--transition-base);
+}/* --- 2. 尺寸档 --- *//* xs */.clear-records-btn,
+.btn-edit-user,
+.btn-delete-user {
+    padding: 5px 12px; border-radius: 8px; font-size: 13px;
+}/* pill-sm */.font-btn,
+.jump-btn,
+.speech-btn {
+    padding: 5px 14px; border-radius: 20px; font-size: 13px;
+}/* md */.scan-btn,
+.search-btn,
+.reset-btn,
+.open-image-folder-btn {
+    padding: 8px 20px; border-radius: 8px; font-size: 14px;
+}/* pill-md */.btn-nav,
+.chapter-switch-btn,
+.back-to-list-btn,
+.action-btn {
+    padding: 8px 20px; border-radius: 30px; font-size: 14px;
+}/* chip */.pagination-btn {
+    padding: 8px 16px; border-radius: 8px; font-size: 14px;
+}/* --- 3. 不参与收敛的特殊按钮 --- *//*
+   .tab-btn                 选项卡，外观特殊
+   .recent-delete-btn       绝对定位的小图标按钮
+   .search-trigger-btn      固定高度 32px 的工具按钮
+   .toc-drawer-detail-btn   固定高度 28px 的工具按钮
+   .btn                     由 --btn-* 令牌驱动，作为体系基准
+*//* --- 4. 特殊按钮：只统一“行为”，不改外观 --- *//* 这些按钮尺寸/形状是个案设计（选项卡、图标按钮、固定尺寸工具按钮），
+   这里只补 cursor / 点击高亮 / 盒模型，不动 padding、border、字号。 */.btn,
+.tab-btn,
+.recent-delete-btn,
+.toc-drawer-detail-btn {
+    cursor: pointer;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}/* 折叠箭头（Lucide chevron）：font-size 对 SVG 无效，显式给尺寸。
+   .collapsed 时父级仍用 transform: rotate(-90deg) 做折叠动画，行为不变。 */.expand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}.expand-icon .ic {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}

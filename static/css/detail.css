@@ -1,0 +1,828 @@
+/* ===== 全局颜色变量 ===== */:root {
+    /* 基础绿色系（主色调） */
+    --color-green-primary: #728B47;
+    --color-green-dark: #4B6D0F;
+    --color-green-deeper: #5a8f4c;
+    --color-green-deepest: #4a6a3a;
+    --color-green-dark-bg: #3a4d3a;
+    --color-green-darkest-bg: #2a3a2a;
+    --color-green-darkest-bg-2: #1e2a1e;
+    --color-green-darkest-bg-3: #152015;
+
+    /* 浅绿/米绿色系（背景/卡片） */
+    --color-green-light: #E0E8D0;
+    --color-green-lighter: #F0F3EA;
+    --color-green-border: #537c07;
+
+    /* 文字/中性色 */
+    --detail-text-primary: #2d3748;
+    --detail-text-secondary: #1a202c;
+    --color-text-light: #cbd5e1;
+    --color-text-placeholder: #BDC8A8;
+    --color-white: #ffffff;
+    --color-black: #000000;
+
+    /* 🔥 新增：高亮颜色（与 reader.css 保持一致） */
+
+    /* 阴影色 */
+    --shadow-dark: rgba(0, 0, 0, 0.1);
+    --shadow-darker: rgba(0, 0, 0, 0.2);
+    --shadow-deep: rgba(0, 0, 0, 0.3);
+
+    /* 交互状态 */
+    --detail-border-primary: #ccd8bc;
+}/* 详情页顶部标题 */.header-main h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    letter-spacing: 0.02em;
+}/* 详情卡片 - 移除固定高度，让内容自然撑开 */.detail-card {
+    background: var(--color-green-light);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 25px -5px var(--shadow-dark);
+    border: 1px solid var(--color-green-border);
+}/* 章节树形结构 - 移除最大高度，让所有章节都显示 */.chapters-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 10px;
+}/* 如果还想保留一些视觉分隔，可以添加这个 */.chapters-tree {
+    max-height: none;
+    /* 明确取消高度限制 */
+    overflow-y: visible;
+    /* 取消内部滚动 */
+}.card-title {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--detail-text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--color-green-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+}.meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px 20px;
+    align-items: center;
+    margin: 15px 0;
+}.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.95em;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+/* 详情页 meta 胶囊里的作者链接：继承胶囊文字颜色，用虚线下划线示意可点。
+   不套用列表页的 .author-link（那边是深色文字，放在玻璃拟态胶囊上看不清）。 */
+.meta-author-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dashed currentColor;
+    opacity: 0.92;
+    transition: opacity 0.2s;
+}
+.meta-author-link:hover {
+    opacity: 1;
+    border-bottom-style: solid;
+}
+/* 马甲：略淡 + 小一号字，看得出从属关系 */
+.meta-author-link.author-alias-link {
+    opacity: 0.72;
+    font-size: 0.92em;
+}
+.meta-author-link.author-alias-link:hover {
+    opacity: 1;
+}
+.meta-author-link + .author-sep {
+    opacity: 0.5;
+    margin: 0 1px;
+}
+.tag-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--color-green-light);
+    color: var(--color-green-dark);
+    border-radius: 30px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--color-green-border);
+}.tag-badge:hover {
+    background: var(--color-green-border);
+    color: var(--color-white);
+    border-color: var(--color-green-border);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-green);
+}.intro-content {
+    background: var(--color-green-lighter);
+    padding: 25px;
+    border-radius: 15px;
+    white-space: pre-wrap;
+    font-size: 1.05em;
+    color: var(--detail-text-secondary);
+    line-height: 1.8;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--color-green-border);
+    /* 字体跟随用户配置的正文字体：由 novel_detail.html 的 head_extra 防闪烁脚本
+       注入 .intro-content { font-family: ... !important }；未配置时继承 body
+       系统栈（style.css）。这里不再写死任何字体——安卓无 KaiTi/STKaiti，
+       写死楷体栈只会回退到设备默认 serif，详见 2026-10-19 方案 A。 */
+}.chapter-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--detail-text-primary);
+    border-left: 4px solid transparent;
+}.chapter-item:hover {
+    background: var(--color-white);
+    transform: translateX(3px);
+}
+/* ===== 章节层级：一级 / 二级 / 三级视觉区分 =====
+   这组规则在 NAS 版重构中丢失，导致三级目录渲染完全一致。 */
+/* ===== 章节层级图标 =====
+   统一使用 Lucide sprite（/static/icons.svg），由模板注入：
+     一级 book-open / 二级 chevron-right / 三级 list
+   颜色走 currentColor，明暗主题自动适配。 */
+.chapter-lv-icon {
+    flex-shrink: 0;
+    opacity: 0.85;
+    margin-right: 2px;
+}
+.chapter-level1 {
+    background: var(--color-green-lighter);
+    border-left-color: var(--color-primary-dark);
+    font-weight: 700;
+    font-size: 1.05em;
+    margin-top: 10px;
+    letter-spacing: 0.02em;
+}
+.chapter-level1:first-child {
+    margin-top: 0;
+}
+.chapter-level1 .chapter-lv-icon {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.4;
+    color: var(--color-primary-dark);
+    opacity: 1;
+}
+.chapter-level2 {
+    background: var(--color-green-light);
+    border-left-color: var(--color-primary-light);
+    margin-left: 28px;
+    font-weight: 500;
+}
+.chapter-level2 .chapter-lv-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--color-primary-dark);
+    opacity: 0.7;
+}
+.chapter-level3 {
+    background: transparent;
+    border-left-color: var(--color-border-primary);
+    margin-left: 56px;
+    font-weight: 400;
+    font-size: 0.95em;
+    color: var(--detail-text-secondary);
+}
+.chapter-level3 .chapter-lv-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--color-text-light-gray);
+    opacity: 0.75;
+}
+.chapter-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}.chapter-line {
+    font-size: 0.8em;
+    color: var(--color-green-border);
+    background: var(--color-green-light);
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-left: 10px;
+    white-space: nowrap;
+}/* ===== 空章节（只有标题没有正文）=====
+   渲染为 <span> 而非 <a>：不可点击。
+   视觉上保持和普通章节完全一致，只在右侧加一个小标记，
+   避免虚线与划线破坏目录的整体统一感。 */.chapter-item.is-empty {
+    cursor: default;
+}.chapter-item.is-empty:hover {
+    /* 覆盖 .chapter-item:hover 的背景与位移动画，保持静止 */
+    background: var(--color-green-lighter);
+    transform: none;
+}/* 空章节的小标记（复用 .chapter-line 的胶囊样式，换成中性色） */.chapter-item.is-empty .chapter-line {
+    color: var(--color-text-placeholder);
+    background: var(--color-green-lighter);
+    border: 1px solid var(--color-green-border);
+}.no-chapters {
+    text-align: center;
+    padding: 40px;
+    color: var(--color-text-placeholder);
+    background: var(--color-green-lighter);
+    border-radius: 15px;
+    border: 2px dashed var(--color-green-border);
+}.no-chapters p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}.action-btn {
+    background: var(--color-green-deepest);
+    color: var(--color-white);
+
+
+
+
+
+
+
+    font-weight: 500;
+
+
+
+}/* 编辑器打开按钮悬停 */.action-btn:hover {
+    background: var(--color-green-dark);
+    /* 变亮/变深 */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -5px var(--color-green-primary);
+}/* 从头阅读按钮 - 基础背景 */.action-btn.secondary {
+    background: var(--color-green-primary);
+}/* 从头阅读按钮悬停 */.action-btn.secondary:hover {
+    background: var(--color-green-deepest);
+    /* 变深 */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -5px var(--color-green-deepest);
+}/* 继续阅读按钮 - 强调色，作为主操作 */.action-btn.continue-btn {
+    background: var(--color-green-dark);
+}.action-btn.continue-btn:hover {
+    background: var(--color-green-deepest);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -5px var(--color-green-deepest);
+}/* 「继续阅读」按钮里的章节名 */.action-btn .continue-chapter {
+    font-weight: 400;
+    opacity: 0.9;
+}/* 已读标记按钮：未读为浅色描边，已读为实心绿 */.action-btn.mark-read-btn {
+    background: transparent;
+    color: var(--color-green-deepest);
+    border: 1px solid var(--color-green-primary);
+}.action-btn.mark-read-btn:hover {
+    background: var(--color-green-primary);
+    color: var(--color-white);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -5px var(--color-green-primary);
+}/* 已读完状态：实心 + 稍微降一点饱和度，避免和主操作抢眼 */.action-btn.mark-read-btn.is-finished {
+    background: var(--color-green-dark);
+    color: var(--color-white);
+    border-color: var(--color-green-dark);
+}.action-btn.mark-read-btn.is-finished:hover {
+    background: var(--color-green-deepest);
+    border-color: var(--color-green-deepest);
+}.action-btn.mark-read-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}body.dark-mode .action-btn.mark-read-btn {
+    color: var(--color-text-light);
+    border-color: var(--color-green-primary);
+}body.dark-mode .action-btn.mark-read-btn.is-finished {
+    color: var(--color-white);
+}@media (max-width: 768px) {.meta-info {
+        gap: 8px;
+    }.header-main h1 {
+        font-size: 1.8rem;
+    }.detail-card {
+        padding: 10px;
+    }.chapter-item {
+        padding: 5px 10px;
+        font-size: 0.85rem;
+    }/* 隐藏统计信息（一级/二级/三级统计） */.detail-card .stats {
+        display: none !important;
+    }/* 调整章节列表高度 */.chapters-tree {
+        max-height: none;
+        min-height: auto;
+    }/* 章节项内边距调小 */.chapter-item {
+        padding: 8px 8px;
+    }/* 行号稍微调小 */.chapter-line {
+        font-size: 0.6rem;
+        padding: 1px 5px;
+    }
+    /* 平板收窄层级缩进 */
+    .chapter-level2 {
+        margin-left: 18px;
+    }
+    .chapter-level3 {
+        margin-left: 36px;
+        font-size: 0.9rem;
+    }}@media (max-width: 480px) {.chapter-item {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+    /* 移动端收窄层级缩进，避免右侧行号被挤出 */
+    .chapter-level2 {
+        margin-left: 12px;
+    }
+    .chapter-level3 {
+        margin-left: 24px;
+        font-size: 0.85rem;
+    }}@media (max-width: 768px) {/* 详情页操作按钮（继续阅读 / 从头阅读）
+       原值 padding:10px + font-size:1.2rem(≈19.2px) 比桌面端(8px 20px / 14px)还大，
+       手机上显得很笨重；这里收到 0.85rem(≈13.6px)，整体约 31px 高。 */.action-btn {
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+    }/* 移动端把「继续阅读」的章节名收窄，避免按钮过宽换行 */.action-btn .continue-chapter {
+        font-size: 0.8em;
+        opacity: 0.9;
+        max-width: 8em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: bottom;
+    }}/* 基础样式（适用于所有设备） */.meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px 20px;
+    align-items: center;
+    margin: 15px 0;
+}/* 移动端优化：胶囊 2×2 排布，超长文字省略 */@media (max-width: 768px) {.meta-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 10px;
+        align-items: center;
+    }.meta-item {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        padding: 7px 14px;
+        font-size: 0.85rem;
+    }.meta-item svg {
+        vertical-align: middle;
+        margin-right: 5px;
+    }.meta-item.meta-tags {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        white-space: normal;
+        overflow: visible;
+    }.tag-badge {
+        padding: 3px 10px;
+        font-size: 0.85rem;
+    }}/* 小屏手机优化 */@media (max-width: 480px) {.meta-info {
+        gap: 6px 8px;
+    }.meta-item {
+        padding: 6px 12px;
+        font-size: 0.82rem;
+    }.meta-item.meta-tags {
+        padding: 6px 12px;
+    }.tag-badge {
+        padding: 3px 8px;
+    }}/* 浅色模式统计信息样式（默认） */.stats {
+    background: var(--color-green-lighter);
+    border: 1px solid var(--color-green-border);
+    color: var(--color-green-dark);
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}.stats span {
+    color: var(--detail-text-primary);
+}/* ==================== 详情页深浅色主题 ==================== *//* 深色主题 - 通过 body.dark-mode 类触发 */body.dark-mode .detail-card {
+    background: var(--color-green-darkest-bg);
+    border: 1px solid var(--color-green-dark-bg);
+    box-shadow: 0 10px 25px -5px var(--shadow-deep);
+}body.dark-mode .card-title {
+    color: var(--color-text-light);
+    border-bottom-color: var(--color-green-dark-bg);
+}body.dark-mode .meta-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-green-dark-bg);
+    color: var(--color-text-light);
+}body.dark-mode .tag-badge {
+    background: var(--color-green-dark-bg);
+    color: var(--color-text-light);
+    border-color: var(--color-green-deepest);
+}body.dark-mode .tag-badge:hover {
+    background: var(--color-green-deeper);
+    color: var(--color-white);
+    border-color: var(--color-green-deeper);
+}body.dark-mode .intro-content {
+    background: var(--color-green-darkest-bg-2);
+    color: var(--color-text-light);
+    border-color: var(--color-green-dark-bg);
+}body.dark-mode .chapter-item {
+    color: var(--color-text-light);
+}body.dark-mode .chapter-item:hover {
+    background: var(--color-green-dark-bg);
+}
+body.dark-mode .chapter-level1 {
+    background: var(--color-green-darkest-bg);
+    border-left-color: var(--color-primary-light);
+    color: var(--color-text-light);
+}
+body.dark-mode .chapter-level2 {
+    background: var(--color-green-darkest-bg-2);
+    border-left-color: var(--color-primary-dark);
+    color: var(--color-text-light);
+}
+body.dark-mode .chapter-level3 {
+    background: transparent;
+    border-left-color: var(--color-green-dark-bg);
+    color: var(--color-text-light);
+}
+body.dark-mode .chapter-level1 .chapter-lv-icon {
+    color: var(--color-primary-light);
+}
+body.dark-mode .chapter-level2 .chapter-lv-icon {
+    color: var(--color-primary-light);
+    opacity: 0.85;
+}
+body.dark-mode .chapter-level3 .chapter-lv-icon {
+    color: var(--color-text-light);
+    opacity: 0.6;
+}body.dark-mode .chapter-line {
+    background: var(--color-green-dark-bg);
+    color: var(--color-text-light);
+}/* 空章节在深色模式下的小标记 */body.dark-mode .chapter-item.is-empty:hover {
+    background: var(--color-green-darkest-bg);
+}body.dark-mode .chapter-item.is-empty .chapter-line {
+    background: var(--color-green-darkest-bg);
+    color: var(--color-text-light);
+    border: 1px solid var(--color-green-dark-bg);
+}body.dark-mode .no-chapters {
+    background: var(--color-green-darkest-bg-2);
+    border-color: var(--color-green-dark-bg);
+    color: var(--color-text-light);
+}body.dark-mode .action-btn {
+    background: var(--color-green-deeper);
+    color: var(--color-white);
+}body.dark-mode .action-btn:hover {
+    background: var(--color-green-deepest);
+    box-shadow: 0 10px 15px -5px var(--color-green-deeper);
+}/* 优化后的深色模式“从头阅读”按钮样式 */body.dark-mode .action-btn.secondary {
+    background: var(--color-green-dark-bg);
+    /* 使用更深的背景色，替代之前的亮色 */
+    color: var(--color-text-light);
+    border: 1px solid var(--color-green-deepest);
+    box-shadow: 0 2px 5px var(--shadow-deep);
+}body.dark-mode .action-btn.secondary:hover {
+    background: var(--color-green-deeper);
+    /* 悬停时略微提亮，但仍保持深色基调 */
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -5px var(--color-green-deeper);
+}/* 深色主题下的滚动条样式 */body.dark-mode .intro-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}body.dark-mode .intro-content::-webkit-scrollbar-track {
+    background: var(--color-green-darkest-bg-2);
+    border-radius: 4px;
+}body.dark-mode .intro-content::-webkit-scrollbar-thumb {
+    background: var(--color-green-dark-bg);
+    border-radius: 4px;
+}body.dark-mode .intro-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-green-deeper);
+}/* 完整版深色主题统计信息样式 */body.dark-mode .stats {
+    background: var(--color-green-darkest-bg-2);
+    border: 1px solid var(--color-green-dark-bg);
+    color: var(--color-text-light);
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}body.dark-mode .stats span {
+    color: var(--color-text-light);
+    background: transparent;
+}/* 移动端深色主题适配 *//* 简介中的图片样式 - 缩略图模式 */.intro-content .local-image-figure,
+.intro-content .image-wrapper {
+    max-width: 600px;
+    display: inline-block;
+    margin: 5px 8px 5px 0;
+    cursor: pointer;
+    vertical-align: middle;
+}.intro-content .local-image-figure img,
+.intro-content .image-wrapper img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px var(--shadow-dark);
+}/* 图片说明文字（简介中隐藏） */.intro-content .local-image-caption {
+    font-size: 10px;
+    color: var(--color-text-placeholder);
+    text-align: center;
+    margin-top: 2px;
+}/* 悬停效果 */.intro-content .local-image-figure:hover,
+.intro-content .image-wrapper:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}/* 表情样式 */.intro-content {
+    line-height: 1.7;
+}.intro-content .custom-emoji {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+    display: inline-block;
+}/* 高亮样式 */.intro-content .highlight-quote-double,
+.intro-content .highlight-quote-single {
+    color: #e53e3e;
+    /* 红色警告色，保留原色 */
+    font-weight: 500;
+}.intro-content .highlight-bracket,
+.intro-content .highlight-square-bracket {
+    color: var(--color-green-deeper);
+    /* 使用已有绿色 */
+    font-weight: 500;
+}.intro-content .highlight-book {
+    color: #3182ce;
+    /* 蓝色保留原色，语义突出 */
+    font-weight: 500;
+}/* 简介中的链接 - 使用全局变量 */.intro-content a {
+    color: var(--color-green-deeper);
+    text-decoration: underline;
+    word-break: break-all;
+}.intro-content a:hover {
+    color: var(--color-green-dark);
+    text-decoration: none;
+}/* 深色模式 */body.dark-mode .intro-content a {
+    color: #63b3ed;
+}body.dark-mode .intro-content a:hover {
+    color: #90cdf4;
+}/* ===== 深色模式适配 ===== */body.dark-mode .intro-content .local-image-figure img,
+body.dark-mode .intro-content .image-wrapper img {
+    box-shadow: 0 1px 3px var(--shadow-deep);
+}body.dark-mode .intro-content .highlight-quote-double,
+body.dark-mode .intro-content .highlight-quote-single {
+    color: #f56565;
+    /* 深色模式下亮红 */
+}body.dark-mode .intro-content .highlight-bracket,
+body.dark-mode .intro-content .highlight-square-bracket {
+    color: #68d391;
+    /* 深色模式下亮绿 */
+}body.dark-mode .intro-content .highlight-book {
+    color: #63b3ed;
+    /* 深色模式下亮蓝 */
+}body.dark-mode .intro-content a {
+    color: #63b3ed;
+}body.dark-mode .intro-content a:hover {
+    color: #90cdf4;
+}body.dark-mode .intro-content .local-image-caption {
+    color: var(--color-text-light);
+}/* 占位符 - 详情页 */.intro-content .image-fallback-placeholder {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    background: var(--color-green-lighter);
+    border: 2px dashed var(--color-green-border);
+    border-radius: 12px;
+    min-height: 80px;
+    width: 100%;
+    max-width: 600px;
+    gap: 6px;
+    transition: all 0.3s ease;
+    margin: 0 auto;
+}.intro-content .image-fallback-placeholder:hover {
+    background: var(--color-green-light);
+    border-color: var(--color-green-dark);
+}.intro-content .fallback-icon {
+    font-size: 2rem;
+    opacity: 0.6;
+}.intro-content .fallback-text {
+    font-size: 0.9rem;
+    color: var(--detail-text-secondary);
+    font-weight: 500;
+}.intro-content .fallback-link {
+    margin-top: 2px;
+    padding: 4px 14px;
+    background: var(--color-green-deepest);
+    color: var(--color-white);
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}.intro-content .fallback-link:hover {
+    background: var(--color-green-dark);
+    color: var(--color-white);
+    text-decoration: none;
+}/* 详情页行内图片 */.intro-content .inline-image {
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-dark);
+    cursor: zoom-in;
+    transition: all 0.3s ease;
+    object-fit: contain;
+    border: 1px solid var(--color-green-border);
+}.intro-content .inline-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px var(--shadow-green);
+}/* 图片加载中骨架屏（详情页） */.intro-content .inline-image:not(.loaded) {
+    min-width: 100px;
+    min-height: 50px;
+    background: linear-gradient(90deg, var(--color-green-lighter) 25%,
+            var(--color-green-border) 50%, var(--color-green-lighter) 75%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+}/* ===== 深色模式适配（详情页） ===== */body.dark-mode .intro-content .image-fallback-placeholder {
+    background: var(--color-green-darkest-bg-2);
+    border-color: var(--color-green-dark-bg);
+}body.dark-mode .intro-content .image-fallback-placeholder:hover {
+    background: var(--color-green-darkest-bg);
+    border-color: var(--color-green-deeper);
+}body.dark-mode .intro-content .fallback-text {
+    color: var(--color-text-light);
+}body.dark-mode .intro-content .fallback-link {
+    background: var(--color-green-deeper);
+}body.dark-mode .intro-content .fallback-link:hover {
+    background: var(--color-green-deepest);
+}body.dark-mode .intro-content .inline-image {
+    border-color: var(--color-green-dark-bg);
+    box-shadow: 0 2px 8px var(--shadow-deep);
+}body.dark-mode .intro-content .inline-image:not(.loaded) {
+    background: linear-gradient(90deg, var(--color-green-darkest-bg-2) 25%,
+            var(--color-green-dark-bg) 50%, var(--color-green-darkest-bg-2) 75%);
+}/* 图片包装器 - 详情页（深色模式） */body.dark-mode .intro-content .image-wrapper {
+    background: transparent;
+}/* ===== 移动端适配 ===== */@media (max-width: 768px) {.intro-content .image-fallback-placeholder {
+        padding: 16px 12px;
+        min-height: 60px;
+        border-radius: 8px;
+    }.intro-content .fallback-icon {
+        font-size: 1.5rem;
+    }.intro-content .fallback-text {
+        font-size: 0.8rem;
+    }.intro-content .fallback-link {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+    }.intro-content .inline-image {
+        max-height: 200px;
+    }}@media (max-width: 480px) {.intro-content .image-fallback-placeholder {
+        padding: 12px 10px;
+        min-height: 50px;
+    }.intro-content .fallback-icon {
+        font-size: 1.2rem;
+    }.intro-content .fallback-text {
+        font-size: 0.7rem;
+    }.intro-content .inline-image {
+        max-height: 150px;
+    }}/* 加载动画 */@keyframes loading-shimmer {0% {
+        background-position: 200% 0;
+    }100% {
+        background-position: -200% 0;
+    }}/* ============================================
+   🔗 美化链接样式（修复版）
+   ============================================ */.pretty-link {
+    display: inline;
+    /* 改为 inline，避免块级行为 */
+    padding: 1px 6px 1px 2px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--detail-border-primary);
+    border-radius: 12px;
+    color: var(--detail-text-secondary);
+    text-decoration: none;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    white-space: nowrap;
+    vertical-align: middle;
+    line-height: 1.4;
+    /* 关键：消除内联元素间的空白 */
+    margin: 0 -2px 0 -1px;
+}/* 使用伪元素替代 flex 布局 */.pretty-link::before {
+    content: "🔗";
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-right: 2px;
+}/* 移除外层 span 的干扰 */.pretty-link:hover {
+    background: var(--color-btn-active);
+    color: var(--color-btn-text-active);
+    border-color: var(--color-btn-active);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow-green);
+    text-decoration: none;
+}/* 限制链接文本宽度 *//* 深色模式 */body.dark-mode .pretty-link {
+    background: var(--color-bg-tertiary);
+    border-color: var(--detail-border-primary);
+    color: var(--detail-text-secondary);
+}body.dark-mode .pretty-link:hover {
+    background: var(--color-btn-active);
+    color: var(--color-btn-text-active);
+    border-color: var(--color-btn-active);
+}/* 移动端适配 */@media (max-width: 768px) {.pretty-link {
+        font-size: 0.75em;
+        padding: 0 4px 0 2px;
+        border-radius: 10px;
+    }}/* 当链接单独占一行时 */.content-line:has(.pretty-link:only-child) .pretty-link {
+    font-size: 0.9em;
+    padding: 4px 10px 4px 6px;
+}/* ===== 详情页分隔符样式 ===== */.separator {
+    text-indent: 0;
+    text-align: center;
+    margin: 35px 0;
+    position: relative;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    display: block;
+}/* 点类 - dot */.separator[data-type="dot"] {
+    color: var(--color-highlight-quote, #c2412c);
+    font-size: 1.2rem;
+    letter-spacing: 8px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}.separator[data-type="dot"]:hover {
+    opacity: 1;
+    letter-spacing: 12px;
+}/* 星类 - star */.separator[data-type="star"] {
+    color: var(--color-highlight-quote, #c2412c);
+    font-size: 1.3rem;
+    letter-spacing: 6px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}.separator[data-type="star"]:hover {
+    opacity: 1;
+    letter-spacing: 10px;
+}/* 线类 - line */.separator[data-type="line"] {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-text-quaternary, #4b5563),
+            var(--color-highlight-quote, #c2412c), var(--color-text-quaternary, #4b5563), transparent);
+    margin: 40px 0;
+}.separator[data-type="line"]::before {
+    content: '❖';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-bg-primary, #ffffff);
+    padding: 0 15px;
+    color: var(--color-highlight-quote, #c2412c);
+    font-size: 0.9rem;
+}/* 花类 - flower（其他装饰符号） */.separator[data-type="flower"] {
+    color: var(--color-highlight-quote, #c2412c);
+    font-size: 1.1rem;
+    letter-spacing: 8px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}.separator[data-type="flower"]:hover {
+    opacity: 1;
+    letter-spacing: 12px;
+}/* 深色模式适配 */body.dark-mode .separator[data-type="dot"],
+body.dark-mode .separator[data-type="star"],
+body.dark-mode .separator[data-type="flower"] {
+    text-shadow: 0 0 3px rgba(106, 154, 74, 0.2);
+}body.dark-mode .separator[data-type="line"]::before {
+    background: var(--color-bg-primary, #131a12);
+}body.dark-mode .separator[data-type="line"] {
+    background: linear-gradient(90deg, transparent, var(--color-text-quaternary, #9ca3af),
+            var(--color-highlight-quote, #ff8a6f), var(--color-text-quaternary, #9ca3af), transparent);
+}/* ===== 正文预览样式 ===== */.preview-content {
+    color: var(--detail-text-primary);
+    font-style: normal;
+    opacity: 0.9;
+}body.dark-mode .preview-content {
+    color: var(--color-text-light);
+}.preview-hint {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--color-green-border);
+    font-size: 0.85em;
+    color: var(--color-text-placeholder);
+    text-align: center;
+}body.dark-mode .preview-hint {
+    color: var(--color-text-light);
+    border-top-color: var(--color-green-dark-bg);
+    opacity: 0.6;
+}/* 「返回」按钮琥珀橙样式已统一迁移至 style.css(.btn-nav.btn-back-home)，详情/配置/标签页共用，此处不再重复定义 */}/* 大号占位：font-size 对 SVG 无效，显式给尺寸并保证在 flex 内居中 */.fallback-icon .ic {
+    width: 32px;
+    height: 32px;
+    vertical-align: middle;
+}

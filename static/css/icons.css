@@ -1,0 +1,45 @@
+/* ============================================
+   🎨 图标系统（Lucide sprite）
+   ------------------------------------------------------------
+   来源: https://lucide.dev  (ISC License)
+   Sprite: /static/icons.svg  （由 static/icons/*.svg 合并生成）
+
+   用法:
+     <svg class="ic"><use href="/static/icons.svg#ic-search"></use></svg>
+
+   尺寸/颜色都用 CSS 控制：
+     class="ic"         16px（正文内联）
+     class="ic ic--sm"  14px
+     class="ic ic--lg"  20px
+     class="ic ic--xl"  24px
+   颜色跟随 currentColor，自动适配深色模式与阅读页背景主题。
+   ============================================ */.ic {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 与文字基线对齐。改用 vertical-align: middle 之外的方式都不稳：
+     -0.16em 在 flex 容器里会把图标往下推，导致「图标偏下」。
+     这里用 text-bottom 的微调值，配合行内文字的中文重心。 */
+  vertical-align: -0.125em;
+  pointer-events: none;      /* 图标本身不响应点击，交给父元素 */
+}/* 在 flex 容器里，vertical-align 不生效，改用 align-items 控制；
+   这里确保图标不会因为基线产生额外下移 */.ic-btn .ic,
+.card-icon .ic,
+.ic-text .ic,
+.tab-btn .ic,
+h1 > .ic,
+h2 > .ic,
+h3 > .ic,
+h4 > .ic {
+  vertical-align: middle;
+}.ic--xs { width: 12px; height: 12px; }.ic--sm { width: 14px; height: 14px; }.ic--lg { width: 20px; height: 20px; }.ic--xl { width: 24px; height: 24px; }/* 粗一点的描边，用在大尺寸上避免显得单薄 *//* 图标 + 文字的组合：给中间留出间距 */.ic-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}/* 纯图标按钮：居中且可点击 */.ic-btn .ic { pointer-events: none; }/* 语义色（可选，用在状态提示上） */.ic--danger { color: var(--color-danger, #dc3545); }/* 深色模式下保持可读 */body.dark-mode .ic { stroke-width: 2; }

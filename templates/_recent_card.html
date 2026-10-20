@@ -1,0 +1,54 @@
+{% from "_icons.html" import icon %}
+{# 最近阅读卡片：服务端首屏渲染用。
+   注意：static/js/main.js 里有对应的客户端模板 buildRecentCardHTML()，
+   改这里的结构时两边要一起改，否则「加载更多」出来的卡片样式会不一致。 #}
+<div class="recent-card-wrapper" data-work-id="{{ record.work_id }}"
+     data-file-path="{{ record.file_path }}"
+     data-title="{{ record.title }}"
+     data-author="{{ record.author_display }}"
+     data-chapter="{{ record.chapter_display }}"
+     data-progress="{% if record.progress_percent is not none %}{{ record.progress_percent }}{% endif %}"
+     data-progress-known="{{ '1' if record.progress_known else '0' }}"
+     data-finished="{{ '1' if record.finished else '0' }}">
+    <a href="{{ url_for('continue_reading', file_path=(record.file_path or '').lstrip('/')) }}" class="recent-card">
+        <div class="recent-card-head">
+            <div class="recent-card-title" title="{{ record.title }}">{{ record.title }}</div>
+        </div>
+
+        <div class="recent-card-info">
+            {# 作者为 [不详]/未知 等占位符时不渲染，把槽位让给有用信息。
+               后端已过滤成 author_display，这里再兜一层，防止上下文缺失时泄漏原始占位符。 #}
+            {% set _author = record.author_display if record.author_display is defined and record.author_display else record.author %}
+            {% if _author and _author not in ['[不详]', '不详', '未知', '未知作者', '无', 'None', 'none'] %}
+            <span class="recent-author" title="{{ _author }}">{{ icon('pencil', 'sm') }} {{ _author }}</span>
+            {% endif %}
+            <span class="recent-chapter" title="{{ record.chapter_display }}">{{ icon('book-open', 'sm') }} {{ record.chapter_display }}</span>
+        </div>
+
+        {# 进度条：老记录没有章节数据时显示为「进度待更新」而不是假装 0% #}
+        <div class="recent-progress{% if not record.progress_known %} progress-unknown{% endif %}{% if record.finished %} progress-finished{% endif %}">
+            <div class="recent-progress-track">
+                <div class="recent-progress-fill"
+                     style="width: {{ record.progress_percent if record.progress_percent is not none else 0 }}%"></div>
+            </div>
+            <span class="recent-progress-text">{% if record.finished %}{{ icon('circle-check', 'sm') }} {% endif %}{{ record.progress_text }}</span>
+        </div>
+
+        <div class="recent-card-foot">
+            <span class="recent-card-time">{{ icon('clock', 'xs') }} {{ record.time_display }}</span>
+            {% if record.missing_file %}
+            <span class="recent-missing-badge" title="文件已不在，可能被移动或删除">{{ icon('circle-x', 'sm') }} 文件丢失</span>
+            {% endif %}
+        </div>
+    </a>
+
+    <div class="recent-card-actions">
+        {# url_for 自身会处理 path 参数的编码，不要再用 |urlencode，否则二次编码。
+           这里只放图标：按钮是 24x24 圆形，带文字会被裁掉（与 main.js 客户端模板保持一致）。 #}
+        <a href="{{ url_for('read_chapter', file_path=(record.file_path or '').lstrip('/'), line_number=1) }}"
+           class="recent-restart-btn" title="从头开始读" aria-label="从头开始读">{{ icon('rotate-ccw', 'sm') }}</a>
+        <button type="button" class="recent-delete-btn" onclick="deleteSingleRecord(this)"
+                data-work-id="{{ record.work_id }}" data-file-path="{{ record.file_path }}"
+                title="删除这条记录" aria-label="删除这条记录">{{ icon('x', 'sm') }}</button>
+    </div>
+</div>

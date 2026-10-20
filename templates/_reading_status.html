@@ -1,0 +1,34 @@
+{% from "_icons.html" import icon %}
+{# 阅读状态标记（主页 PC 表格 + 移动端卡片共用）
+
+   两种状态：
+     reading  —— 有阅读记录但未标记读完。纯展示，不可点击（自动推导出来的）
+     finished —— 已读完。可点击取消
+
+   未读过（reading_status == 'none'）时显示一个「标记已读」按钮，
+   方便直接把书标成读完；点击会由后端创建一条最小记录。
+
+   依赖 novel 上下文里的：reading_status / record_finished / work_id / title
+#}
+{% set _status = novel.reading_status or 'none' %}
+{% if _status == 'finished' %}
+<button type="button" class="reading-status-btn is-finished"
+        data-work-id="{{ novel.work_id or '' }}"
+        data-file-path="{{ novel.file_path or '' }}"
+        data-title="{{ novel.title or '' }}"
+        data-author="{{ novel.author or '' }}"
+        data-finished="1"
+        onclick="toggleFinished(this)"
+        title="已标记为已读完，点击取消">{{ icon('circle-check', 'sm') }} 已读完</button>
+{% elif _status == 'reading' %}
+<span class="reading-status-chip is-reading" title="有阅读记录，尚未标记为已读完">{{ icon('book-open', 'sm') }} 阅读中</span>
+{% else %}
+<button type="button" class="reading-status-btn is-none"
+        data-work-id="{{ novel.work_id or '' }}"
+        data-file-path="{{ novel.file_path or '' }}"
+        data-title="{{ novel.title or '' }}"
+        data-author="{{ novel.author or '' }}"
+        data-finished="0"
+        onclick="toggleFinished(this)"
+        title="标记这本书为已读完">{{ icon('square-check', 'sm') }} 标记已读</button>
+{% endif %}
