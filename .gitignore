@@ -13,9 +13,8 @@ data/*
 static/fonts/
 # 头图背景来源网络，授权不明，仅排除这一类；图标与 svg 素材可公开
 static/images/header-bg-*.webp
-# 占位封面：目前是临时图（来源待确认），确认后换成自制设计稿再决定是否入库。
-# 不入库不影响功能 —— CSS 里做了降级，缺图时回退成渐变 + 书名首字。
-static/images/cover-placeholder.webp
+# 占位封面 static/images/cover-placeholder.webp 为 AI 生成图，无版权限制，正常入库。
+# CSS 仍保留降级（缺图回退渐变 + 书名首字），删掉这张图也不会破。
 # 表情包来源网络，授权不明
 static/emojis/
 
