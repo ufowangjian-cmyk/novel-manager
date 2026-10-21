@@ -3918,7 +3918,12 @@ def _scan_core(full_scan=False):
     finally:
         # 扫描后温和清理：保留 50 本，避免用户立刻点进详情又要重解析
         aggressive_cache_cleanup(keep_tag=200, keep_chapter=50, keep_image=200)
+        # line_cache 存的是扫描期解析出的正文行，通常是大头；
+        # 不清的话扫描完 RSS 会长期停在峰值，看起来像内存泄漏
+        line_cache.clear()
         gc.collect()
+        # glibc 默认不把已 free 的内存还给 OS，必须显式 trim，容器里 RSS 才会降
+        trim_memory()
 
 #==================== 定时扫描循环 =====================
 def scheduled_scan_loop():
