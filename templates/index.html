@@ -385,7 +385,7 @@
 
                     <!-- 缓存概览 -->
                     <div class="cache-overview">
-                        <div class="cache-overview-title">📊 当前缓存概览</div>
+                        <div class="cache-overview-title">{{ icon('database', 'sm') }} 当前缓存概览</div>
                         <div class="stat-grid">
                             <div class="stat-card">
                                 <div class="stat-value">{{ cache_stats.total_novels }}</div>
@@ -425,7 +425,7 @@
                     <!-- 上次扫描 -->
                     <div class="last-scan">
                         {% if scan_stats and scan_stats.last_scan_time %}
-                        <div class="last-scan-title">🕒 上次扫描</div>
+                        <div class="last-scan-title">{{ icon('clock', 'sm') }} 上次扫描</div>
                         <div class="last-scan-detail">
                             <span
                                 class="last-scan-badge {{ 'badge-full' if scan_stats.last_scan_type == 'full' else 'badge-inc' }}">
