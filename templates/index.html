@@ -424,6 +424,18 @@
 
                     <!-- 上次扫描 -->
                     <div class="last-scan">
+                        {% if scan_stats and scan_stats.last_scan_interrupted %}
+                        <div class="scan-warn">
+                            {{ icon('alert-triangle', 'sm') }}
+                            <span>
+                                上次{{ '全量扫描' if scan_stats.last_scan_interrupted.type == 'full' else '增量扫描'
+                                }}未完成{% if scan_stats.last_scan_interrupted.start_time %}（开始于 {{
+                                scan_stats.last_scan_interrupted.start_time | timestamp_to_date }}）{% endif %}{% if
+                                scan_stats.last_scan_interrupted.reason %}：{{ scan_stats.last_scan_interrupted.reason }}{%
+                                else %}，可能是扫描途中程序重启，建议重新执行一次{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
                         {% if scan_stats and scan_stats.last_scan_time %}
                         <div class="last-scan-title">{{ icon('clock', 'sm') }} 上次扫描</div>
                         <div class="last-scan-detail">
@@ -442,6 +454,15 @@
                                 }}</b>
                         </div>
                         {% endif %}
+                        <div class="last-scan-full">
+                            {% if scan_stats.last_full_scan_time %}
+                            上次全量完成：{{ scan_stats.last_full_scan_time | timestamp_to_date }}
+                            {% elif scan_stats.last_scan_type == 'full' %}
+                            上次全量完成：{{ scan_stats.last_scan_time | timestamp_to_date }}
+                            {% else %}
+                            上次全量完成：无记录
+                            {% endif %}
+                        </div>
                         {% else %}
                         <div class="last-scan-empty">尚未进行过扫描</div>
                         {% endif %}

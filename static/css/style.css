@@ -2084,6 +2084,34 @@ body.dark-mode .random-intro-label {
     font-style: italic;
 }
 
+/* 上次扫描未完成（进程在扫描途中重启 / 扫描出错）的警示条 */
+.scan-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--color-alert);
+    border-radius: 8px;
+    background: var(--color-bg-light);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--color-alert-dark);
+}
+
+.scan-warn .ic {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--color-alert);
+}
+
+/* 「上次全量完成」一行：增量扫描时也告诉用户多久没做全量了 */
+.last-scan-full {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--color-text-slate-pale);
+}
+
 /* 增量扫描按钮：醒目蓝，与「上次扫描」增量徽章(蓝)一致，便于和全量(绿)区分 */
 .scan-btn.scan-inc {
     background: linear-gradient(135deg, var(--color-accent-blue-light), var(--color-accent-blue));
