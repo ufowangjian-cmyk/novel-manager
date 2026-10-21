@@ -216,6 +216,7 @@ function checkScreenSizeAndDisplay() {
 // ===== 扫描进度 =====
 let scanning = false;
 let progressInterval = null;
+let displayedProgress = 0;   // 进度条已显示的百分比，只增不减
 
 function startScan(fullScan = false) {
     console.log('startScan 被调用, fullScan=', fullScan, 'scanning=', scanning);
@@ -237,6 +238,7 @@ function startScan(fullScan = false) {
 
     const progressFill = document.getElementById('progressFill');
     const progressMessage = document.getElementById('progressMessage');
+    displayedProgress = 0;
     if (progressFill) progressFill.style.width = '0%';
     if (progressMessage) progressMessage.textContent = '正在启动扫描...';
 
@@ -252,7 +254,7 @@ function startScan(fullScan = false) {
             console.log('扫描启动响应:', data);
             if (data.status === 'started' || data.status === 'already_scanning') {
                 if (progressInterval) clearInterval(progressInterval);
-                progressInterval = setInterval(checkProgress, 1000);
+                progressInterval = setInterval(checkProgress, 400);
             } else {
                 scanning = false;
                 if (scanBtn) scanBtn.disabled = false;
@@ -311,8 +313,9 @@ function updateProgressUI(data) {
     if (!progressFill) return;
 
     if (data.status === 'scanning') {
-        const percentage = data.percentage || 0;
-        progressFill.style.width = percentage + '%';
+        // 只增不减：不同阶段 total 会变化，避免百分比倒退造成视觉抖动
+        displayedProgress = Math.max(displayedProgress, data.percentage || 0);
+        progressFill.style.width = displayedProgress + '%';
         if (progressMessage) progressMessage.textContent = data.message || '正在扫描...';
         if (progressTime && data.elapsed !== undefined) {
             progressTime.textContent = `已用: ${formatTime(data.elapsed || 0)} | 剩余: ${formatTime(data.remaining || 0)}`;
