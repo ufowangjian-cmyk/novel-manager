@@ -119,13 +119,20 @@ def load_json_file(file_path, default=None):
     return default
 
 #===================== 通用 JSON 文件保存（原子写）=====================
-def save_json_file(file_path, data):
-    """通用 JSON 文件保存：先写临时文件再原子替换，避免半截文件"""
+def save_json_file(file_path, data, indent=2):
+    """通用 JSON 文件保存：先写临时文件再原子替换，避免半截文件。
+
+    indent=None 时用紧凑格式（无空格、无换行）——缓存这类大文件能省 40% 体积和一半写出时间，
+    配置文件仍用 indent=2 保持人类可读。
+    """
     tmp_path = f"{file_path}.tmp.{os.getpid()}.{threading.get_ident()}"
     try:
         with _write_lock:
             with open(tmp_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+                if indent is None:
+                    json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+                else:
+                    json.dump(data, f, ensure_ascii=False, indent=indent)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp_path, file_path)
@@ -1906,23 +1913,26 @@ def _set_media_tags(item, media_types):
 
     if result != current:
         item['tags'] = ','.join(result) if result else '无'
+        return True
+    return False
 
 
 def _refresh_media_tags(item, folder_path):
-    """按目录实际内容刷新 配图/视频/音频 标签"""
+    """按目录实际内容刷新 配图/视频/音频 标签，返回是否发生变化"""
     try:
-        _set_media_tags(item, scan_media_types(folder_path))
+        return _set_media_tags(item, scan_media_types(folder_path))
     except Exception as e:
         logger.warning(f"刷新媒体标签失败（已跳过）: {folder_path}: {e}")
+        return False
 
 
 def _strip_media_tags(item):
-    """配图目录已不存在时，移除三类媒体标签"""
+    """配图目录已不存在时，移除三类媒体标签，返回是否发生变化"""
     try:
         names = {'image': False, 'video': False, 'audio': False}
-        _set_media_tags(item, names)
+        return _set_media_tags(item, names)
     except Exception:
-        pass
+        return False
 
 
 def get_image_folder_for_novel(filename, _use_cache=True):
@@ -3523,7 +3533,8 @@ def save_cache():
             # 🔥 chapter_cache 不再持久化（运行时缓存）
         }
 
-        save_json_file(CACHE_FILE, cache_data)
+        # 缓存是机器读的，用紧凑格式：12MB → 约 7MB，写出时间减半
+        save_json_file(CACHE_FILE, cache_data, indent=None)
         print(f"✅ 已缓存 {len(novel_data)} 本小说")
     except Exception as e:
         print(f"❌ 缓存保存失败：{e}")
@@ -3596,6 +3607,7 @@ def _scan_core(full_scan=False):
     skipped_files = []
     existing_map = {}       # 仅增量扫描时填充；全量扫描保持为空
     renamed_count = 0
+    media_changed = False   # 未变化文件的配图/视频/音频标签是否被刷新过
 
     try:
         scan_progress['status'] = 'scanning'
@@ -3691,9 +3703,11 @@ def _scan_core(full_scan=False):
                         # 这里对未变化文件单独重算媒体标签：成本仅一次目录遍历
                         # （配图目录通常很小），远低于重解析整本小说。
                         if new_image_folder:
-                            _refresh_media_tags(old_item, new_image_folder)
+                            if _refresh_media_tags(old_item, new_image_folder):
+                                media_changed = True
                         else:
-                            _strip_media_tags(old_item)
+                            if _strip_media_tags(old_item):
+                                media_changed = True
 
                         unchanged_count += 1
                         continue
@@ -3861,8 +3875,14 @@ def _scan_core(full_scan=False):
 
             cleaned_data.sort(key=lambda x: x.get('filename', '').lower())
             novel_data = cleaned_data
-            save_cache()
-            print(f"✅ 扫描完成，最终小说数: {len(novel_data)}")
+            # 只有真的发生变化才重写缓存。全量扫描必然有 files_to_scan；
+            # 增量扫描若全部未变化（最常见的情况），跳过可省下重写十几 MB 的开销
+            # —— 在 NAS 上这一步原本占整个扫描耗时的一半。
+            if files_to_scan or removed_files or renamed_count or media_changed:
+                save_cache()
+                print(f"✅ 扫描完成，最终小说数: {len(novel_data)}")
+            else:
+                print(f"✅ 扫描完成（无任何变化，跳过写盘），共 {len(novel_data)} 本")
         else:
             print("⚠️ 扫描完成，没有变化")
 
