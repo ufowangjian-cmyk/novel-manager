@@ -3767,6 +3767,12 @@ def _scan_core(full_scan=False):
             _image_check_cache.clear()
             files_to_scan = list(all_files.keys())
             temp_data_map = {}
+            # 全量扫描没有「检查书目」阶段，必须切到 parse。
+            # 否则 phase 一直停在 scan_dir，接口按「检查阶段占 0-55%」计算，
+            # 进度条最多只到 55%，然后扫描结束时瞬间跳到 100%。
+            scan_progress['phase'] = 'parse'
+            scan_progress['current'] = 0
+            scan_progress['total'] = len(files_to_scan)
             print(f"📊 全量扫描，文件数: {len(files_to_scan)}")
 
         # ========== 批次解析 ==========
@@ -3919,6 +3925,9 @@ def _scan_core(full_scan=False):
 
         scan_progress['status'] = 'completed'
         cache['filter_options'] = None
+        # 进度计数收尾打印：用于核对 current 是否走到 total（排查进度条不到头的问题）
+        print(f"📊 进度计数收尾: {scan_progress['current']}/{scan_progress['total']} "
+              f"（{'全量' if full_scan else '增量'}，阶段 {scan_progress.get('phase')}）")
 
         # ========== 持久化本次扫描统计，供首页「扫描管理」区块展示「上次扫描」信息 ==========
         try:
@@ -4055,7 +4064,9 @@ def get_scan_progress():
             'status': scan_progress['status'],
             'message': scan_progress['message'],
             'total': scan_progress['total'],
-            'current': scan_progress['current']
+            'current': scan_progress['current'],
+            # 完成时明确给出 100%，前端不必自己推断
+            'percentage': 100 if scan_progress['status'] == 'completed' else 0
         })
 
 #==================== API 路由 =====================
