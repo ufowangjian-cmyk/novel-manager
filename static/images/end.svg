@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 120" width="100%" height="100%">
+  <defs>
+    <!-- 文字渐变（流光效果） -->
+    <linearGradient id="textGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4a0080"/>
+      <stop offset="25%" stop-color="#e94560"/>
+      <stop offset="50%" stop-color="#ffd700"/>
+      <stop offset="75%" stop-color="#e94560"/>
+      <stop offset="100%" stop-color="#4a0080"/>
+      <animate attributeName="x1" from="-1" to="1" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="x2" from="0" to="2" dur="3s" repeatCount="indefinite"/>
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="neon">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景：完全透明，让页面背景透出来 -->
+  <!-- 不加 rect，或者加 fill="transparent" -->
+  
+  <!-- 左侧装饰星 -->
+  <g filter="url(#glow)">
+    <text x="80" y="68" font-size="24" fill="#ffd700" text-anchor="middle" opacity="0.8">
+      ⭐
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite"/>
+    </text>
+  </g>
+  
+  <!-- 右侧装饰星 -->
+  <g filter="url(#glow)">
+    <text x="820" y="68" font-size="24" fill="#ffd700" text-anchor="middle" opacity="0.8">
+      ⭐
+      <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
+    </text>
+  </g>
+  
+  <!-- 左侧飘浮小星 -->
+  <text x="50" y="50" font-size="12" fill="#e94560" opacity="0.6">
+    ✦
+    <animate attributeName="y" values="50;45;50" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="2s" repeatCount="indefinite"/>
+  </text>
+  
+  <text x="110" y="85" font-size="10" fill="#ffd700" opacity="0.5">
+    ✦
+    <animate attributeName="y" values="85;78;85" dur="2.5s" repeatCount="indefinite"/>
+  </text>
+  
+  <!-- 右侧飘浮小星 -->
+  <text x="850" y="45" font-size="12" fill="#e94560" opacity="0.6">
+    ✦
+    <animate attributeName="y" values="45;38;45" dur="2.2s" repeatCount="indefinite"/>
+  </text>
+  
+  <text x="780" y="80" font-size="10" fill="#ffd700" opacity="0.5">
+    ✦
+    <animate attributeName="y" values="80;73;80" dur="1.8s" repeatCount="indefinite"/>
+  </text>
+  
+  <!-- 主标题（带流光和光晕） -->
+  <g filter="url(#neon)">
+    <text x="450" y="72" font-family="Georgia, 'Times New Roman', serif" font-size="48" 
+          font-weight="bold" fill="url(#textGrad)" text-anchor="middle" letter-spacing="20">
+      🔸 全 文 完 🔸
+    </text>
+  </g>
+  
+  <!-- 副标题（淡入淡出） -->
+  <text x="450" y="100" font-family="Arial, sans-serif" font-size="11" 
+        fill="#888" text-anchor="middle" letter-spacing="6" opacity="0">
+    🔹 — 感 谢 阅 读 — 🔹
+    <animate attributeName="opacity" values="0;0.8;0.8;0" dur="4s" repeatCount="indefinite"/>
+  </text>
+  
+  <!-- 装饰横线（中间，带流光） -->
+  <line x1="200" y1="85" x2="700" y2="85" stroke="url(#textGrad)" stroke-width="1.5" 
+        stroke-dasharray="300" stroke-dashoffset="300" opacity="0.5">
+    <animate attributeName="stroke-dashoffset" from="300" to="0" dur="1s" fill="freeze"/>
+  </line>
+</svg>
