@@ -665,10 +665,10 @@ const RandomNovel = (function () {
         const tags = tagList.slice(0, 8).map(t =>
             `<a href="?tag=${encodeURIComponent(t)}" class="tag-badge">${escapeHtml(t)}</a>`
         ).join('');
-        // 两个计数徽章：桌面按 8 个算，移动端按 3 个算，由 CSS 切换显示
+        // 两个计数徽章：桌面按 8 个算，移动端按 5 个算，由 CSS 切换显示
         const moreTags =
             (tagList.length > 8 ? `<span class="tag-badge tag-more tag-more-desktop">+${tagList.length - 8}</span>` : '') +
-            (tagList.length > 3 ? `<span class="tag-badge tag-more tag-more-mobile">+${tagList.length - 3}</span>` : '');
+            (tagList.length > 5 ? `<span class="tag-badge tag-more tag-more-mobile">+${tagList.length - 5}</span>` : '');
 
         const intro = n.intro
             ? `<div class="random-intro-label">${icon('book-open', 'sm')} 简介 / 试读</div>

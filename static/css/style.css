@@ -1970,9 +1970,9 @@ body.dark-mode .random-refresh-btn:disabled {
         font-size: 1.9rem;
     }
 
-    /* 移动端标签只留前 3 个，剩下的用「+N」表示。
+    /* 移动端标签只留前 5 个，剩下的用「+N」表示。
        选择器限定为 a.tag-badge，计数徽章是 <span> 不受影响。 */
-    .random-tags > a.tag-badge:nth-child(n+4) {
+    .random-tags > a.tag-badge:nth-child(n+6) {
         display: none;
     }
 
