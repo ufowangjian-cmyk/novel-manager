@@ -1758,7 +1758,7 @@ body.dark-mode .random-refresh-btn:disabled {
 .random-card {
     background: var(--color-bg-light);
     border-radius: 12px;
-    border-left: 4px solid var(--color-primary-dark);
+    /* 不再用左侧 4px 绿色装饰条：窄屏上它白占宽度，且和卡片的圆角/背景不搭 */
     padding: 18px;
     /* 两列网格：封面(108px) + 信息。minmax(0, 1fr) 而非 1fr —— 后者的最小宽度
        是内容宽度，超长标题/标签会把网格撑破。
