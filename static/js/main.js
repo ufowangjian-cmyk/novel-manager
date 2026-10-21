@@ -672,19 +672,34 @@ const RandomNovel = (function () {
                <div class="random-intro">${escapeHtml(n.intro)}</div>`
             : `<div class="random-intro random-intro-empty">这本书没有可显示的简介，点开看看正文吧。</div>`;
 
+        // 封面：有图显示图，没有则用书名首字占位。元素必须始终存在，
+        // 否则 grid 会把右栏内容挤进 108px 的封面列。
+        const initial = escapeHtml((n.title || '书').slice(0, 1));
+        const cover = n.cover_url
+            ? `<div class="random-cover" data-initial="${initial}">
+                   <img src="${escapeHtml(n.cover_url)}" alt="${escapeHtml(n.title)} 封面" loading="lazy" referrerpolicy="no-referrer"
+                        onerror="this.parentElement.classList.add('random-cover-empty');this.parentElement.textContent=this.parentElement.dataset.initial;">
+               </div>`
+            : `<div class="random-cover random-cover-empty" data-initial="${initial}">
+                   <span class="random-cover-initial">${initial}</span>
+               </div>`;
+
         return `
         <div class="random-card" data-work-id="${escapeHtml(n.work_id)}">
-            <div class="random-card-main">
-                <h4 class="random-title">
-                    <a href="${escapeHtml(n.detail_url)}">${escapeHtml(n.title)}</a>
-                </h4>
-                <div class="random-meta">${meta.join('')}</div>
-                ${tags ? `<div class="random-tags">${tags}${moreTags}</div>` : ''}
-            </div>
-            <div class="random-intro-wrap">${intro}</div>
-            <div class="random-card-actions">
-                <a href="${escapeHtml(n.detail_url)}" class="btn btn-secondary">${icon('file', 'sm')} 查看详情</a>
-                <a href="${escapeHtml(n.read_url)}" class="btn btn-success">${icon('book-open', 'sm')} 开始阅读</a>
+            ${cover}
+            <div class="random-card-body">
+                <div class="random-card-main">
+                    <h4 class="random-title">
+                        <a href="${escapeHtml(n.detail_url)}">${escapeHtml(n.title)}</a>
+                    </h4>
+                    <div class="random-meta">${meta.join('')}</div>
+                    ${tags ? `<div class="random-tags">${tags}${moreTags}</div>` : ''}
+                </div>
+                <div class="random-intro-wrap">${intro}</div>
+                <div class="random-card-actions">
+                    <a href="${escapeHtml(n.detail_url)}" class="btn btn-secondary">${icon('file', 'sm')} 查看详情</a>
+                    <a href="${escapeHtml(n.read_url)}" class="btn btn-success">${icon('book-open', 'sm')} 开始阅读</a>
+                </div>
             </div>
         </div>`;
     }

@@ -2000,6 +2000,77 @@ AUDIO_EXTENSIONS_ALL = frozenset({
 })
 
 
+# ==================== 「每日推荐」卡片封面 ====================
+# 来源优先级：配图目录里的本地图片 > 正文里出现的封面外链。
+# 都没有时返回空串，模板退化成「书名首字」占位封（保证左右两栏布局稳定）。
+_COVER_NAME_HINTS = ('cover', '封面', 'front', 'poster', 'folder', '001', '01')
+_IMG_URL_RE = re.compile(
+    r'''https?://[^\s"'<>]+?\.(?:jpe?g|png|webp|gif|bmp|avif)(?:\?[^\s"'<>]*)?''',
+    re.I,
+)
+
+
+def _pick_cover_image(folder, max_depth=2, limit=60):
+    """在配图目录里挑一张当封面，返回 (所在子目录, 文件名)；没有返回 None。
+
+    配图常按章节分子目录（第1章/01.jpg），所以要在浅层递归里找。
+    优先文件名带 cover/封面 的，其次按路径排序取第一张 —— 稳定、可预测，
+    不会出现「每次刷新推荐封面都不一样」的随机感。
+    """
+    candidates = []
+    base_depth = folder.rstrip(os.sep).count(os.sep)
+    try:
+        for root, dirs, files in os.walk(folder):
+            if root.rstrip(os.sep).count(os.sep) - base_depth >= max_depth:
+                dirs[:] = []
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            for name in files:
+                if name.startswith('.') or name.lower() in ('thumbs.db', 'desktop.ini'):
+                    continue
+                if os.path.splitext(name)[1].lower() in IMAGE_EXTENSIONS_ALL:
+                    candidates.append((root, name))
+            if len(candidates) >= limit:
+                break
+    except OSError:
+        return None
+
+    if not candidates:
+        return None
+
+    def rank(item):
+        root, name = item
+        low = name.lower()
+        hinted = 0 if any(h in low for h in _COVER_NAME_HINTS) else 1
+        return (hinted, len(root), low)
+
+    return min(candidates, key=rank)
+
+
+def find_cover_url(novel):
+    """给「每日推荐」卡片找封面，返回可直接用于 <img src> 的地址；没有则空串。"""
+    if not isinstance(novel, dict):
+        return ''
+
+    filename = novel.get('filename') or os.path.basename(str(novel.get('file_path') or ''))
+    folder = get_image_folder_for_novel(filename) if filename else None
+    if folder:
+        picked = _pick_cover_image(folder)
+        if picked:
+            sub_folder, name = picked
+            try:
+                return url_for('serve_local_image', folder=sub_folder, name=name)
+            except RuntimeError:
+                # 非请求上下文（后台线程）调用时 url_for 不可用，直接放弃封面
+                return ''
+
+    # 外链：正文预览/简介里出现的第一张图（含「封面：http…」这种带标签的写法）
+    for key in ('preview', 'intro'):
+        match = _IMG_URL_RE.search(str(novel.get(key) or ''))
+        if match:
+            return match.group(0)
+    return ''
+
+
 def scan_media_types(folder_path, max_depth=3):
     """统计配图目录里实际存在的媒体类型。
 
@@ -4304,6 +4375,8 @@ def pick_random_novel(exclude_work_id=None, prefer_rich=True):
             'intro': intro,
             'file_path': base_info.get('file_path', ''),
             'has_intro': bool(intro),
+            # 封面：配图目录首图 > 正文封面外链；为空时卡片用书名首字占位
+            'cover_url': find_cover_url(base_info),
         }
 
     candidates = novel_data

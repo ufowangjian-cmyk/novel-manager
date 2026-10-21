@@ -6,58 +6,73 @@
 
    依赖 novel 上下文（主名/马甲已拆好）：
      title / author / author_aliases / site / word_count / publish_date
-     progress / tags / intro / file_path / work_id
+     progress / tags / intro / file_path / work_id / cover_url
+
+   布局：左封面 + 右内容两栏（grid）。cover_url 为空时渲染「书名首字」占位封，
+   封面元素必须始终存在 —— 缺了它 grid 会把右栏内容挤进 108px 那一列。
 #}
 <div class="random-card" data-work-id="{{ novel.work_id }}">
 
-    <div class="random-card-main">
-        <h4 class="random-title">
-            <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}">{{ novel.title }}</a>
-        </h4>
-
-        <div class="random-meta">
-            <span class="random-meta-item">{{ icon('pencil', 'sm') }} {{ novel.author }}
-                {%- if novel.author_aliases %} <span class="random-alias">（{{ novel.author_aliases|join('、') }}）</span>{% endif %}
-            </span>
-            {% if novel.site and novel.site != '未知网站' %}
-            <span class="random-meta-item">{{ icon('globe', 'sm') }} {{ novel.site }}</span>
-            {% endif %}
-            {% if novel.word_count %}
-            <span class="random-meta-item">
-                {{ icon('pencil', 'sm') }} {% if novel.word_count >= 10000 %}{{ '{:.1f}'.format(novel.word_count / 10000) }}万字{% else %}{{ novel.word_count }}字{% endif %}
-            </span>
-            {% endif %}
-            {% if novel.progress %}
-            <span class="random-meta-item">{{ icon('library', 'sm') }} {{ novel.progress }}</span>
-            {% endif %}
-            {% if novel.publish_date and novel.publish_date != '未知' %}
-            <span class="random-meta-item">{{ icon('calendar', 'sm') }} {{ novel.publish_date }}</span>
-            {% endif %}
-        </div>
-
-        {% if novel.tags %}
-        <div class="random-tags">
-            {% for tag in novel.tags[:8] %}
-            <a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>
-            {% endfor %}
-            {% if novel.tags|length > 8 %}
-            <span class="tag-badge tag-more">+{{ novel.tags|length - 8 }}</span>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="random-intro-wrap">
-        {% if novel.intro %}
-        <div class="random-intro-label">{{ icon('book-open', 'sm') }} 简介 / 试读</div>
-        <div class="random-intro">{{ novel.intro }}</div>
+    <div class="random-cover{% if not novel.cover_url %} random-cover-empty{% endif %}"
+         data-initial="{{ (novel.title or '书')[:1] }}">
+        {% if novel.cover_url %}
+        <img src="{{ novel.cover_url }}" alt="{{ novel.title }} 封面" loading="lazy" referrerpolicy="no-referrer"
+             onerror="this.parentElement.classList.add('random-cover-empty');this.parentElement.textContent=this.parentElement.dataset.initial;">
         {% else %}
-        <div class="random-intro random-intro-empty">这本书没有可显示的简介，点开看看正文吧。</div>
+        <span class="random-cover-initial">{{ (novel.title or '书')[:1] }}</span>
         {% endif %}
     </div>
 
-    <div class="random-card-actions">
-        <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}" class="btn btn-secondary">{{ icon('file', 'sm') }} 查看详情</a>
-        <a href="{{ url_for('read_chapter', file_path=(novel.file_path or '').lstrip('/'), line_number=1) }}" class="btn btn-success">{{ icon('book-open', 'sm') }} 开始阅读</a>
+    <div class="random-card-body">
+        <div class="random-card-main">
+            <h4 class="random-title">
+                <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}">{{ novel.title }}</a>
+            </h4>
+
+            <div class="random-meta">
+                <span class="random-meta-item">{{ icon('pencil', 'sm') }} {{ novel.author }}
+                    {%- if novel.author_aliases %} <span class="random-alias">（{{ novel.author_aliases|join('、') }}）</span>{% endif %}
+                </span>
+                {% if novel.site and novel.site != '未知网站' %}
+                <span class="random-meta-item">{{ icon('globe', 'sm') }} {{ novel.site }}</span>
+                {% endif %}
+                {% if novel.word_count %}
+                <span class="random-meta-item">
+                    {{ icon('pencil', 'sm') }} {% if novel.word_count >= 10000 %}{{ '{:.1f}'.format(novel.word_count / 10000) }}万字{% else %}{{ novel.word_count }}字{% endif %}
+                </span>
+                {% endif %}
+                {% if novel.progress %}
+                <span class="random-meta-item">{{ icon('library', 'sm') }} {{ novel.progress }}</span>
+                {% endif %}
+                {% if novel.publish_date and novel.publish_date != '未知' %}
+                <span class="random-meta-item">{{ icon('calendar', 'sm') }} {{ novel.publish_date }}</span>
+                {% endif %}
+            </div>
+
+            {% if novel.tags %}
+            <div class="random-tags">
+                {% for tag in novel.tags[:8] %}
+                <a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>
+                {% endfor %}
+                {% if novel.tags|length > 8 %}
+                <span class="tag-badge tag-more">+{{ novel.tags|length - 8 }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="random-intro-wrap">
+            {% if novel.intro %}
+            <div class="random-intro-label">{{ icon('book-open', 'sm') }} 简介 / 试读</div>
+            <div class="random-intro">{{ novel.intro }}</div>
+            {% else %}
+            <div class="random-intro random-intro-empty">这本书没有可显示的简介，点开看看正文吧。</div>
+            {% endif %}
+        </div>
+
+        <div class="random-card-actions">
+            <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}" class="btn btn-secondary">{{ icon('file', 'sm') }} 查看详情</a>
+            <a href="{{ url_for('read_chapter', file_path=(novel.file_path or '').lstrip('/'), line_number=1) }}" class="btn btn-success">{{ icon('book-open', 'sm') }} 开始阅读</a>
+        </div>
     </div>
 </div>
