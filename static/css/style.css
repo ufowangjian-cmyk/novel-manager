@@ -1945,10 +1945,21 @@ body.dark-mode .random-refresh-btn:disabled {
         max-height: 200px;
     }
 
+    /* 推荐区块的左右留白：原本 tab-content 20 + section 5 + card 14 = 39px，
+       在 375px 屏幕上吃掉两成宽度。压到 12 + 0 + 12 = 24px。
+       只针对 #tab-random，不影响其他选项卡的表格留白。 */
+    #tab-random {
+        padding: 12px;
+    }
+
+    .random-section {
+        padding: 0;
+    }
+
     .random-card {
         grid-template-columns: 84px minmax(0, 1fr);
         gap: 12px;
-        padding: 14px;
+        padding: 12px;
     }
 
     .random-cover {
