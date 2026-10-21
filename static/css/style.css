@@ -1754,11 +1754,13 @@ body.dark-mode .random-refresh-btn:disabled {
     border-radius: 12px;
     border-left: 4px solid var(--color-primary-dark);
     padding: 18px;
-    /* 左封面 + 右内容两栏。右栏用 minmax(0, 1fr) 而不是 1fr：
-       1fr 的最小宽度是内容宽度，超长标题/标签会把网格撑破。 */
+    /* 两列网格：封面(108px) + 信息。minmax(0, 1fr) 而非 1fr —— 后者的最小宽度
+       是内容宽度，超长标题/标签会把网格撑破。
+       简介区和按钮用 grid-column: 1 / -1 横跨整行，落在封面下方。 */
     display: grid;
     grid-template-columns: 108px minmax(0, 1fr);
-    gap: 16px;
+    column-gap: 16px;
+    row-gap: 16px;
     align-items: start;
 }
 
@@ -1823,6 +1825,8 @@ body.dark-mode .random-refresh-btn:disabled {
 .random-intro-wrap {
     border-top: 1px dashed var(--color-border-primary);
     padding-top: 12px;
+    /* 横跨两列：虚线从头贯穿到尾，简介也在封面下方铺满整行 */
+    grid-column: 1 / -1;
 }
 
 .random-intro-label {
@@ -1873,6 +1877,7 @@ body.dark-mode .random-refresh-btn:disabled {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    grid-column: 1 / -1;
 }
 
 /* 「每日推荐」封面：固定 3:4 比例，无图时用书名首字占位。
@@ -1912,14 +1917,6 @@ body.dark-mode .random-refresh-btn:disabled {
     line-height: 1;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
     user-select: none;
-}
-
-/* 右栏：原来的纵向三段（信息 / 简介 / 按钮） */
-.random-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
 }
 
 .random-empty {

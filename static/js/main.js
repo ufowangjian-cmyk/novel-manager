@@ -687,19 +687,17 @@ const RandomNovel = (function () {
         return `
         <div class="random-card" data-work-id="${escapeHtml(n.work_id)}">
             ${cover}
-            <div class="random-card-body">
-                <div class="random-card-main">
-                    <h4 class="random-title">
-                        <a href="${escapeHtml(n.detail_url)}">${escapeHtml(n.title)}</a>
-                    </h4>
-                    <div class="random-meta">${meta.join('')}</div>
-                    ${tags ? `<div class="random-tags">${tags}${moreTags}</div>` : ''}
-                </div>
-                <div class="random-intro-wrap">${intro}</div>
-                <div class="random-card-actions">
-                    <a href="${escapeHtml(n.detail_url)}" class="btn btn-secondary">${icon('file', 'sm')} 查看详情</a>
-                    <a href="${escapeHtml(n.read_url)}" class="btn btn-success">${icon('book-open', 'sm')} 开始阅读</a>
-                </div>
+            <div class="random-card-main">
+                <h4 class="random-title">
+                    <a href="${escapeHtml(n.detail_url)}">${escapeHtml(n.title)}</a>
+                </h4>
+                <div class="random-meta">${meta.join('')}</div>
+                ${tags ? `<div class="random-tags">${tags}${moreTags}</div>` : ''}
+            </div>
+            <div class="random-intro-wrap">${intro}</div>
+            <div class="random-card-actions">
+                <a href="${escapeHtml(n.detail_url)}" class="btn btn-secondary">${icon('file', 'sm')} 查看详情</a>
+                <a href="${escapeHtml(n.read_url)}" class="btn btn-success">${icon('book-open', 'sm')} 开始阅读</a>
             </div>
         </div>`;
     }
