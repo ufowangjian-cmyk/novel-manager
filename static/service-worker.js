@@ -4,7 +4,7 @@
 // ============================================
 
 // 缓存版本：改动后必须递增，否则浏览器会一直用旧的缓存
-const CACHE_VERSION = 'novel-v16';
+const CACHE_VERSION = 'novel-v17';
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 
 // ===== 安装 =====
