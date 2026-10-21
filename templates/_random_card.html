@@ -56,8 +56,12 @@
             {% for tag in novel.tags[:8] %}
             <a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>
             {% endfor %}
+            {# 两个计数徽章：桌面按 8 个算，移动端按 3 个算，由 CSS 切换显示 #}
             {% if novel.tags|length > 8 %}
-            <span class="tag-badge tag-more">+{{ novel.tags|length - 8 }}</span>
+            <span class="tag-badge tag-more tag-more-desktop">+{{ novel.tags|length - 8 }}</span>
+            {% endif %}
+            {% if novel.tags|length > 3 %}
+            <span class="tag-badge tag-more tag-more-mobile">+{{ novel.tags|length - 3 }}</span>
             {% endif %}
         </div>
         {% endif %}

@@ -661,11 +661,14 @@ const RandomNovel = (function () {
             meta.push(`<span class="random-meta-item">${icon('calendar', 'sm')} ${escapeHtml(n.publish_date)}</span>`);
         }
 
-        const tags = (n.tags || []).slice(0, 8).map(t =>
+        const tagList = n.tags || [];
+        const tags = tagList.slice(0, 8).map(t =>
             `<a href="?tag=${encodeURIComponent(t)}" class="tag-badge">${escapeHtml(t)}</a>`
         ).join('');
-        const moreTags = (n.tags && n.tags.length > 8)
-            ? `<span class="tag-badge tag-more">+${n.tags.length - 8}</span>` : '';
+        // 两个计数徽章：桌面按 8 个算，移动端按 3 个算，由 CSS 切换显示
+        const moreTags =
+            (tagList.length > 8 ? `<span class="tag-badge tag-more tag-more-desktop">+${tagList.length - 8}</span>` : '') +
+            (tagList.length > 3 ? `<span class="tag-badge tag-more tag-more-mobile">+${tagList.length - 3}</span>` : '');
 
         const intro = n.intro
             ? `<div class="random-intro-label">${icon('book-open', 'sm')} 简介 / 试读</div>

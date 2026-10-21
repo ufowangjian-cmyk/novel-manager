@@ -778,6 +778,12 @@ td:nth-child(6) a {
     color: var(--color-text-dark);
 }
 
+/* 移动端的「+N」计数：桌面隐藏，窄屏时由媒体查询打开。
+   与 .tag-more-desktop 成对使用 —— 桌面按 8 个标签算，移动端按 3 个算。 */
+.tag-more-mobile {
+    display: none;
+}
+
 .no-tag {
     color: var(--color-text-light-gray);
 }
@@ -1951,6 +1957,20 @@ body.dark-mode .random-refresh-btn:disabled {
 
     .random-cover-initial {
         font-size: 1.9rem;
+    }
+
+    /* 移动端标签只留前 3 个，剩下的用「+N」表示。
+       选择器限定为 a.tag-badge，计数徽章是 <span> 不受影响。 */
+    .random-tags > a.tag-badge:nth-child(n+4) {
+        display: none;
+    }
+
+    .tag-more-desktop {
+        display: none;
+    }
+
+    .tag-more-mobile {
+        display: inline-block;
     }
 
     .random-card-actions .btn {
