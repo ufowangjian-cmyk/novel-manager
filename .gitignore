@@ -15,8 +15,9 @@ static/fonts/
 static/images/header-bg-*.webp
 # 占位封面 static/images/cover-placeholder.webp 为 AI 生成图，无版权限制，正常入库。
 # CSS 仍保留降级（缺图回退渐变 + 书名首字），删掉这张图也不会破。
-# 表情包来源网络，授权不明
-static/emojis/
+# 表情包：2026-10-23 起开放随仓库分发（这些多是网络流传的表情图，
+# GitHub 上同类资源常见；约 20MB / 280 个文件）。
+# 系统缩略图 Thumbs.db 仍由下方「系统垃圾」规则排除。
 
 # ========== 本地配置 ==========
 # 含内网真实路径 / 密码，用 .env.example 与 docker-compose.example.yml 代替
