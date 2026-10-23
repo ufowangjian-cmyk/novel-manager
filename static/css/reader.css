@@ -2852,3 +2852,85 @@ body.dark-mode .content-line mark.search-hit,
 .bi-row { display:flex; gap:16px; margin-top:8px; }
 .bi-check { display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--reader-text, #333); cursor:pointer; }
 .bi-check input { width:16px; height:16px; cursor:pointer; }
+
+/* ==================== 相似书籍（阅读页末页） ====================
+   只在全书最后一页出现，跟着阅读主题（纸黄/护眼/夜间）走：
+   颜色全部取 --reader-* / --color-* 语义变量，不写死背景色。 */
+.similar-card {
+  max-width: 720px;
+  margin: 40px auto 28px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--reader-bg-primary);
+  border: 1px solid var(--reader-border-primary);
+}
+
+.similar-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #2d3748);
+  border-bottom: 1px solid var(--reader-border-primary);
+}
+
+.similar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 6px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--color-text-primary, #2d3748);
+}
+
+.similar-item + .similar-item {
+  border-top: 1px solid var(--reader-border-primary);
+}
+
+.similar-item:hover {
+  background: var(--color-bg-secondary, rgba(128, 128, 128, 0.08));
+}
+
+.similar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.similar-title {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.similar-sub {
+  font-size: 0.76rem;
+  color: var(--color-text-tertiary, #8a94a6);
+}
+
+.similar-reason {
+  flex: none;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--color-bg-secondary, rgba(128, 128, 128, 0.12));
+  color: var(--color-text-tertiary, #8a94a6);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .similar-card {
+    margin: 28px 12px 20px;
+    padding: 12px;
+  }
+}

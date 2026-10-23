@@ -356,7 +356,7 @@ italic_default=False) %}
             <div class="config-card">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('file') }}</span>
-                    <h2>列表与显示</h2>
+                    <h2>列表与显示（新用户初始值）</h2>
                     <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
                 </div>
                 <div class="card-content">
@@ -855,10 +855,50 @@ italic_default=False) %}
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/config.js') }}"></script>
 <script>
+    // ===== 配置卡片展开状态记忆 =====
+    // 默认全部展开；用户点过哪张就记住哪张，刷新后保持。
+    // 用卡片标题当 key（不用索引），将来增删卡片不会串位。
+    function configCardStoreKey() { return 'nm_config_cards'; }
+
+    function configCardName(card) {
+        var title = card.querySelector('.card-header h2');
+        return title ? title.textContent.trim().replace(/\s+/g, ' ') : '';
+    }
+
+    function saveConfigCardState() {
+        try {
+            var state = {};
+            document.querySelectorAll('.config-card').forEach(function (card) {
+                state[configCardName(card)] = card.classList.contains('collapsed');
+            });
+            localStorage.setItem(configCardStoreKey(), JSON.stringify(state));
+        } catch (e) { /* 隐私模式等场景静默跳过 */ }
+    }
+
+    function initConfigCardMemory() {
+        var state = {};
+        try {
+            state = JSON.parse(localStorage.getItem(configCardStoreKey()) || '{}') || {};
+        } catch (e) { state = {}; }
+        document.querySelectorAll('.config-card').forEach(function (card) {
+            var saved = state[configCardName(card)];
+            if (saved === true) card.classList.add('collapsed');
+            else if (saved === false) card.classList.remove('collapsed');
+        });
+        document.querySelectorAll('.config-card .card-header').forEach(function (header) {
+            header.addEventListener('click', function () {
+                // 内联 onclick 的 toggleCard 先执行，延一个 tick 再读最新状态
+                setTimeout(saveConfigCardState, 0);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initPage();
         // 配置页专属初始化：我的阅读偏好
         loadMyPreferences();
+        // 记住配置卡片的展开/折叠状态
+        initConfigCardMemory();
     });
 </script>
 {% endblock %}

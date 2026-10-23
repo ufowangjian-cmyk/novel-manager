@@ -826,3 +826,76 @@ body.dark-mode .separator[data-type="flower"] {
     height: 32px;
     vertical-align: middle;
 }
+
+/* ==================== 相似书籍（详情页） ==================== */
+.similar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.similar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.18s;
+}
+
+.similar-item:hover {
+    background: rgba(83, 124, 7, 0.08);
+}
+
+.similar-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* 长书名（库里有 100 本 ≥30 字）两行截断，不撑破卡片 */
+.similar-title {
+    font-size: 0.98em;
+    color: var(--detail-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+.similar-sub {
+    font-size: 0.82em;
+    color: #8a94a6;
+}
+
+.similar-reason {
+    flex: none;
+    font-size: 0.75em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(83, 124, 7, 0.1);
+    color: #537c07;
+    white-space: nowrap;
+}
+
+body.dark-mode .similar-title {
+    color: var(--color-text-light);
+}
+
+body.dark-mode .similar-sub {
+    color: #9aa5b1;
+}
+
+body.dark-mode .similar-reason {
+    background: rgba(151, 196, 89, 0.16);
+    color: #c0dd97;
+}
+
+body.dark-mode .similar-item:hover {
+    background: rgba(151, 196, 89, 0.1);
+}

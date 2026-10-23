@@ -4225,6 +4225,417 @@ def build_author_identity_map(novels=None):
     return lookup
 
 
+# ==================== 相似书籍推荐 ====================
+# 用途：详情页 + 阅读页最后一页的「相似书籍」区块。锦上添花的功能，
+# 刻意保持简单：只用书名 / 作者 / 标签，不引第三方库、不落盘、不加配置项。
+#
+# 取舍：宁缺毋滥 —— 分数不到阈值就不返回，调用方据此整块不渲染，
+# 不拿随机书或弱标签凑数。
+#
+# 书名解析（parse_title_meta）解决三件事：
+#   1) 系列：「系列名 + 第几部」拆开，同系列排一起、按卷次
+#   2) 关系：番外 / 同人 / 外传 / 前传 / 续 单独标出，不跟原书混为一谈
+#   3) 噪声：番号（FC2PPV-3179361）、原名/又名、【征文】这类尾巴不参与计算
+#
+# ⚠️ 冒号/下划线截出来的「系列根名」默认不可信：「XX：YY」这种修辞副标题会截出
+#    两个字的假系列。只有该根名在全库出现 >= 2 次才认，否则回退完整书名。
+#    实测 5102 本可聚出 266 个真系列簇。
+
+SIMILAR_LIMIT = 8              # 最多几条
+SIMILAR_THRESHOLD = 22.0       # 低于此分不展示
+SIMILAR_SERIES_CAP = 3         # 同一系列最多占几条
+SIMILAR_TAGS_FOR_MATCH = 6     # 只吃前 6 个高权重标签（每本中位数 46 个，全量算人人相似）
+SIMILAR_GRAM_HOT_RATIO = 0.05  # 覆盖超过 5% 的二元组算热词，不进候选
+SIMILAR_MIN_GRAM_HITS = 3      # 书名二元组至少命中几个才算候选
+
+_SIM_TAIL_BRACKET_RE = re.compile(r'[（(【\[《]([^（()）【】\[\]《》]*)[）)】\]》]\s*$')
+_SIM_VOLUME_RE = re.compile(r'第\s*([0-9一二三四五六七八九十百零两〇]{1,4})\s*[部卷册集篇季]')
+_SIM_TRAIL_NUM_RE = re.compile(r'(?<=[\u4e00-\u9fa5])[\s·]*([0-9]{1,2})\s*$')
+_SIM_CODE_RE = re.compile(r'(?<![A-Za-z0-9])([A-Za-z][A-Za-z0-9]{1,9})[-_ ]?([0-9]{3,})(?![0-9])')
+_SIM_ALIAS_RE = re.compile(r'(?:原名|又名)\s*[:：]?\s*(.+)$')
+_SIM_SEP_RE = re.compile(r'[_＿]|[:：]|—{2,}')
+_SIM_CN_DIGITS = {
+    '零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4,
+    '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
+}
+_SIM_RELATIONS = (
+    ('番外', 'fanwai'), ('同人', 'tongren'), ('外传', 'waizhuan'),
+    ('外篇', 'waizhuan'), ('前传', 'qianchuan'), ('后传', 'xuji'),
+    ('续集', 'xuji'), ('续篇', 'xuji'),
+)
+_SIM_RELATION_LABEL = {
+    'main': '', 'fanwai': '番外', 'tongren': '同人',
+    'waizhuan': '外传', 'qianchuan': '前传', 'xuji': '续',
+}
+_SIM_CONTINUE_SKIP = '继续连持陆'
+# 这些不是真作者，不能拿来做「同作者」匹配（否则 159 本 [不详] 会互相推荐）
+_SIM_UNKNOWN_AUTHORS = {
+    '', '[不详]', '【不详】', '不详', '未知作者', '未知', '匿名', '佚名', '-', '—', '无',
+}
+
+
+def _sim_cn_to_int(text):
+    """一~九十九 的中文数字转整数；认不出返回 None。"""
+    text = (text or '').strip()
+    if not text:
+        return None
+    if text.isdigit():
+        return int(text)
+    if '十' in text:
+        left, _, right = text.partition('十')
+        if left and left not in _SIM_CN_DIGITS:
+            return None
+        if right and right not in _SIM_CN_DIGITS:
+            return None
+        tens = _SIM_CN_DIGITS.get(left, 1) if left else 1
+        ones = _SIM_CN_DIGITS.get(right, 0) if right else 0
+        return tens * 10 + ones
+    return _SIM_CN_DIGITS.get(text)
+
+
+def _sim_find_relation(text):
+    """返回 (relation, 位置)，取最靠前的关系词；没找到返回 ('main', -1)。"""
+    best_pos, best_rel = -1, 'main'
+    for word, rel in _SIM_RELATIONS:
+        pos = text.find(word)
+        if pos >= 0 and (best_pos < 0 or pos < best_pos):
+            best_pos, best_rel = pos, rel
+    # 单字「续」：前面是 继/连/持/陆 的不算（继续、连续、持续、陆续）
+    for pos, char in enumerate(text):
+        if char != '续':
+            continue
+        prev = text[pos - 1] if pos else ''
+        if prev and prev in _SIM_CONTINUE_SKIP:
+            continue
+        if best_pos < 0 or pos < best_pos:
+            best_pos, best_rel = pos, 'xuji'
+        break
+    return best_rel, best_pos
+
+
+def _sim_clean(text):
+    """去掉空白与残留分隔符，用于书名归一化比较。"""
+    return re.sub(r'[\s\u3000·・]+', '', text or '').strip('_＿-—:：')
+
+
+def parse_title_meta(title):
+    """把书名拆成：系列根名 / 卷次 / 关系（番外·同人·续·外传）/ 原名 / 番号。
+
+    返回的 dict 字段始终齐全。base 只是「候选系列根名」，是否可信由调用方
+    按全库频次判定（见 _build_similar_index），避免冒号截断出假系列。
+    """
+    raw = (title or '').strip()
+    meta = {
+        'raw': raw, 'base': '', 'base_full': '', 'volume': None,
+        'relation': 'main', 'relation_label': '', 'aliases': [], 'code': '', 'note': '',
+    }
+    if not raw:
+        return meta
+
+    text = raw.replace('《', '').replace('》', '').strip()
+
+    # 1) 尾部括号逐层剥离（最多两层）：卷次 / 原名 / 番号 / 关系词 / 题材标注
+    for _ in range(2):
+        match = _SIM_TAIL_BRACKET_RE.search(text)
+        if not match:
+            break
+        inner = (match.group(1) or '').strip()
+        if not inner:
+            break
+
+        consumed = False
+        volume = _SIM_VOLUME_RE.search(inner)
+        if volume:
+            meta['volume'] = _sim_cn_to_int(volume.group(1))
+            consumed = True
+        elif re.fullmatch(r'[0-9]{1,2}', inner):
+            meta['volume'] = int(inner)
+            consumed = True
+        elif inner in ('上', '中', '下'):
+            meta['volume'] = {'上': 1, '中': 2, '下': 3}[inner]
+            consumed = True
+
+        if not consumed:
+            alias = _SIM_ALIAS_RE.search(inner)
+            if alias:
+                meta['aliases'].append(alias.group(1).strip())
+                consumed = True
+
+        if not consumed and len(inner) <= 20:
+            code = _SIM_CODE_RE.search(inner)
+            if code:
+                meta['code'] = f'{code.group(1).upper()}-{code.group(2)}'
+                consumed = True
+
+        if not consumed:
+            relation, _pos = _sim_find_relation(inner)
+            if relation != 'main':
+                meta['relation'] = relation
+                consumed = True
+
+        if not consumed and not meta['note']:
+            meta['note'] = inner
+
+        text = text[:match.start()].strip()
+        if not text:
+            break
+
+    # 2) 关系词：整段书名里再找一次（拆掉括号后可能才露出来）
+    relation, _pos = _sim_find_relation(text)
+    if meta['relation'] == 'main' and relation != 'main':
+        meta['relation'] = relation
+
+    # 3) 分隔符左侧 = 系列名候选
+    head = text
+    sep = _SIM_SEP_RE.search(text)
+    if sep and sep.start() >= 2:
+        head = text[:sep.start()].strip()
+
+    # 4) 卷次：「第X部」或书名尾部裸数字
+    volume = _SIM_VOLUME_RE.search(head)
+    if volume and meta['volume'] is None:
+        meta['volume'] = _sim_cn_to_int(volume.group(1))
+    head = _SIM_VOLUME_RE.sub('', head)
+    trailing = _SIM_TRAIL_NUM_RE.search(head)
+    if trailing:
+        if meta['volume'] is None:
+            meta['volume'] = int(trailing.group(1))
+        head = head[:trailing.start()].strip()
+
+    meta['base'] = _sim_clean(head)
+    meta['base_full'] = _sim_clean(text)
+    meta['relation_label'] = _SIM_RELATION_LABEL.get(meta['relation'], '')
+    if not meta['base']:
+        meta['base'] = meta['base_full']
+    return meta
+
+
+def _sim_grams(text, size=2):
+    """中文/字母数字二元组集合，用于抓「同格式书名同族」（如番号类长标题）。"""
+    cleaned = re.sub(r'[^\u4e00-\u9fa5A-Za-z0-9]', '', text or '')
+    if len(cleaned) < size:
+        return set()
+    return {cleaned[i:i + size] for i in range(len(cleaned) - size + 1)}
+
+
+def _sim_split_tags(value):
+    """标签兼容字符串（缓存里是逗号分隔）和 list（内存里可能是 list）。"""
+    if isinstance(value, (list, tuple, set)):
+        items = [str(tag).strip() for tag in value]
+    else:
+        items = [tag.strip() for tag in str(value or '').split(',')]
+    return [tag for tag in items if tag and tag != '无']
+
+
+_similar_index_cache = {'key': None, 'data': None}
+
+
+def _build_similar_index():
+    """建倒排索引：系列 / 作者身份组 / 书名二元组 / 标签。全库一次，约 70ms。"""
+    novels = novel_data or []
+    if not novels:
+        return None
+
+    identity = build_author_identity_map(novels)
+    metas = []
+    base_count = {}
+    for novel in novels:
+        meta = parse_title_meta(novel.get('title') or '')
+        metas.append(meta)
+        if meta['base']:
+            base_count[meta['base']] = base_count.get(meta['base'], 0) + 1
+
+    by_series, by_author, by_gram, by_tag = {}, {}, {}, {}
+    tag_sets = []
+    authors = []
+
+    for idx, (novel, meta) in enumerate(zip(novels, metas)):
+        # 系列根名必须全库 >= 2 次才算数，否则用完整书名当 key（防假系列）
+        series_key = meta['base'] if base_count.get(meta['base'], 0) >= 2 else meta['base_full']
+        meta['series_key'] = series_key
+        if series_key:
+            by_series.setdefault(series_key, []).append(idx)
+
+        names = author_names_of(novel.get('author') or '')
+        group = ''
+        if names and names[0] not in _SIM_UNKNOWN_AUTHORS:
+            group = sorted(identity.get(names[0]) or {names[0]})[0]
+            by_author.setdefault(group, []).append(idx)
+        meta['author_group'] = group
+        authors.append((names[0] if names else '', max(0, len(names) - 1)))
+
+        meta['grams'] = _sim_grams(meta['raw'])
+        for gram in meta['grams']:
+            by_gram.setdefault(gram, []).append(idx)
+
+        tag_set = set(_sim_split_tags(novel.get('tags'))[:SIMILAR_TAGS_FOR_MATCH])
+        tag_sets.append(tag_set)
+        for tag in tag_set:
+            by_tag.setdefault(tag, []).append(idx)
+
+    return {
+        'novels': novels, 'metas': metas, 'base_count': base_count,
+        'alias_group': identity, 'by_series': by_series, 'by_author': by_author,
+        'by_gram': by_gram, 'by_tag': by_tag, 'tag_sets': tag_sets,
+        'authors': authors, 'total': len(novels),
+    }
+
+
+def _get_similar_index():
+    """索引生命周期跟着 novel_data 这个列表对象走，不落盘。
+
+    扫描/重载缓存都是整体替换 `novel_data = [...]`（load_cache 与扫描分支都是新列表），
+    所以比较对象身份 + 长度就能准确判断要不要重建，比按目录 mtime 更可靠
+    （扫描只读目录，mtime 不会变）。
+    """
+    cached = _similar_index_cache
+    data = cached['data']
+    if (data is not None and data['novels'] is novel_data
+            and len(data['novels']) == len(novel_data or [])):
+        return data
+    data = _build_similar_index()
+    cached['key'] = (id(novel_data), len(novel_data or []))
+    cached['data'] = data
+    return data
+
+
+def find_similar_novels(title, author, tags, exclude_work_id='', exclude_path='',
+                        limit=SIMILAR_LIMIT):
+    """找相似书籍，返回按相关度排好的 list。
+
+    打分：系列根名相同 60 / 作者身份组相同（含马甲）30 /
+          书名二元组 Jaccard ×20 / 标签 Jaccard ×15，满分 125。
+    不到 SIMILAR_THRESHOLD 直接丢弃；同系列最多 SIMILAR_SERIES_CAP 条。
+    """
+    index = _get_similar_index()
+    if not index:
+        return []
+
+    novels = index['novels']
+    metas = index['metas']
+    total = index['total']
+    base_count = index['base_count']
+    hot_limit = max(1, int(total * SIMILAR_GRAM_HOT_RATIO))
+
+    query_meta = parse_title_meta(title)
+    query_base = query_meta['base']
+    query_series = query_base if base_count.get(query_base, 0) >= 2 else query_meta['base_full']
+    query_grams = _sim_grams(query_meta['raw'])
+    query_tags = set(_sim_split_tags(tags)[:SIMILAR_TAGS_FOR_MATCH])
+
+    query_group = ''
+    names = author_names_of(author or '')
+    if names and names[0] not in _SIM_UNKNOWN_AUTHORS:
+        query_group = sorted(index['alias_group'].get(names[0]) or {names[0]})[0]
+
+    # === 候选集：系列 + 作者 + 书名二元组 + 非热标签，上限通常两三百本 ===
+    candidates = set()
+    if query_series:
+        candidates.update(index['by_series'].get(query_series, ()))
+    if query_group:
+        candidates.update(index['by_author'].get(query_group, ()))
+
+    gram_hits = {}
+    for gram in query_grams:
+        posting = index['by_gram'].get(gram)
+        if not posting or len(posting) > hot_limit:
+            continue
+        for idx in posting:
+            gram_hits[idx] = gram_hits.get(idx, 0) + 1
+    candidates.update(idx for idx, hits in gram_hits.items() if hits >= SIMILAR_MIN_GRAM_HITS)
+
+    for tag in query_tags:
+        posting = index['by_tag'].get(tag)
+        if not posting or len(posting) > hot_limit:
+            continue
+        candidates.update(posting)
+
+    exclude_name = os.path.basename(exclude_path or '')
+    items = []
+    for idx in candidates:
+        novel = novels[idx]
+        if exclude_work_id and novel.get('work_id') == exclude_work_id:
+            continue
+        if exclude_name and os.path.basename(novel.get('file_path') or '') == exclude_name:
+            continue
+
+        meta = metas[idx]
+        matched = []
+        score = 0.0
+        is_series = bool(query_series) and meta.get('series_key') == query_series
+        if is_series:
+            score += 60.0
+            matched.append('series')
+        else:
+            other_grams = meta.get('grams') or set()
+            union = len(query_grams | other_grams)
+            if union:
+                score += 20.0 * len(query_grams & other_grams) / union
+        if query_group and meta.get('author_group') == query_group:
+            score += 30.0
+            matched.append('author')
+
+        other_tags = index['tag_sets'][idx]
+        union = len(query_tags | other_tags)
+        common_tags = len(query_tags & other_tags)
+        if union:
+            score += 15.0 * common_tags / union
+        if score < SIMILAR_THRESHOLD:
+            continue
+
+        labels = []
+        if is_series:
+            labels.append('系列' + (f'·第{meta["volume"]}部' if meta.get('volume') else ''))
+        if meta['relation'] != 'main':
+            labels.append(meta['relation_label'])
+        if not labels:
+            labels.append('同作者' if 'author' in matched else '同标签')
+
+        author_name, alias_count = index['authors'][idx]
+        items.append({
+            'title': novel.get('title') or meta['raw'],
+            'author': author_name or '未知作者',
+            'alias_count': alias_count,
+            'reason': ' · '.join(label for label in labels if label),
+            'score': round(score, 1),
+            'volume': meta.get('volume') or 0,
+            'is_series': is_series,
+            'is_main': meta['relation'] == 'main',
+            'series_key': meta.get('series_key') or '',
+            'file_path': (novel.get('file_path') or '').lstrip('/'),
+        })
+
+    # 系列整体排前面；系列内部按「本篇 → 卷次」，避免番外/同人把原书挤出前 3 条
+    items.sort(key=lambda item: (
+        0 if item['is_series'] else 1,
+        0 if item['is_main'] else 1,
+        item['volume'],
+        -item['score'],
+        item['title'],
+    ))
+
+    picked = []
+    series_used = {}
+    for item in items:
+        if item['is_series']:
+            used = series_used.get(item['series_key'], 0)
+            if used >= SIMILAR_SERIES_CAP:
+                continue
+            series_used[item['series_key']] = used + 1
+        picked.append(item)
+        if len(picked) >= limit:
+            break
+    return picked
+
+
+def build_similar_urls(items, **query):
+    """给相似项补详情页链接，并带上当前列表的筛选参数（返回列表不丢状态）。"""
+    clean = {key: value for key, value in query.items() if value not in (None, '', 0)}
+    for item in items:
+        item['detail_url'] = url_for('novel_detail', file_path=item['file_path'], **clean)
+    return items
+
+
 def get_filter_options_cached():
     current_hash = get_data_hash(novel_data)
 
@@ -4454,6 +4865,27 @@ def list_header_bg_images():
     return urls
 
 
+# 页面 CSS 的版本号：静态资源走浏览器 30 天强缓存，改样式后必须换 URL 才生效。
+_css_version_cache = {'value': 0, 'ts': 0}
+
+
+def get_css_version():
+    """取 detail.css / reader.css 的最新 mtime 作为 ?v=，改样式后自动失效。"""
+    now = time.time()
+    if _css_version_cache['value'] and now - _css_version_cache['ts'] < 300:
+        return _css_version_cache['value']
+    latest = 0
+    for name in ('detail.css', 'reader.css'):
+        try:
+            latest = max(latest, int(os.path.getmtime(
+                os.path.join(BASE_DIR, 'static', 'css', name))))
+        except OSError:
+            continue
+    _css_version_cache['value'] = latest
+    _css_version_cache['ts'] = now
+    return latest
+
+
 # 头部背景图清单注入所有模板：详情页/配置页/标签页/缺失页同样有 .header，
 # 以前只有首页路由传 header_bg_images，其它页面前端拿不到清单，只能退化成
 # 「new Image() 逐张探测」——首屏先下 11.7MB 才显示第一张。
@@ -4464,6 +4896,7 @@ def inject_header_bg_images():
     return {
         'header_bg_images': list_header_bg_images(),
         'max_tags_display': prefs.get('max_tags_display', 3),
+        'css_version': get_css_version(),
     }
 
 
@@ -5057,6 +5490,16 @@ def novel_detail(file_path):
     # 读取当前用户阅读偏好（简介/预览跟随配置的正文字体，与阅读页一致）
     user_prefs = resolve_reader_prefs()
 
+    # 相似书籍：扩展阅读用，无结果时模板整块不渲染，不影响详情页其它内容
+    similar_novels = build_similar_urls(
+        find_similar_novels(
+            base_info['title'], base_info['author'], base_info['tags'],
+            exclude_work_id=detail_work_id, exclude_path=file_path
+        ),
+        page=back_page, search=search_text, author=search_author,
+        tag=search_tag, site=search_site
+    )
+
     return render_template('novel_detail.html',
         title=base_info['title'],
         author=base_info['author'],
@@ -5084,7 +5527,8 @@ def novel_detail(file_path):
         is_finished=is_finished,
         has_record=has_record,
         detail_work_id=detail_work_id,
-        user_prefs=user_prefs
+        user_prefs=user_prefs,
+        similar_novels=similar_novels
     )
 #==================== 阅读章节路由 =====================
 def load_novel_content(file_path):
@@ -5494,6 +5938,22 @@ def read_chapter(file_path, line_number):
     # 读取当前用户偏好（用于跨设备同步字体/字号/排版）
     user_prefs = resolve_reader_prefs()
 
+    # 相似书籍：只在全书最后一页出现（与模板里「返回列表」同条件）
+    try:
+        at_the_end = (next_chapter is None and next_page is None)
+    except NameError:
+        at_the_end = False
+    similar_novels = []
+    if at_the_end:
+        similar_novels = build_similar_urls(
+            find_similar_novels(
+                base_info['title'], base_info['author'], base_info['tags'],
+                exclude_path=file_path
+            ),
+            page=back_page, search=search_text, author=search_author,
+            tag=search_tag, site=search_site
+        )
+
     return render_template('read_chapter.html',
         title=base_info['title'],
         author=base_info['author'],
@@ -5520,7 +5980,8 @@ def read_chapter(file_path, line_number):
         search_author=search_author,
         search_tag=search_tag,
         search_site=search_site,
-        is_virtual_chapter=is_virtual_chapter
+        is_virtual_chapter=is_virtual_chapter,
+        similar_novels=similar_novels
     )
 
 #==================== 继续阅读路由 =====================
