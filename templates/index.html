@@ -502,6 +502,25 @@
         </div>
     </div>
 
+    {# 筛选/搜索结果提示条。刻意放在选项卡区块【外面】：
+       收起筛选区块后仍然显示，方便在列表被筛过的情况下直接一键还原。
+       只清筛选条件，保留当前排序（sort/order）。 #}
+    {% if search_text or search_author or search_tag or search_site %}
+    <div class="filter-notice">
+        <span class="filter-notice-text">
+            {{ icon('filter', 'sm') }}
+            {% if search_text %}
+            <span class="filter-notice-query" title="{{ search_text }}">搜索「{{ search_text }}」</span>
+            {% else %}
+            <span>筛选结果</span>
+            {% endif %}
+            <span class="filter-notice-count">共 <b>{{ pagination.total }}</b> 本</span>
+        </span>
+        <a href="?sort={{ sort_by }}&order={{ sort_order }}" class="filter-notice-reset">
+            {{ icon('rotate-ccw', 'sm') }} 返回列表
+        </a>
+    </div>
+    {% endif %}
 
     <!-- 小说列表 - PC端表格 -->
     <div class="table-wrapper">

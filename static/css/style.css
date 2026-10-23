@@ -506,6 +506,87 @@ body {
 /* ============================================
    5. 小说表格 & 卡片
    ============================================ */
+
+/* ---- 筛选/搜索提示条：紧凑一行，位于列表上方、选项卡区块之外 ---- */
+.filter-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--color-primary-link);
+    background: var(--color-primary-opacity-10);
+    border: 1px solid var(--color-primary-opacity-20);
+    border-radius: 10px;
+}
+
+.filter-notice-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.filter-notice-text > .ic {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+/* 搜索词可能很长，超宽省略，避免把「返回列表」挤到第二行 */
+.filter-notice-query {
+    max-width: 46vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filter-notice-count {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.filter-notice-count b {
+    font-weight: 600;
+}
+
+.filter-notice-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: var(--color-primary-link);
+    background: var(--color-primary-opacity-20);
+    border-radius: 7px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s ease;
+}
+
+.filter-notice-reset:hover {
+    background: var(--color-primary-opacity-30);
+}
+
+body.dark-mode .filter-notice {
+    color: var(--dark-text-secondary);
+    background: rgba(114, 139, 71, 0.18);
+    border-color: var(--dark-border-primary);
+}
+
+body.dark-mode .filter-notice-reset {
+    color: #cfe0a8;
+    background: rgba(114, 139, 71, 0.35);
+}
+
+body.dark-mode .filter-notice-reset:hover {
+    background: rgba(114, 139, 71, 0.5);
+}
+
 .table-wrapper {
     background: var(--color-bg-card);
     border-radius: 15px;
