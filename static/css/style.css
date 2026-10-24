@@ -4350,3 +4350,101 @@ body.dark-mode .user-menu-subitem.active {
     background: rgba(255, 255, 255, 0.14);
     color: var(--dark-primary-light);
 }
+
+/* ==================== 用户头像 ====================
+   白底圆 + 彩色描边 + 一个 emoji，不用任何图片资源。
+   emoji 靠系统字体渲染，各平台字形不同但都清晰。
+   描边色由后端按用户 seed 生成，通过 --av-color 传进来。 */
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--av-color, #7BA05B);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    flex: none;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* 深绿导航上白圆容易"发飘"，外圈极淡描边压一下 */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* 用户菜单下拉里的信息行：容器正好 34px，头像填满即可 */
+.user-avatar--lg {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+}
+
+/* 配置页用户列表等紧凑位置 */
+.user-avatar--sm {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    border-width: 1.5px;
+    box-shadow: none;
+}
+
+/* ==================== 头像选择器（配置页 → 用户管理 → 编辑） ====================
+   24 个 emoji 网格 + 8 个颜色圆点。底/边框都用半透明灰，
+   深色弹窗和浅色主题下都能看清，不用各写一套。 */
+.av-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.av-pick {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.14);
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.av-pick:hover {
+    background: rgba(128, 128, 128, 0.26);
+}
+
+.av-pick.on {
+    border-color: #7BA05B;
+    background: rgba(123, 160, 91, 0.32);
+}
+
+.av-color-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.av-color {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.av-color:hover {
+    transform: scale(1.15);
+}
+
+.av-color.on {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
+}

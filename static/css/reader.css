@@ -874,7 +874,21 @@ body.dark-mode .speech-controls {
 }
 
 .content-line:has(.local-image-figure),
-.content-line:has(.image-wrapper) {
+.content-line:has(.image-wrapper),
+.content-line:has(.ending-wrapper) {
+  /* 必须 !important：正文那条缩进规则是
+     .content-line:not(...):not(...):not(...):not(...)，特异度 (0,5,0)，
+     比这里的 (0,2,0) 高，不加 !important 这条补丁根本盖不住
+     （视频/音频那两条一直带 !important，所以它们没出问题）。 */
+  text-indent: 0 !important;
+}
+
+/* 同一类漏网：图片兜底块 / 缺失提示 / 错误提示也被塞在正文行里，
+   内部的居中文字会继承 2em 缩进而整体偏右。以后新增这类组件请加进这里。 */
+.local-image-error,
+.image-fallback-placeholder,
+.error-hint,
+.image-error-hint {
   text-indent: 0;
 }
 
@@ -1244,19 +1258,20 @@ body.dark-mode .local-image-missing {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px 20px;
-  background: var(--color-bg-secondary);
-  border: 2px dashed var(--reader-border-primary);
-  border-radius: 12px;
-  min-height: 100px;
+  padding: 16px 0;
   width: 100%;
-  gap: 8px;
-  transition: all 0.3s ease;
+  gap: 10px;
 }
 
-.image-fallback-placeholder:hover {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-text-tertiary);
+/* 图片加载失败占位图（外链挂了/超时才会显示）。
+   底色和圆角由 SVG 自己带（半透明灰，深浅主题都协调），
+   这里不再套虚线框，避免「框套框」。尺寸跟正文列宽走，300px 封顶。 */
+.fallback-image {
+  display: block;
+  width: 300px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
 }
 
 /* 图片加载失败占位图标（Lucide SVG）：
@@ -1317,6 +1332,9 @@ body.dark-mode .fallback-text {
   padding: 20px 0;
   position: relative;
   clear: both;
+  /* text-indent 是可继承属性：正文行的首行缩进（2em）会漏到这里，
+     让结尾图整体右移、在窄屏上还会溢出被切。必须显式清零。 */
+  text-indent: 0;
 }
 
 .ending-image {

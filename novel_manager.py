@@ -461,6 +461,62 @@ def normalize_user_info(info, fallback_id):
     out.setdefault('user_id', fallback_id)
     return out
 
+
+# ==================== 用户头像（随机 emoji + 配色） ====================
+# 不准备任何图片资源：头像就是「白底圆 + 彩色描边 + 一个 emoji」。
+# emoji 本身是文字，靠系统字体渲染，各平台字形不同但都清晰。
+# 每个用户存一个 seed，emoji 与描边色都由 seed 确定性推出 —— 稳定、可复现，
+# 想换头像只要重掷 seed。白名单只收动物/植物，避免随机到不合适的符号。
+AVATAR_EMOJI = (
+    '🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
+    '🐷', '🐸', '🦉', '🐧', '🐟', '🦋', '🐢', '🐙',
+    '🌻', '🌵', '🍀', '🍄', '🌙', '⭐', '🍊', '🍎',
+)
+AVATAR_COLORS = (
+    '#7BA05B', '#5F8D6B', '#6B8E9F', '#8C7AA8',
+    '#C08552', '#B5837A', '#8FA05B', '#A5806B',
+)
+
+
+def avatar_look(seed):
+    """seed -> (emoji, 描边色)。同一个 seed 永远得到同一张脸。"""
+    try:
+        seed = abs(int(seed))
+    except (TypeError, ValueError):
+        seed = 0
+    emoji = AVATAR_EMOJI[seed % len(AVATAR_EMOJI)]
+    color = AVATAR_COLORS[(seed // len(AVATAR_EMOJI)) % len(AVATAR_COLORS)]
+    return emoji, color
+
+
+def ensure_avatar_seed(user_key, persist=True):
+    """取用户的头像 seed；没有就随机生成一个并写回 config.json（老用户无感迁移）。"""
+    users = CONFIG.get('users', {}) or {}
+    info = users.get(user_key)
+    if not isinstance(info, dict):
+        return 0
+
+    avatar = info.get('avatar')
+    seed = avatar.get('seed') if isinstance(avatar, dict) else None
+    if isinstance(seed, int) and seed > 0:
+        return seed
+
+    seed = random.randint(1, 999999)
+    info['avatar'] = {'seed': seed}
+    users[user_key] = info
+    CONFIG['users'] = users
+    if persist:
+        try:
+            save_json_file(CONFIG_FILE, CONFIG)
+            logger.info(
+                f"🎲 生成头像 seed={seed} 给用户「{info.get('user_id') or user_key}」"
+            )
+        except Exception as e:
+            # 存不下来也不影响本次显示，下次访问会再试
+            logger.warning(f"头像 seed 保存失败：{e}")
+    return seed
+
+
 def hash_password(password):
     return generate_password_hash(password)
 
@@ -4870,17 +4926,23 @@ _css_version_cache = {'value': 0, 'ts': 0}
 
 
 def get_css_version():
-    """取 detail.css / reader.css 的最新 mtime 作为 ?v=，改样式后自动失效。"""
+    """静态资源版本号：static/css 与 static/js 下的最新 mtime。
+
+    名字沿用 css_version（模板里已经在用），但范围覆盖到 JS ——
+    改 reader-core.js 这类脚本同样必须换 URL，否则浏览器按 30 天强缓存跑旧代码。
+    """
     now = time.time()
     if _css_version_cache['value'] and now - _css_version_cache['ts'] < 300:
         return _css_version_cache['value']
     latest = 0
-    for name in ('detail.css', 'reader.css'):
-        try:
-            latest = max(latest, int(os.path.getmtime(
-                os.path.join(BASE_DIR, 'static', 'css', name))))
-        except OSError:
-            continue
+    for sub in ('css', 'js'):
+        for root, _dirs, files in os.walk(os.path.join(BASE_DIR, 'static', sub)):
+            for name in files:
+                if name.endswith(('.css', '.js')):
+                    try:
+                        latest = max(latest, int(os.path.getmtime(os.path.join(root, name))))
+                    except OSError:
+                        continue
     _css_version_cache['value'] = latest
     _css_version_cache['ts'] = now
     return latest
@@ -5061,7 +5123,7 @@ def get_cache_overview():
 #==================== 首页路由 =====================
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    _, user_info = get_current_user_info()
+    user_key, user_info = get_current_user_info()
     # 列表显示相关（排序 / 分页 / 日期格式）自 2026-10-19 起支持个人覆盖，
     # 统一走 resolve_reader_prefs：CONFIG 里的是「新用户默认值」，用户设过的覆盖它
     user_prefs = resolve_reader_prefs(user_info)
@@ -5069,9 +5131,13 @@ def index():
 
     current_user_display = '用户'
     current_user_role = 'user'
+    current_user_avatar = {'emoji': '👤', 'color': '#8a94a6'}
     if user_info:
         current_user_display = user_info.get('user_id', '用户')
         current_user_role = user_info.get('role', 'user')
+        if user_key:
+            avatar_emoji, avatar_color = avatar_look(ensure_avatar_seed(user_key))
+            current_user_avatar = {'emoji': avatar_emoji, 'color': avatar_color}
 
     records = load_reading_records()
     recent_records = build_recent_records(records)
@@ -5257,6 +5323,7 @@ def index():
         sort_order=sort_order,
         current_user_display=current_user_display,
         current_user_role=current_user_role,
+        current_user_avatar=current_user_avatar,
         user_prefs=user_prefs
     )
 
@@ -7288,13 +7355,27 @@ def api_users_list():
     user_list = []
     for key, user_info in users.items():
         info = normalize_user_info(user_info, key)
+        # 老用户首次进这个页面时补一个 seed（写盘一次，之后直接读）
+        avatar_seed = ensure_avatar_seed(key)
+        avatar_emoji, avatar_color = avatar_look(avatar_seed)
         user_list.append({
             'key': key,
             'role': info.get('role', 'user'),
             'user_id': info.get('user_id', key),
-            'preferences': info.get('preferences', {}) or {}
+            'preferences': info.get('preferences', {}) or {},
+            'avatar_seed': avatar_seed,
+            'avatar_emoji': avatar_emoji,
+            'avatar_color': avatar_color,
         })
     return jsonify(user_list)
+
+
+@app.route('/api/avatar/options')
+def api_avatar_options():
+    """可选头像（emoji + 描边色）。配置页编辑用户时用来渲染选择器。"""
+    if not is_admin():
+        return jsonify({'error': '权限不足'}), 403
+    return jsonify({'emoji': list(AVATAR_EMOJI), 'colors': list(AVATAR_COLORS)})
 
 #=================== 添加用户 API ====================
 @app.route('/api/users/add', methods=['POST'])
@@ -7328,7 +7409,13 @@ def api_users_add():
             return jsonify({'success': False, 'message': f'显示名称 "{user_id}" 已存在'})
 
     key = new_user_key()
-    users[key] = {'role': role, 'user_id': user_id, 'password_hash': hash_password(password)}
+    users[key] = {
+        'role': role,
+        'user_id': user_id,
+        'password_hash': hash_password(password),
+        # 新用户直接分配头像 seed，省得第一次打开首页才懒生成
+        'avatar': {'seed': random.randint(1, 999999)},
+    }
     CONFIG['users'] = users
     save_json_file(CONFIG_FILE, CONFIG)
     save_json_file(get_user_record_file(key), {})
@@ -7349,6 +7436,17 @@ def api_users_edit():
     role = data.get('role', 'user')
     user_id = (data.get('user_id') or '').strip()
     keep_preferences = data.get('keep_preferences', True)
+
+    # 头像：传了 avatar_seed 就换，没传保留原来的
+    # （下面 new_info 是重建的 dict，不显式带上就会把 avatar 丢掉）
+    avatar_seed = None
+    if data.get('avatar_seed') is not None:
+        try:
+            avatar_seed = int(data.get('avatar_seed'))
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': '头像参数无效'})
+        if avatar_seed < 0 or avatar_seed > 9999999:
+            return jsonify({'success': False, 'message': '头像参数超出范围'})
 
     if not user_id:
         return jsonify({'success': False, 'message': '显示名称不能为空'})
@@ -7380,6 +7478,11 @@ def api_users_edit():
     }
     if keep_preferences and old_info.get('preferences'):
         new_info['preferences'] = old_info['preferences']
+    # 头像：优先用新选中的，否则沿用旧的（老用户可能还没有，交给懒生成）
+    if avatar_seed is not None:
+        new_info['avatar'] = {'seed': avatar_seed}
+    elif isinstance(old_info.get('avatar'), dict):
+        new_info['avatar'] = old_info['avatar']
     new_info['password_hash'] = old_info.get('password_hash')
     if new_password:
         new_info['password_hash'] = hash_password(new_password)

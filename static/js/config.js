@@ -293,12 +293,12 @@ function renderUserList(users, container) {
                     <div class="user-account-item" data-username="${user.key.replace(/'/g, "\\'")}" style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                <span style="background: rgba(90, 143, 76, 0.25); padding: 2px 8px; border-radius: 12px; font-size: 11px;">${icon('user', 'xs')} ${escapeHtml(user.user_id || user.key)}</span>
+                                <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(90, 143, 76, 0.25); padding: 2px 10px 2px 4px; border-radius: 12px; font-size: 11px;"><span class="user-avatar user-avatar--sm" style="--av-color: ${user.avatar_color || '#7BA05B'}">${user.avatar_emoji || '👤'}</span>${escapeHtml(user.user_id || user.key)}</span>
                                 <span class="record-badge ${roleClass}" style="font-size: 11px; padding: 2px 8px;">${roleName}</span>
                                 ${isCurrentUser ? '<span style="font-size: 10px; background: #4caf50; padding: 2px 6px; border-radius: 10px;">当前用户</span>' : ''}
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn-edit-user" data-key="${user.key.replace(/"/g, '&quot;')}" data-role="${user.role}" data-userid="${(user.user_id || user.key).replace(/"/g, '&quot;')}" data-preferences='${JSON.stringify(user.preferences || {}).replace(/'/g, "&#39;")}'style="background: #ffaa66; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;">${icon('pencil', 'sm')} 编辑</button>
+                                <button class="btn-edit-user" data-key="${user.key.replace(/"/g, '&quot;')}" data-role="${user.role}" data-userid="${(user.user_id || user.key).replace(/"/g, '&quot;')}" data-avatar-seed="${user.avatar_seed || 0}" data-preferences='${JSON.stringify(user.preferences || {}).replace(/'/g, "&#39;")}'style="background: #ffaa66; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;">${icon('pencil', 'sm')} 编辑</button>
                                 <button class="btn-delete-user" data-key="${user.key}" style="background:#ff6b6b;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;color:white;">${icon('trash-2', 'sm')} 删除</button>
                             </div>
                         </div>
@@ -408,7 +408,7 @@ function submitAddUser() {
         });
 }
 // ========== 编辑用户 ==========
-function showEditUserModal(userKey, role, userId, preferences = {}) {
+function showEditUserModal(userKey, role, userId, preferences = {}, avatarSeed = 0) {
     const existingModal = document.querySelector('.modal');
     if (existingModal) existingModal.remove();
 
@@ -451,6 +451,19 @@ function showEditUserModal(userKey, role, userId, preferences = {}) {
                             <div class="form-hint" style="margin-top: 5px;">${icon('lightbulb', 'sm')} 用于在用户记录管理中显示，建议使用易识别的昵称</div>
                         </div>
                         <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; color: #a0c0ff;">${icon('smile', 'sm')} 头像</label>
+                            <div style="display: flex; gap: 14px; align-items: flex-start;">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none;">
+                                    <span id="modal_avatar_preview" class="user-avatar" style="width: 56px; height: 56px; font-size: 26px;">🐱</span>
+                                    <span style="font-size: 11px; color: #8a94a6;">预览</span>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div id="modal_avatar_emoji" class="av-emoji-grid"></div>
+                                    <div id="modal_avatar_color" class="av-color-row"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 8px; color: #a0c0ff;">新密码</label>
                             <input type="text" id="modal_edit_password" placeholder="输入新密码（留空则不修改）"autocomplete="off">
                             <div class="form-hint" style="margin-top: 5px;">${icon('lightbulb', 'sm')} 留空则保持原密码不变</div>
@@ -484,11 +497,93 @@ function showEditUserModal(userKey, role, userId, preferences = {}) {
             `;
     document.body.appendChild(modal);
 
+    // 头像选择器要等 DOM 挂上去才能填（内部会拉一次 /api/avatar/options 并缓存）
+    renderAvatarPicker(avatarSeed);
+
     modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             modal.remove();
         }
     });
+}
+
+// ========== 头像选择器（编辑用户）==========
+// 与后端的映射保持一致：emoji = seed % N，color = seed // N % 颜色数。
+// 反过来算：seed = emojiIndex + colorIndex * N —— 选两个格子就能得到一个确定 seed。
+const avatarPicker = { emoji: 0, color: 0, options: null, ready: false };
+
+async function renderAvatarPicker(seed) {
+    const box = document.getElementById('modal_avatar_emoji');
+    const colorBox = document.getElementById('modal_avatar_color');
+    if (!box || !colorBox) return;
+
+    if (!avatarPicker.options) {
+        try {
+            const resp = await fetch('/api/avatar/options');
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            avatarPicker.options = await resp.json();
+        } catch (err) {
+            box.innerHTML = '<span style="font-size: 12px; color: #f44336;">头像选项加载失败</span>';
+            return;
+        }
+    }
+
+    const opts = avatarPicker.options;
+    const total = opts.emoji.length;
+    const value = Math.abs(parseInt(seed, 10) || 0);
+    avatarPicker.emoji = value % total;
+    avatarPicker.color = Math.floor(value / total) % opts.colors.length;
+
+    box.innerHTML = opts.emoji.map(function (emoji, i) {
+        return '<button type="button" class="av-pick' + (i === avatarPicker.emoji ? ' on' : '') +
+            '" data-i="' + i + '">' + emoji + '</button>';
+    }).join('');
+
+    colorBox.innerHTML = opts.colors.map(function (color, i) {
+        return '<button type="button" class="av-color' + (i === avatarPicker.color ? ' on' : '') +
+            '" data-i="' + i + '" style="background: ' + color + ';"></button>';
+    }).join('');
+
+    box.querySelectorAll('.av-pick').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            avatarPicker.emoji = parseInt(btn.dataset.i, 10) || 0;
+            syncAvatarPicker();
+        });
+    });
+    colorBox.querySelectorAll('.av-color').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            avatarPicker.color = parseInt(btn.dataset.i, 10) || 0;
+            syncAvatarPicker();
+        });
+    });
+
+    avatarPicker.ready = true;
+    syncAvatarPicker();
+}
+
+function syncAvatarPicker() {
+    const opts = avatarPicker.options;
+    if (!opts) return;
+    const preview = document.getElementById('modal_avatar_preview');
+    if (preview) {
+        preview.textContent = opts.emoji[avatarPicker.emoji];
+        preview.style.setProperty('--av-color', opts.colors[avatarPicker.color]);
+    }
+    document.querySelectorAll('#modal_avatar_emoji .av-pick').forEach(function (btn, i) {
+        btn.classList.toggle('on', i === avatarPicker.emoji);
+    });
+    document.querySelectorAll('#modal_avatar_color .av-color').forEach(function (btn, i) {
+        btn.classList.toggle('on', i === avatarPicker.color);
+    });
+}
+
+function currentAvatarSeed() {
+    const opts = avatarPicker.options;
+    if (!opts || !avatarPicker.ready) return null;   // 没加载出来就别提交，免得覆盖原头像
+    const total = opts.emoji.length;
+    const seed = avatarPicker.emoji + avatarPicker.color * total;
+    // seed=0 会被后端当成「未设置」，换成等价的 total × 颜色数
+    return seed === 0 ? total * opts.colors.length : seed;
 }
 // ========== 提交编辑用户 ==========
 function submitEditUser(userKey) {
@@ -520,6 +615,12 @@ function submitEditUser(userKey) {
 
     if (newPassword) {
         requestData.new_password = newPassword;
+    }
+
+    // 只有头像选项真的加载出来了才提交，否则会把用户原来的头像覆盖掉
+    const avatarSeed = currentAvatarSeed();
+    if (avatarSeed !== null) {
+        requestData.avatar_seed = avatarSeed;
     }
 
     fetch('/api/users/edit', {
@@ -1073,6 +1174,7 @@ document.body.addEventListener('click', function (e) {
         const userKey = editBtn.getAttribute('data-key');
         const role = editBtn.getAttribute('data-role');
         const userId = editBtn.getAttribute('data-userid');
+        const avatarSeed = parseInt(editBtn.getAttribute('data-avatar-seed'), 10) || 0;
         let preferences = {};
         try {
             const prefsStr = editBtn.getAttribute('data-preferences');
@@ -1080,7 +1182,7 @@ document.body.addEventListener('click', function (e) {
                 preferences = JSON.parse(prefsStr.replace(/&#39;/g, "'"));
             }
         } catch (e) { }
-        showEditUserModal(userKey, role, userId, preferences);
+        showEditUserModal(userKey, role, userId, preferences, avatarSeed);
     }
 });
 

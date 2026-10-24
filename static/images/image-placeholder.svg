@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" width="400" height="225" role="img" aria-label="图片加载失败">
+  <rect width="400" height="225" rx="12" fill="#8b93a1" fill-opacity="0.12"/>
+  <g stroke="#8b93a1" stroke-opacity="0.55" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="136" y="52" width="128" height="92" rx="8"/>
+    <circle cx="163" cy="77" r="8"/>
+    <path d="M141 130l30-28 24 22 22-18 38 32"/>
+    <line x1="122" y1="40" x2="278" y2="166"/>
+  </g>
+  <text x="200" y="186" text-anchor="middle" font-family="system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="15" fill="#8b93a1" fill-opacity="0.85">图片加载失败</text>
+</svg>

@@ -216,7 +216,7 @@
         const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
         // 🔥 和老版本一样，紧凑一行，无换行无缩进
-        return '<span class="image-wrapper" id="' + imgId + '-wrapper"><img src="' + safeUrl + '" class="inline-image" referrerpolicy="no-referrer" loading="lazy" data-img-id="' + imgId + '" data-fallback-url="' + safeUrl.replace(/&quot;/g, '&#34;') + '" alt="图片"><div class="image-fallback-placeholder" id="' + imgId + '-placeholder" style="display:none;"><span class="fallback-icon">' + icon('image', 'xl') + '</span><span class="fallback-text">图片加载失败</span><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" class="fallback-link">查看原图</a></div></span>';
+        return '<span class="image-wrapper" id="' + imgId + '-wrapper"><img src="' + safeUrl + '" class="inline-image" referrerpolicy="no-referrer" loading="lazy" data-img-id="' + imgId + '" data-fallback-url="' + safeUrl.replace(/&quot;/g, '&#34;') + '" alt="图片"><div class="image-fallback-placeholder" id="' + imgId + '-placeholder" style="display:none;"><img class="fallback-image" src="/static/images/image-placeholder.svg" alt="图片加载失败"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" class="fallback-link">查看原图</a></div></span>';
     }
 
     // URL 格式化函数
