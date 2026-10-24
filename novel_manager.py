@@ -462,15 +462,17 @@ def normalize_user_info(info, fallback_id):
     return out
 
 
-# ==================== 用户头像（随机 emoji + 配色） ====================
-# 不准备任何图片资源：头像就是「白底圆 + 彩色描边 + 一个 emoji」。
-# emoji 本身是文字，靠系统字体渲染，各平台字形不同但都清晰。
-# 每个用户存一个 seed，emoji 与描边色都由 seed 确定性推出 —— 稳定、可复现，
-# 想换头像只要重掷 seed。白名单只收动物/植物，避免随机到不合适的符号。
-AVATAR_EMOJI = (
-    '🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
-    '🐷', '🐸', '🦉', '🐧', '🐟', '🦋', '🐢', '🐙',
-    '🌻', '🌵', '🍀', '🍄', '🌙', '⭐', '🍊', '🍎',
+# ==================== 用户头像（Lucide 线稿 + 配色） ====================
+# 不占图片资源：白底圆 + 彩色描边 + 一个 Lucide 线稿图标。
+# 用项目已有的图标库（static/icons/*.svg → static/icons.svg，由 _sprite_build.py 打包），
+# 所以头像和全站图标的描边粗细、圆角风格完全一致。
+# 每个用户存一个 seed，图标与描边色都由 seed 确定性推出 —— 稳定、可复现。
+AVATAR_ICONS = (
+    'cat', 'dog', 'rabbit', 'bird', 'fish', 'turtle', 'squirrel', 'bug',
+    'leaf', 'flower', 'sprout', 'tree-deciduous', 'clover',
+    'moon', 'star', 'sun', 'snowflake', 'flame',
+    'apple', 'cherry', 'coffee',
+    'rocket', 'gift', 'heart',
 )
 AVATAR_COLORS = (
     '#7BA05B', '#5F8D6B', '#6B8E9F', '#8C7AA8',
@@ -479,14 +481,14 @@ AVATAR_COLORS = (
 
 
 def avatar_look(seed):
-    """seed -> (emoji, 描边色)。同一个 seed 永远得到同一张脸。"""
+    """seed -> (Lucide 图标名, 描边色)。同一个 seed 永远得到同一个头像。"""
     try:
         seed = abs(int(seed))
     except (TypeError, ValueError):
         seed = 0
-    emoji = AVATAR_EMOJI[seed % len(AVATAR_EMOJI)]
-    color = AVATAR_COLORS[(seed // len(AVATAR_EMOJI)) % len(AVATAR_COLORS)]
-    return emoji, color
+    icon_name = AVATAR_ICONS[seed % len(AVATAR_ICONS)]
+    color = AVATAR_COLORS[(seed // len(AVATAR_ICONS)) % len(AVATAR_COLORS)]
+    return icon_name, color
 
 
 def ensure_avatar_seed(user_key, persist=True):
@@ -5131,13 +5133,13 @@ def index():
 
     current_user_display = '用户'
     current_user_role = 'user'
-    current_user_avatar = {'emoji': '👤', 'color': '#8a94a6'}
+    current_user_avatar = {'icon': 'user', 'color': '#8a94a6'}
     if user_info:
         current_user_display = user_info.get('user_id', '用户')
         current_user_role = user_info.get('role', 'user')
         if user_key:
-            avatar_emoji, avatar_color = avatar_look(ensure_avatar_seed(user_key))
-            current_user_avatar = {'emoji': avatar_emoji, 'color': avatar_color}
+            avatar_icon, avatar_color = avatar_look(ensure_avatar_seed(user_key))
+            current_user_avatar = {'icon': avatar_icon, 'color': avatar_color}
 
     records = load_reading_records()
     recent_records = build_recent_records(records)
@@ -7357,14 +7359,14 @@ def api_users_list():
         info = normalize_user_info(user_info, key)
         # 老用户首次进这个页面时补一个 seed（写盘一次，之后直接读）
         avatar_seed = ensure_avatar_seed(key)
-        avatar_emoji, avatar_color = avatar_look(avatar_seed)
+        avatar_icon, avatar_color = avatar_look(avatar_seed)
         user_list.append({
             'key': key,
             'role': info.get('role', 'user'),
             'user_id': info.get('user_id', key),
             'preferences': info.get('preferences', {}) or {},
             'avatar_seed': avatar_seed,
-            'avatar_emoji': avatar_emoji,
+            'avatar_icon': avatar_icon,
             'avatar_color': avatar_color,
         })
     return jsonify(user_list)
@@ -7372,10 +7374,10 @@ def api_users_list():
 
 @app.route('/api/avatar/options')
 def api_avatar_options():
-    """可选头像（emoji + 描边色）。配置页编辑用户时用来渲染选择器。"""
+    """可选头像（Lucide 图标名 + 描边色）。配置页编辑用户时用来渲染选择器。"""
     if not is_admin():
         return jsonify({'error': '权限不足'}), 403
-    return jsonify({'emoji': list(AVATAR_EMOJI), 'colors': list(AVATAR_COLORS)})
+    return jsonify({'icons': list(AVATAR_ICONS), 'colors': list(AVATAR_COLORS)})
 
 #=================== 添加用户 API ====================
 @app.route('/api/users/add', methods=['POST'])

@@ -4352,25 +4352,32 @@ body.dark-mode .user-menu-subitem.active {
 }
 
 /* ==================== 用户头像 ====================
-   白底圆 + 彩色描边 + 一个 emoji，不用任何图片资源。
-   emoji 靠系统字体渲染，各平台字形不同但都清晰。
-   描边色由后端按用户 seed 生成，通过 --av-color 传进来。 */
+   白底圆 + 彩色描边 + 一个 Lucide 线稿图标（与全站图标同库同粗细）。
+   描边色和图标色都由后端按用户 seed 生成，通过 --av-color 传进来。 */
 .user-avatar {
     width: 28px;
     height: 28px;
     border-radius: 50%;
     background: #fff;
     border: 2px solid var(--av-color, #7BA05B);
+    /* 图标描边取这个颜色（Lucide 的 stroke 是 currentColor） */
+    color: var(--av-color, #7BA05B);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
     line-height: 1;
     flex: none;
     box-sizing: border-box;
     overflow: hidden;
     /* 深绿导航上白圆容易"发飘"，外圈极淡描边压一下 */
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* 图标按头像尺寸等比缩放，28/34/22 三档共用一套规则 */
+.user-avatar .ic {
+    width: 54%;
+    height: 54%;
+    stroke-width: 2.2;
 }
 
 /* 用户菜单下拉里的信息行：容器正好 34px，头像填满即可 */
@@ -4405,6 +4412,8 @@ body.dark-mode .user-menu-subitem.active {
     border: 1px solid transparent;
     border-radius: 8px;
     background: rgba(128, 128, 128, 0.14);
+    /* 图标走 currentColor，跟随弹窗文字色（深浅主题都对） */
+    color: var(--text-primary, #dbe7cf);
     font-size: 15px;
     line-height: 1;
     display: flex;
@@ -4412,6 +4421,11 @@ body.dark-mode .user-menu-subitem.active {
     justify-content: center;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
+}
+
+.av-pick .ic {
+    width: 18px;
+    height: 18px;
 }
 
 .av-pick:hover {

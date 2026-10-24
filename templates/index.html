@@ -50,13 +50,13 @@
                 <button type="button" class="user-menu-btn" id="userMenuBtn" aria-haspopup="menu" aria-expanded="false"
                     aria-controls="userMenuDropdown">
                     <span class="user-menu-btn-icon"><span class="user-avatar"
-                            style="--av-color: {{ current_user_avatar.color }}">{{ current_user_avatar.emoji }}</span></span>
+                            style="--av-color: {{ current_user_avatar.color }}">{{ icon(current_user_avatar.icon) }}</span></span>
                     <span class="user-menu-btn-name">菜单</span>
                 </button>
                 <div class="user-menu-dropdown" id="userMenuDropdown" role="menu">
                     <div class="user-menu-info">
                         <span class="user-menu-info-icon"><span class="user-avatar user-avatar--lg"
-                                style="--av-color: {{ current_user_avatar.color }}">{{ current_user_avatar.emoji }}</span></span>
+                                style="--av-color: {{ current_user_avatar.color }}">{{ icon(current_user_avatar.icon) }}</span></span>
                         <span class="user-menu-info-text">
                             <span class="user-menu-info-name">{{ current_user_display }}</span>
                             <span class="user-menu-info-role">{% if current_user_role == 'admin' %}管理{% else %}用户{%

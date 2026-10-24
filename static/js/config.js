@@ -293,7 +293,7 @@ function renderUserList(users, container) {
                     <div class="user-account-item" data-username="${user.key.replace(/'/g, "\\'")}" style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(90, 143, 76, 0.25); padding: 2px 10px 2px 4px; border-radius: 12px; font-size: 11px;"><span class="user-avatar user-avatar--sm" style="--av-color: ${user.avatar_color || '#7BA05B'}">${user.avatar_emoji || '👤'}</span>${escapeHtml(user.user_id || user.key)}</span>
+                                <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(90, 143, 76, 0.25); padding: 2px 10px 2px 4px; border-radius: 12px; font-size: 11px;"><span class="user-avatar user-avatar--sm" style="--av-color: ${user.avatar_color || '#7BA05B'}">${icon(user.avatar_icon || 'user', 'xs')}</span>${escapeHtml(user.user_id || user.key)}</span>
                                 <span class="record-badge ${roleClass}" style="font-size: 11px; padding: 2px 8px;">${roleName}</span>
                                 ${isCurrentUser ? '<span style="font-size: 10px; background: #4caf50; padding: 2px 6px; border-radius: 10px;">当前用户</span>' : ''}
                             </div>
@@ -529,14 +529,15 @@ async function renderAvatarPicker(seed) {
     }
 
     const opts = avatarPicker.options;
-    const total = opts.emoji.length;
+    const total = opts.icons.length;
     const value = Math.abs(parseInt(seed, 10) || 0);
     avatarPicker.emoji = value % total;
     avatarPicker.color = Math.floor(value / total) % opts.colors.length;
 
-    box.innerHTML = opts.emoji.map(function (emoji, i) {
+    // avatarPicker.emoji 存的是「图标索引」（沿用旧字段名，避免大改）
+    box.innerHTML = opts.icons.map(function (name, i) {
         return '<button type="button" class="av-pick' + (i === avatarPicker.emoji ? ' on' : '') +
-            '" data-i="' + i + '">' + emoji + '</button>';
+            '" data-i="' + i + '">' + icon(name) + '</button>';
     }).join('');
 
     colorBox.innerHTML = opts.colors.map(function (color, i) {
@@ -566,7 +567,7 @@ function syncAvatarPicker() {
     if (!opts) return;
     const preview = document.getElementById('modal_avatar_preview');
     if (preview) {
-        preview.textContent = opts.emoji[avatarPicker.emoji];
+        preview.innerHTML = icon(opts.icons[avatarPicker.emoji]);
         preview.style.setProperty('--av-color', opts.colors[avatarPicker.color]);
     }
     document.querySelectorAll('#modal_avatar_emoji .av-pick').forEach(function (btn, i) {
@@ -580,7 +581,7 @@ function syncAvatarPicker() {
 function currentAvatarSeed() {
     const opts = avatarPicker.options;
     if (!opts || !avatarPicker.ready) return null;   // 没加载出来就别提交，免得覆盖原头像
-    const total = opts.emoji.length;
+    const total = opts.icons.length;
     const seed = avatarPicker.emoji + avatarPicker.color * total;
     // seed=0 会被后端当成「未设置」，换成等价的 total × 颜色数
     return seed === 0 ? total * opts.colors.length : seed;
