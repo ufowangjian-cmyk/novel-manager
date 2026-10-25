@@ -91,9 +91,6 @@
 /* ============================================
    6. 表单样式
    ============================================ */
-.form-group {
-    margin-bottom: 20px;
-}
 
 .form-group label {
     display: flex;
@@ -297,10 +294,6 @@
     background: var(--color-warm);
     color: var(--text-white);
 
-
-
-
-
     font-weight: 500;
 
 }
@@ -313,10 +306,6 @@
 .btn-delete-user {
     background: var(--color-danger);
     color: var(--text-white);
-
-
-
-
 
     font-weight: 500;
 
@@ -789,18 +778,6 @@ body.dark-mode .loading-overlay {
         font-size: 22px;
     }
 
-    .card-header {
-        padding: 14px 18px;
-    }
-
-    .card-header h2 {
-        font-size: 16px;
-    }
-
-    .card-content {
-        padding: 18px 16px;
-    }
-
     .button-group {
         flex-direction: column;
     }
@@ -808,14 +785,6 @@ body.dark-mode .loading-overlay {
     .btn {
         justify-content: center;
         padding: 10px 16px;
-    }
-
-    .form-group-inline {
-        flex-direction: column;
-    }
-
-    .form-group-inline .form-group {
-        min-width: 100%;
     }
 
     .modal-content {
@@ -827,10 +796,6 @@ body.dark-mode .loading-overlay {
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
-    }
-
-    .user-record-row {
-        flex-wrap: wrap;
     }
 
     /* 底部按钮组 - 移动端两两一组 */
@@ -922,10 +887,6 @@ body.dark-mode .loading-overlay {
 }
 
 @media (max-width: 480px) {
-    .page-config {
-        padding: 8px;
-        /* 小屏稍微缩小 */
-    }
 
     .page-config .header {
         padding: 14px 16px;
@@ -943,19 +904,9 @@ body.dark-mode .loading-overlay {
         font-size: 14px;
     }
 
-    .card-content {
-        padding: 14px 12px;
-    }
-
     .btn {
         padding: 8px 14px;
         font-size: 12px;
-    }
-
-    .form-group input,
-    .form-group select {
-        padding: 8px 12px;
-        font-size: 13px;
     }
 
     .page-config .page-container>.button-group {
@@ -1089,13 +1040,6 @@ body.dark-mode .memory-stat-item .stat-value {
         gap: 8px;
     }
 
-    .memory-stat-item {
-        padding: 10px 14px;
-    }
-
-    .memory-stat-item .stat-value {
-        font-size: 16px;
-    }
 }
 
 /* ============================================
@@ -1370,10 +1314,7 @@ body.dark-mode .set-bi:focus-visible {
 @media (max-width: 768px) {
 
     /* 移动端恢复一行一个 */
-    .font-grid {
-        grid-template-columns: 1fr;
-        column-gap: 0;
-    }
+    
 }
 
 /* ============================================
@@ -1383,6 +1324,12 @@ body.dark-mode .set-bi:focus-visible {
    全部使用已有变量，深浅色主题自动适配；不引入任何硬编码颜色。
    本段位于文件末尾，覆盖 components.css 与本文前方的同名规则
    （加载顺序：tokens.css -> style.css -> components.css -> config.css）。
+
+   ⚠️ 维护约定（2026-10-25 清理后加）：
+   改样式请直接改上方对应规则，不要再往这里追加「覆盖段」。
+   同名规则层层叠加后，实际生效值必须从文件末尾往回倒推才能确定 ——
+   清理时仅一个副标题就有 5 处定义（基础 / 收紧段 / @768 / @480 / 末尾再压缩），
+   维护成本极高。确实需要覆盖时，请在同一条规则里写全所有相关属性，并注明覆盖的是哪一条。
    ============================================ */
 
 /* ---------- 1. 页面与头部收紧 ---------- */
