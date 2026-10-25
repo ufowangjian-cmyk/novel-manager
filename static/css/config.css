@@ -792,12 +792,6 @@ body.dark-mode .loading-overlay {
         max-width: 95%;
     }
 
-    .user-record-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-    }
-
     /* 底部按钮组 - 移动端两两一组 */
     .page-config .page-container>.button-group {
         display: grid;
@@ -853,10 +847,9 @@ body.dark-mode .loading-overlay {
         gap: 8px;
     }
 
-    .user-record-info {
+        .user-record-info {
         display: flex !important;
         flex-direction: row !important;
-        /* 保持水平 */
         align-items: center !important;
         flex-wrap: wrap !important;
         gap: 6px;
@@ -1297,11 +1290,6 @@ body.dark-mode .set-bi:focus-visible {
    改成 CSS Grid 两列排布，行间距沿用 .form-group 自带的 margin-bottom。
    默认（桌面）两列；窄屏 768px 以下回退为单列，保持移动端原有的一行一个。
    用 1fr 1fr 而非 auto-fit，是为了始终严格两列、不会因宽度变化突然变三列。 */
-.font-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 20px;
-}
 
 /* 网格子项默认 stretch，会让每格里的 select 高度被拉齐；
    这里让 .form-group 自身保持内容高度即可（margin-bottom 提供行距）。 */
@@ -1431,6 +1419,7 @@ body.dark-mode .set-bi:focus-visible {
    项高从 ~75px 压到 ~36px；9 个条目从 5 行变 3 行。
    1400px 卡宽下 3 列 × ~440px，label ~100px + 控件 ~330px 不挤。 */
 .font-grid {
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     column-gap: 16px;
     row-gap: 10px;
