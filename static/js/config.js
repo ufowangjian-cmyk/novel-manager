@@ -86,6 +86,44 @@ function formatFontName(fontFamily) {
     }
     return fontFamily.length > 30 ? fontFamily.substring(0, 27) + '...' : fontFamily;
 }
+
+// ========== 阅读偏好里的分元素字体 ==========
+// 阅读页支持「正文 + 8 个作用域」各自选字体，还能各自开关粗体/斜体
+// （key 形如 title_font_family / title_bold），配置页原来只显示正文那一个，
+// 会把用户设的标题、引号、括号字体全丢掉。
+const FONT_SCOPE_LABELS = [
+    ['', '正文'],
+    ['title', '标题'],
+    ['double_quote', '双引号'],
+    ['single_quote', '单引号'],
+    ['bracket', '圆括号'],
+    ['square_bracket', '方头括号'],
+    ['square_bracket_1', '方括号'],
+    ['hollow_bracket', '空心括号'],
+    ['book', '书名号'],
+];
+
+// 生成「正文：xxx / 标题：xxx（粗）」这样的行。
+// 只有正文一定显示；其它作用域为空表示「跟随正文」，不占行。
+function buildFontRows(prefs) {
+    const rows = [];
+    FONT_SCOPE_LABELS.forEach(function (item) {
+        const scope = item[0];
+        const label = item[1];
+        const family = scope ? prefs[scope + '_font_family'] : prefs.font_family;
+        if (scope && !family) return;
+
+        const styleKey = scope || 'body';
+        const marks = [];
+        if (prefs[styleKey + '_bold']) marks.push('粗');
+        if (prefs[styleKey + '_italic']) marks.push('斜');
+
+        rows.push('<div>' + label + '：' + formatFontName(family || '') +
+            (marks.length ? '<span style="opacity: 0.65;">（' + marks.join('+') + '）</span>' : '') +
+            '</div>');
+    });
+    return rows.join('');
+}
 // ========== 时间戳格式化 ==========
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -430,7 +468,7 @@ function showEditUserModal(userKey, role, userId, preferences = {}, avatarSeed =
 
     const prefs = preferences || {};
     const fontSize = prefs.font_size || '未设置';
-    const fontFamily = formatFontName(prefs.font_family || '');
+    const fontRows = buildFontRows(prefs);
 
     modal.innerHTML = `
                 <div class="modal-content">
@@ -479,7 +517,8 @@ function showEditUserModal(userKey, role, userId, preferences = {}, avatarSeed =
                             <label style="display: block; margin-bottom: 8px; color: #a0c0ff;">${icon('book-open', 'sm')} 阅读偏好</label>
                             <div style="font-size: 13px; color: #aaa;">
                                 <div>${icon('pencil', 'sm')} 字号: ${fontSize}px</div>
-                                <div>${icon('type', 'sm')} 字体: ${fontFamily}</div>
+                                <div>${icon('type', 'sm')} 字体</div>
+                                <div style="padding-left: 20px; margin-top: 2px;">${fontRows}</div>
                                 <div>${icon('ruler', 'sm')} 行高: ${prefs.line_height || '未设置'}</div>
                                 <div>${icon('palette', 'sm')} 主题: ${formatThemeName(prefs.theme)}</div>
                                 <div>${icon('volume-2', 'sm')} 朗读语速: ${prefs.speech_rate || '未设置'}</div>
