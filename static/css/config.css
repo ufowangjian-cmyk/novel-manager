@@ -1386,17 +1386,11 @@ body.dark-mode .set-bi:focus-visible {
    ============================================ */
 
 /* ---------- 1. 页面与头部收紧 ---------- */
-.page-config .header {
-    padding: 18px 24px;
-    margin-bottom: 16px;
-    border-radius: 14px;
-}
-.page-config .header h1 {
-    font-size: 26px;
-    margin-bottom: 6px;
-}
-/* 副标题不再单独覆盖字号/间距：统一由 style.css 的 .header-desc 提供（14px / 18px），
-   与标签管理页保持完全一致。这里原来写 13px，桌面端就已经比标签页小了。 */
+/* 头部尺寸不再二次收紧：上面第 3 节的定义（padding 25px 30px / margin-bottom 25px /
+   h1 32px / margin 0 0 8px）与标签管理页的 .page-tags .header 完全相同。
+   这里原先又压成 18px 24px 和 h1 26px，两页因此一个紧一个松。
+   副标题也不单独覆盖字号/间距，统一由 style.css 的 .header-desc 提供
+   （14px / 18px），与标签管理页保持完全一致。 */
 
 /* ---------- 2. 卡片整体收紧 ---------- */
 .config-card {
@@ -1596,16 +1590,11 @@ body.dark-mode .set-bi:focus-visible {
     margin-bottom: 0;
 }
 
-/* ---------- 11. 响应式：移动端保持一列并进一步压缩 ---------- */
+/* ---------- 11. 响应式：移动端保持一列 ---------- */
 @media (max-width: 768px) {
-    .page-config .header {
-        padding: 14px 16px;
-        margin-bottom: 12px;
-    }
-    .page-config .header h1 {
-        font-size: 20px;
-    }
-
+    /* 头部尺寸不在这里二次压缩：上面的响应式块已经给出 padding 18px 20px /
+       margin-bottom 18px / h1 22px，与标签管理页完全一致。
+       这里原先又压成 14px 16px 和 h1 20px，是两页看起来不一样的原因之一。 */
     /* 移动端副标题也不再缩字号 —— 标签管理页此时是 14px，
        两边只有一致才不会一页大、一页小。 */
 
@@ -1686,12 +1675,8 @@ body.dark-mode .set-bi:focus-visible {
     .page-config {
         padding: 8px;
     }
-    .page-config .header {
-        padding: 12px 14px;
-    }
-    .page-config .header h1 {
-        font-size: 18px;
-    }
+    /* 头部不再二次压缩：@480 的 padding 14px 16px / h1 18px 已在上面的响应式块里定义，
+       与标签管理页完全一致。这里原先又压成 12px 14px。 */
     .card-content {
         padding: 12px 12px;
         gap: 8px;
