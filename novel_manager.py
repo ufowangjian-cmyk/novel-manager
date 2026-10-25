@@ -716,6 +716,118 @@ def resolve_reader_prefs(user_info=None):
 
     return prefs
 
+
+# ===================== 首页页码记忆（Docker 版）=====================
+# 记住用户最后一次停留的书架页码，下次打开首页直接落在那儿。
+# 只记「纯浏览」状态：带筛选/搜索的请求既不记录也不恢复。
+# 存在 users[key].preferences 里，跟其他偏好一起走 api_users_edit 的保留逻辑。
+# 增删书会让总页数变化，所以同时记下当时的页数，恢复时按比例折算 ——
+# 只记页码的话，删掉一批书后可能直接落到最后一页。
+HOME_PAGE_KEY = 'home_page'
+HOME_PAGE_PAGES_KEY = 'home_page_pages'
+
+
+def get_saved_home_page(user_info):
+    """返回 (页码, 记录时的总页数)。第 1 页视为「没记」，返回 (None, None)。"""
+    if not isinstance(user_info, dict):
+        return None, None
+    prefs = user_info.get('preferences')
+    if not isinstance(prefs, dict):
+        return None, None
+
+    try:
+        page = int(prefs.get(HOME_PAGE_KEY))
+    except (TypeError, ValueError):
+        return None, None
+    if page <= 1:
+        return None, None
+
+    try:
+        pages = int(prefs.get(HOME_PAGE_PAGES_KEY))
+    except (TypeError, ValueError):
+        pages = None
+    if pages is not None and pages <= 0:
+        pages = None
+    return page, pages
+
+
+def resolve_home_page(page_arg, has_filter, user_info, total_pages):
+    """决定这次显示第几页。
+
+    - 显式带 page=  → 直接用它（夹到有效范围）
+    - 没带 page 且没筛选 → 用记忆页，按「当时总页数 → 现在总页数」比例折算
+    - 带筛选/搜索  → 一律第 1 页，不参与记忆
+    """
+    total_pages = max(1, int(total_pages or 1))
+
+    if page_arg is None:
+        return _saved_home_page_clamped(user_info, total_pages) if not has_filter else 1
+
+    try:
+        page = int(page_arg)
+    except (TypeError, ValueError):
+        page = 1
+    return max(1, min(page, total_pages))
+
+
+def _saved_home_page_clamped(user_info, total_pages):
+    saved_page, saved_pages = get_saved_home_page(user_info)
+    if not saved_page:
+        return 1
+
+    if saved_pages and saved_pages > 1:
+        # 按 0 基数比例折算：第 50/100 页 ≈ 现在的第 15/30 页
+        ratio = (saved_page - 1) / float(saved_pages)
+        page = int(round(ratio * total_pages)) + 1
+    else:
+        page = saved_page
+
+    return max(1, min(page, total_pages))
+
+
+def remember_home_page(user_key, page, total_pages):
+    """记住停留的页码；page<=1 表示回到第一页，顺手清掉记忆。
+
+    只有值真的变了才写 config.json —— 每次翻页都写盘没必要。
+    """
+    if not user_key:
+        return
+    users = CONFIG.get('users', {}) or {}
+    info = users.get(user_key)
+    if not isinstance(info, dict):
+        return
+
+    prefs = info.get('preferences')
+    if not isinstance(prefs, dict):
+        prefs = {}
+        info['preferences'] = prefs
+
+    try:
+        page = int(page or 1)
+    except (TypeError, ValueError):
+        return
+    total_pages = max(1, int(total_pages or 1))
+
+    if page <= 1:
+        if HOME_PAGE_KEY not in prefs and HOME_PAGE_PAGES_KEY not in prefs:
+            return
+        prefs.pop(HOME_PAGE_KEY, None)
+        prefs.pop(HOME_PAGE_PAGES_KEY, None)
+    else:
+        if (prefs.get(HOME_PAGE_KEY) == page
+                and prefs.get(HOME_PAGE_PAGES_KEY) == total_pages):
+            return
+        prefs[HOME_PAGE_KEY] = page
+        prefs[HOME_PAGE_PAGES_KEY] = total_pages
+
+    users[user_key] = info
+    CONFIG['users'] = users
+    try:
+        save_json_file(CONFIG_FILE, CONFIG)
+    except Exception as e:
+        # 记不住页码不影响这次访问
+        logger.warning(f"保存首页页码失败：{e}")
+
 # ===================== 缓存清理 =====================
 def cleanup_cache():
     """每10分钟自动跑的温和清理"""
@@ -5227,7 +5339,8 @@ def index():
     reverse_order = (sort_order == 'desc')
     filtered_data.sort(key=get_sort_key, reverse=reverse_order)
 
-    page = request.args.get('page', 1, type=int)
+    # page_arg 为 None 表示「没显式翻页」，这时才去用记忆里的页码
+    page_arg = request.args.get('page', type=int)
     per_page = user_prefs.get('per_page', PER_PAGE)
     try:
         per_page = int(per_page)
@@ -5237,6 +5350,11 @@ def index():
         per_page = PER_PAGE
 
     total = len(filtered_data)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    # 筛选/搜索视图不参与页码记忆（用户翻的是筛选结果，不能覆盖书架位置）
+    has_filter = bool(search_author or search_tag or search_site or search_text)
+    page = resolve_home_page(page_arg, has_filter, user_info, total_pages)
+
     start = (page - 1) * per_page
     end = start + per_page
     paginated_data = [n.copy() for n in filtered_data[start:end]]
@@ -5245,8 +5363,12 @@ def index():
         'page': page,
         'per_page': per_page,
         'total': total,
-        'pages': (total + per_page - 1) // per_page
+        'pages': total_pages
     }
+
+    # 记住这次停留的页码（page=1 会顺手清掉记忆）；只记纯浏览状态
+    if not has_filter:
+        remember_home_page(user_key, page, total_pages)
 
     for novel in paginated_data:
         # 🔥 标记文件状态
