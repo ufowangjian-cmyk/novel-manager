@@ -32,6 +32,7 @@ BLUEPRINT_MODULES = [
     ('app.auth', 'auth_bp', None),
     ('app.library', 'library_bp', None),
     ('app.reader', 'reader_bp', None),
+    ('app.media', 'media_bp', None),
 ]
 
 

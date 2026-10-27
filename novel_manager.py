@@ -2170,7 +2170,7 @@ def find_cover_url(novel):
         if picked:
             sub_folder, name = picked
             try:
-                return url_for('serve_local_image', folder=sub_folder, name=name)
+                return url_for('media.serve_local_image', folder=sub_folder, name=name)
             except RuntimeError:
                 # 非请求上下文（后台线程）调用时 url_for 不可用，直接放弃封面
                 return ''
@@ -4932,9 +4932,6 @@ def inject_header_bg_images():
 
 # 轻量兜底接口：个别页面漏输出清单时，前端一次请求拿到，不再逐张探测。
 # 需要登录（与页面本身一致），不泄露额外信息。
-@app.route('/api/header_bg_images')
-def api_header_bg_images():
-    return jsonify({'images': list_header_bg_images()})
 
 
 # ==================== 扫描管理：缓存概览 / 上次扫描 统计 ====================
@@ -5473,110 +5470,16 @@ MIME_TYPES = {
     '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.wma': 'audio/x-ms-wma', '.opus': 'audio/opus',
 }
 
-@app.route('/api/check_image_folder', methods=['POST'])
-def check_image_folder():
-    data = request.get_json(silent=True) or {}
-    folders = data.get('folders', [])
-
-    if not isinstance(folders, list):
-        return jsonify({'exists': False, 'path': None}), 400
-
-    # 只允许探测小说目录内的文件夹
-    safe_folders = [str(f) for f in folders[:10] if f and is_inside_novel_dir(f)]
-    if not safe_folders:
-        return jsonify({'exists': False, 'path': None})
-
-    return jsonify(check_image_folder_cached(safe_folders))
 
 #=================== 读取本地图片 API ====================
-@app.route('/api/local_image')
-def serve_local_image():
-    folder = request.args.get('folder', '')
-    name = request.args.get('name', '')
-
-    found = resolve_media_path(folder, name, IMAGE_EXTENSIONS)
-    if not found:
-        return '', 404
-
-    img_path, ext = found
-    resp = send_file(img_path, mimetype=MIME_TYPES.get(ext, 'application/octet-stream'))
-    # send_file 默认吃 SEND_FILE_MAX_AGE_DEFAULT（30 天），配图文件夹里的图
-    # 是被同名替换的高频对象——缓存 30 天会导致换了图浏览器不换。
-    # no-cache + send_file 自带的 Last-Modified/ETag：每次带条件请求
-    # 重新验证，没变回 304（几字节），变了立刻拿新图。
-    resp.headers['Cache-Control'] = 'no-cache'
-    return resp
 
 #=================== 列出图片文件夹 API ====================
-@app.route('/api/list_image_folder', methods=['POST'])
-def list_image_folder():
-    data = request.get_json(silent=True) or {}
-    folder = data.get('folder', '')
-
-    if not folder or not is_inside_novel_dir(folder) or not os.path.isdir(folder):
-        return jsonify({'files': []})
-
-    try:
-        entries = os.listdir(folder)
-    except OSError as e:
-        logger.warning(f"列目录失败 {folder}: {e}")
-        return jsonify({'files': []})
-
-    files = [f for f in entries if os.path.splitext(f)[1].lower() in set(IMAGE_EXTENSIONS)]
-    return jsonify({'files': files})
 
 #=================== 打开文件夹 API ====================
-@app.route('/api/open_folder', methods=['POST'])
-def open_folder():
-    data = request.get_json(silent=True) or {}
-    path = data.get('path', '')
-
-    # 只允许打开小说目录内的路径，避免被当成任意路径启动器
-    if not path or not is_inside_novel_dir(path) or not os.path.exists(path):
-        return jsonify({'success': False, 'message': '文件夹不存在或不在小说目录内'})
-
-    try:
-        if sys.platform == 'win32':
-            os.startfile(path)  # noqa: S606 - 本机自用功能
-        elif sys.platform == 'darwin':
-            subprocess.Popen(['open', path])
-        else:
-            subprocess.Popen(['xdg-open', path])
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
 
 #=================== 读取本地视频 API ====================
-@app.route('/api/local_video')
-def serve_local_video():
-    folder = request.args.get('folder', '')
-    name = request.args.get('name', '')
-
-    found = resolve_media_path(folder, name, VIDEO_EXTENSIONS)
-    if not found:
-        return '', 404
-
-    video_path, ext = found
-    resp = send_file(video_path, mimetype=MIME_TYPES.get(ext, 'video/mp4'))
-    # 同 local_image：媒体文件不参与 30 天静态缓存（见上注释）
-    resp.headers['Cache-Control'] = 'no-cache'
-    return resp
 
 #=================== 读取本地音频 API ====================
-@app.route('/api/local_audio')
-def serve_local_audio():
-    folder = request.args.get('folder', '')
-    name = request.args.get('name', '')
-
-    found = resolve_media_path(folder, name, AUDIO_EXTENSIONS)
-    if not found:
-        return '', 404
-
-    audio_path, ext = found
-    resp = send_file(audio_path, mimetype=MIME_TYPES.get(ext, 'audio/mpeg'))
-    # 同 local_image：媒体文件不参与 30 天静态缓存（见上注释）
-    resp.headers['Cache-Control'] = 'no-cache'
-    return resp
 
 # ==================== 表情映射 API ====================
 def load_emoji_mapping_cached():
@@ -5614,28 +5517,10 @@ def load_image_mapping_cached():
     return _image_mapping_cache
 
 #=================== 获取图片映射 API ====================
-@app.route('/api/emoji/image-mapping')
-def get_image_mapping():
-    return jsonify(load_image_mapping_cached())
 
 #=================== 保存图片映射 API ====================
-@app.route('/api/emoji/image-mapping/save', methods=['POST'])
-def save_image_mapping():
-    global _image_mapping_cache
-    try:
-        mapping = request.get_json(silent=True)
-        if not isinstance(mapping, dict):
-            return jsonify({'success': False, 'message': '数据格式错误'})
-        save_json_file(IMAGE_MAPPING_FILE, mapping)
-        _image_mapping_cache = mapping
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
 
 #=================== 获取表情映射 API ====================
-@app.route('/api/emoji/mapping')
-def get_emoji_mapping():
-    return jsonify(load_emoji_mapping_cached())
 
 # ==================== 跨行括号高亮 ====================
 _FULLWIDTH_SPACE = '\u3000'
