@@ -204,14 +204,17 @@ docker restart novel-manager
 ### 目录现状
 
 ```
-novel_manager.py            # 主程序 + 入口（还有 67 个路由没搬）
+novel_manager.py            # 主程序 + 入口（还有 24 个路由没搬）
 app/
 ├── __init__.py             # create_app() 工厂、load_blueprints()/register_blueprints()
-└── auth/                   # ✅ 已迁：9 条路由
-    ├── __init__.py         # auth_bp = Blueprint('auth', __name__)
-    └── routes.py           # 登录 / 登出 / 用户管理 / 个人偏好
+├── auth/                   # ✅ 已迁：9 条路由
+│   ├── __init__.py         # auth_bp = Blueprint('auth', __name__)
+│   └── routes.py           # 登录 / 登出 / 用户管理 / 个人偏好
+└── library/                # ✅ 已迁：43 条路由
+    ├── __init__.py         # library_bp = Blueprint('library', __name__)
+    └── routes.py           # 列表 / 详情 / 扫描 / 标签体系 / 站点配置 / 筛选取数
 storage/cache_store.py      # 书籍缓存存储层（唯一 SQL 入口）
-tests/                      # 快照与回归脚本
+tests/                      # 快照、回归、搬运与静态检查脚本
 docs/
 ├── blueprint-roadmap.md    # 77 条路由 → 目标蓝图 的映射表
 ├── url_map_before.txt      # 拆分前的 url_map 快照（验收基准）
@@ -223,7 +226,7 @@ docs/
 | 蓝图 | 路由数 | 状态 | 内容 |
 |---|---|---|---|
 | `auth` | 9 | ✅ 已完成 | 登录、登出、用户增删改、个人阅读偏好 |
-| `library` | 43 | ⏳ 待迁 | 列表、详情、扫描、标签体系、站点配置 |
+| `library` | 43 | ✅ 已完成 | 列表、详情、扫描、标签体系、站点配置、筛选取数 |
 | `reader` | 10 | ⏳ 待迁 | 阅读页、阅读进度、书内搜索、记录清理 |
 | `media` | 10 | ⏳ 待迁 | 配图检测、音视频、映射表 |
 | 主模块 | 5 | 不需迁 | PWA、静态资源、缓存统计、强制清理 |
@@ -259,10 +262,13 @@ Flask 注册蓝图时会**强制**给端点加 `<蓝图>.` 前缀，所以端点
 
 改端点必须顺着改 `url_for`：
 
-- 代码里：`url_for('login')` → `url_for('auth.login')`
-- 模板里：`url_for('logout')` → `url_for('auth.logout')`（`templates/index.html`）
+- 代码里：`url_for('login')` → `url_for('auth.login')`；`url_for('index')` → `url_for('library.index')`
+- 模板里：`url_for('logout')` → `url_for('auth.logout')`；`url_for('novel_detail')` → `url_for('library.novel_detail')`
 
 漏改不会在启动时报错，而是运行时 `BuildError`（500），所以**改完必须跑页面回归**。
+
+⚠️ **代码和模板必须同一批改**：只搬路由不改模板，页面立刻 500；只改模板不搬路由，
+同样 500。这也意味着「用旧代码 + 新模板」采出来的基线是废的（全是 500 页）。
 
 ### 每阶段的验收方法
 

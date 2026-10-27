@@ -30,6 +30,7 @@ APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 顺序 = 注册顺序；url_prefix 为 None 表示路由里自带完整路径前缀。
 BLUEPRINT_MODULES = [
     ('app.auth', 'auth_bp', None),
+    ('app.library', 'library_bp', None),
 ]
 
 

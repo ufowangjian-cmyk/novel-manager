@@ -16,12 +16,20 @@
 | 0 | 采集基线（路由表 / url_map / 实例属性 / 行为快照） | ✅ |
 | 1 | `create_app()` 工厂骨架，零行为变更 | ✅ 已上线 |
 | 2 | 拆 `auth` 蓝图（9 条路由） | ✅ 已上线 |
-| 3 | 拆 `library`（43 条） | ⏸ 未开始 |
+| 3 | 拆 `library` 蓝图（43 条） | ✅ 已上线 |
 | 4 | 拆 `reader`（10 条） | ⏸ 未开始 |
 | 5 | 拆 `media`（10 条） | ⏸ 未开始 |
 | 6 | 清理，`novel_manager.py` 收敛到入口 | ⏸ 未开始 |
 
-本轮按要求停在「骨架 + auth」，`novel_manager.py` 现在 7596 行、67 条路由。
+`novel_manager.py`：7943 → 6492 行，`@app.route` 76 → 24。
+
+library 内部按风险分三批搬，每批都跑了同一套快照：
+
+| 批次 | 内容 | 条数 | 关键风险 |
+|---|---|---|---|
+| 1 | 筛选取数（`get_all_*`/`get_first_*`）、`/config/get`、`/config/save_sort`、随机推荐、扫描触发与进度、配置页/标签页壳 | 13 | 依赖 10 个共享名字，较干净 |
+| 2 | 标签体系全套（增删改查、规则、别名、派生规则、导入导出） | 26 | 6 个函数有 `global CONFIG/TAG_*` 写操作 |
+| 3 | `index`、`novel_detail`、`save_config`、`reload_config` | 4（534 行） | `global CONFIG` 整体替换 + `apply_runtime_config` 联动 |
 
 ---
 
@@ -110,6 +118,17 @@ GET,POST     | /                                                            | in
 4. **`api_cache_stats` 含进程 RSS**，跨进程必然不同；列为豁免项，只比状态码。
 5. **`novel_manager` 有了 `create_app` 属性后**，快照脚本的「有工厂就用工厂」逻辑误取了空壳实例
    （1 条路由），导致一次假的「完全一致」。改成永远优先取模块级 `app`。
+6. **`threading` / `time` / `session` 漏 import**（library 批次 3 上线后才发现）。依赖分析器当
+   初只找「主模块自己定义的名字」，而 `threading` 是 `import threading` 进来的，被当成已满足。
+   `start_scan` 一被调用就 `NameError` → 500。为此写了 `tests/check_missing_imports.py`，
+   现在每次搬完都跑，能一次列出所有「用了但没定义也没 import」的名字。
+7. **代码与模板必须同批改**。搬到 `library` 后 `url_for('index')` / `url_for('novel_detail')`
+   全要加前缀：代码 6 处（含 `app/auth/routes.py` 里 login 的跳转）+ 模板 7 处
+   （`index.html` / `read_chapter.html` / `_random_card.html`）。只改一边，阅读页和首页立刻 500。
+8. **数据一变，旧的行为基线就失效**。拆 library 期间书库真实新增了一本（5123 → 5124），
+   `index` / `get_all_*` / `api_tags` / `api_users_list` 的哈希全变 —— 看着像代码坏了，其实是
+   数据变了。正确做法：用「旧代码 + 旧模板」在**当前数据**上重采基线再比对，这一步做完后
+   本轮是 32/32 完全一致。
 
 ---
 

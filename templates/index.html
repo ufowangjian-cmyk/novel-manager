@@ -585,7 +585,7 @@
                 <tr>
                     <td>
                         <strong>
-                            <a href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                            <a href="{{ url_for('library.novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                                 class="novel-title">
                                 {{ novel.title }}
                                 {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
@@ -693,7 +693,7 @@
             <div class="novel-card">
                 <div class="novel-card-title">
                     <a
-                        href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
+                        href="{{ url_for('library.novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
                         {{ novel.title }}
                         {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
                             }}️</span>{% endif %}

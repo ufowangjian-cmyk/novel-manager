@@ -110,7 +110,7 @@ def login():
             next_url = request.args.get('next', '')
             if next_url.startswith('/') and not next_url.startswith('//'):
                 return redirect(next_url)
-            return redirect(url_for('index'))
+            return redirect(url_for('library.index'))
         else:
             logger.warning(f"⚠️ 登录失败，密码错误（长度 {len(password)}）")
             return render_template('login.html', error='密码错误', has_users=has_users)
