@@ -33,7 +33,7 @@
 | 独立迁移脚本 | ✅ | `migrate_cache.py`（`--check` 只体检） |
 | 启动时自动迁移 | ✅ | `load_cache()` → `cache_store.ensure_ready()` |
 | 调用点替换 | ✅ | 两个 commit：`9dbd431`（读）、`37ef2ec`（写） |
-| `novel_cache.json.bak` | ✅ | `data/novel_cache.json.bak`（另有一份 `.pre-sqlite` 兜底） |
+| `novel_cache.json.bak` | ✅ | `data/novel_cache.json.bak`（迁移后已清理，另存 zip 备份） |
 | `DEVELOPMENT.md` 存储层说明 | ✅ | 新增「存储层（SQLite）」小节 |
 | 测试记录 | ✅ | 本文第 3 节 |
 | 回滚演练记录 | ✅ | 本文第 4 节 |

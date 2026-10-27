@@ -67,7 +67,6 @@ compose 声明了 IPv6 网络，`ports: "5000:5000"` 会同时发布 IPv4 和 IP
 | `config.json` | 全局配置 + **用户表（含 scrypt 密码哈希）** | ❌ 含账号与个人偏好 |
 | `secret_key` | 会话签名密钥，权限 600 | ❌ 泄露可伪造登录态 |
 | `novel_cache.db` | **书籍缓存（SQLite，约 15MB）** | ❌ 可重建 |
-| `novel_cache.json.bak` | 迁移前的旧缓存，只读备份，不参与运行 | ❌ 可重建 |
 | `reading_records/` | 每用户一个阅读记录文件 | ❌ 隐私 |
 | `tag_rules.json` | 标签规则 | ⭕ 个性化积累 |
 | `image_mapping.json` | 配图映射 | ⭕ |
@@ -79,8 +78,11 @@ compose 声明了 IPv6 网络，`ports: "5000:5000"` 会同时发布 IPv4 和 IP
 
 `secret_key` 丢失会让**所有用户需要重新登录**，迁移时记得一起带走。
 
-备份 `data/` 时可以直接排除 `novel_cache.db*` 和 `novel_cache.json*`——它们都是扫描
-即可重建的派生数据。
+备份 `data/` 时可以直接排除 `novel_cache.db*`——它是扫描即可重建的派生数据。
+
+> **关于 `novel_cache.json.bak`**：迁移时会把旧 JSON 改名保留，但它不参与运行。
+> 本机这份已于 2026-10-27 清理（另存有 zip 备份）。因此现在 `data/` 里没有旧 JSON，
+> 缓存只剩 `novel_cache.db` 一份；万一库丢了，删掉它重扫一遍即可，不需要旧 JSON。
 
 ---
 
@@ -178,7 +180,7 @@ docker exec novel-manager python /app/migrate_cache.py           # 手动迁移
 
 - 幂等：库非空直接返回 0，不会重复导入
 - 全量导入走单事务，失败整体回滚
-- 成功后 `novel_cache.json` 改名 `novel_cache.json.bak`，**不删除**
+- 成功后 `novel_cache.json` 改名 `novel_cache.json.bak`（该备份本机已于 2026-10-27 清理）
 
 **回滚**（三步，都在宿主机上做）：
 
@@ -186,13 +188,16 @@ docker exec novel-manager python /app/migrate_cache.py           # 手动迁移
 cd /path/to/novel-manager                  # 换成你的项目目录
 git checkout pre-sqlite-migration          # 1. 代码回到迁移前
 cd data
-mv novel_cache.json.bak novel_cache.json   # 2. 旧 JSON 改回来（没有 .bak 就用 .pre-sqlite）
+mv novel_cache.json.bak novel_cache.json   # 2. 旧 JSON 改回来（本机已清理，需从 zip 备份取出）
 rm -f novel_cache.db novel_cache.db-journal  # 3. 删掉库
 docker restart novel-manager
 ```
 
 `pre-sqlite-migration` 是迁移前打的 tag，`git show pre-sqlite-migration:novel_manager.py`
 可以单独取出旧版主程序。回滚演练记录见 `docs/sqlite-migration-report.md`。
+
+> 本机的 `novel_cache.json.bak` 已清理，第 2 步的旧 JSON 要从 zip 备份里取；
+> 或者干脆跳过第 2 步——旧代码在没有 JSON 时会重新扫描生成缓存（慢一点，但结果一样）。
 
 ---
 
