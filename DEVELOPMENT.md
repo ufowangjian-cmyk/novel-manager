@@ -183,7 +183,7 @@ docker exec novel-manager python /app/migrate_cache.py           # 手动迁移
 **回滚**（三步，都在宿主机上做）：
 
 ```bash
-cd /vol2/1000/docker/novel-manager
+cd /path/to/novel-manager                  # 换成你的项目目录
 git checkout pre-sqlite-migration          # 1. 代码回到迁移前
 cd data
 mv novel_cache.json.bak novel_cache.json   # 2. 旧 JSON 改回来（没有 .bak 就用 .pre-sqlite）

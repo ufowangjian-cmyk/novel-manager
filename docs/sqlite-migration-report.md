@@ -1,7 +1,7 @@
 # novel_cache.json → SQLite 迁移记录
 
-> 范围：仅 Docker 版（`/vol2/1000/docker/novel-manager`）。桌面版 `C:\Tools\novel-manager`
-> 未改动。`config.json`、`reading_records/`、用户数据未改动。
+> 范围：仅 Docker 版（NAS 上的源码目录，下文用 `$APP_DIR` 代指）。桌面版未改动。
+> `config.json`、`reading_records/`、用户数据未改动。
 
 - 执行日期：2026-10-27
 - 基线 tag：`pre-sqlite-migration`
