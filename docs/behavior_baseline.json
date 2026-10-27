@@ -1,0 +1,290 @@
+{
+  "api_avatar_options": {
+    "len": 305,
+    "location": null,
+    "path": "/api/avatar/options",
+    "session": "admin",
+    "sha": "fd2fbf735322dd1e",
+    "stable": true,
+    "status": 200
+  },
+  "api_cache_stats": {
+    "len": 159,
+    "location": null,
+    "path": "/api/cache/stats",
+    "session": "admin",
+    "sha": "4d28bfa3afa02f8e",
+    "stable": true,
+    "status": 200
+  },
+  "api_emoji_mapping": {
+    "len": 8733,
+    "location": null,
+    "path": "/api/emoji/mapping",
+    "session": "admin",
+    "sha": "1b2bc5c1fad74179",
+    "stable": true,
+    "status": 200
+  },
+  "api_header_bg": {
+    "len": 2404,
+    "location": null,
+    "path": "/api/header_bg_images",
+    "session": "admin",
+    "sha": "e163117adf977a6b",
+    "stable": true,
+    "status": 200
+  },
+  "api_image_mapping": {
+    "len": 31313,
+    "location": null,
+    "path": "/api/emoji/image-mapping",
+    "session": "admin",
+    "sha": "cfa403a15181fa86",
+    "stable": true,
+    "status": 200
+  },
+  "api_preferences": {
+    "len": 4855,
+    "location": null,
+    "path": "/api/get_preferences",
+    "session": "admin",
+    "sha": "7ad1042b77bbb3b9",
+    "stable": true,
+    "status": 200
+  },
+  "api_recent_records": {
+    "len": 155,
+    "location": null,
+    "path": "/api/recent_records",
+    "session": "admin",
+    "sha": "04e2743c55ef570c",
+    "stable": true,
+    "status": 200
+  },
+  "api_scan_progress": {
+    "len": 68,
+    "location": null,
+    "path": "/api/scan_progress",
+    "session": "admin",
+    "sha": "52fa850436a706f1",
+    "stable": true,
+    "status": 200
+  },
+  "api_tag_rules": {
+    "len": 19192,
+    "location": null,
+    "path": "/api/tag/rules/get",
+    "session": "admin",
+    "sha": "237828848c41d626",
+    "stable": true,
+    "status": 200
+  },
+  "api_tag_stats": {
+    "len": 70,
+    "location": null,
+    "path": "/api/tag/stats",
+    "session": "admin",
+    "sha": "248048c0268cb65b",
+    "stable": true,
+    "status": 200
+  },
+  "api_tags": {
+    "len": 18146,
+    "location": null,
+    "path": "/api/tag/list",
+    "session": "admin",
+    "sha": "d809956250ab3537",
+    "stable": true,
+    "status": 200
+  },
+  "api_tags_anon": {
+    "len": 174,
+    "location": null,
+    "path": "/api/tag/list",
+    "session": "anon",
+    "sha": "9f63ac290c15ecb8",
+    "stable": true,
+    "status": 401
+  },
+  "api_users_list": {
+    "len": 1963,
+    "location": null,
+    "path": "/api/users/list",
+    "session": "admin",
+    "sha": "70547074439331dc",
+    "stable": true,
+    "status": 200
+  },
+  "config": {
+    "len": 93724,
+    "location": null,
+    "path": "/config",
+    "session": "admin",
+    "sha": "cdba468a628462bf",
+    "stable": true,
+    "status": 200
+  },
+  "config_anon": {
+    "len": 225,
+    "location": "/login?next=/config",
+    "path": "/config",
+    "session": "anon",
+    "sha": "6de84063c15c52ab",
+    "stable": true,
+    "status": 302
+  },
+  "config_get": {
+    "len": 2045,
+    "location": null,
+    "path": "/config/get",
+    "session": "admin",
+    "sha": "444c255e2a832023",
+    "stable": true,
+    "status": 200
+  },
+  "continue": {
+    "len": 957,
+    "location": "/read/novels/12%25E5%25B9%25B4%25E5%25A8%2587%25E5%25A6%25BB%25E7%25BB%25BD%25E6%2594%25BE%25E5%25A2%2599%25E5%25A4%2596%25E6%259D%258F%25E8%258A%25B1%25E9%25A6%2599%25EF%25BC%259A%25E5%25A6%25BB%25E4%25B8%258E%25E6%2583%2585%25E4%25BA%25BA%25E5%258F%258A%25E6%2588%2591%25E7%259A%2584%25E5%25BF%2583%25E9%2587%258C%25E8%25B7%25AF%25E7%25A8%258B%25E3%2580%25901-4%25E3%2580%2591.txt/40",
+    "path": "/continue/<book>",
+    "session": "admin",
+    "sha": "221e1aac032801ac",
+    "stable": true,
+    "status": 302
+  },
+  "detail": {
+    "len": 39457,
+    "location": null,
+    "path": "/novel_detail/<book>",
+    "session": "admin",
+    "sha": "ca13beeb8c517320",
+    "stable": true,
+    "status": 200
+  },
+  "get_all_authors": {
+    "len": 59681,
+    "location": null,
+    "path": "/get_all_authors",
+    "session": "admin",
+    "sha": "574bb40dfd850169",
+    "stable": true,
+    "status": 200
+  },
+  "get_all_sites": {
+    "len": 1459,
+    "location": null,
+    "path": "/get_all_sites",
+    "session": "admin",
+    "sha": "9c2a54570583f271",
+    "stable": true,
+    "status": 200
+  },
+  "get_all_tags": {
+    "len": 8337,
+    "location": null,
+    "path": "/get_all_tags",
+    "session": "admin",
+    "sha": "da7108a2fe51cd3a",
+    "stable": true,
+    "status": 200
+  },
+  "get_first_tags": {
+    "len": 792,
+    "location": null,
+    "path": "/get_first_tags",
+    "session": "admin",
+    "sha": "c4dbf0a958b8ef52",
+    "stable": true,
+    "status": 200
+  },
+  "index": {
+    "len": 1235749,
+    "location": null,
+    "path": "/",
+    "session": "admin",
+    "sha": "8776fe55936dee6a",
+    "stable": true,
+    "status": 200
+  },
+  "index_anon": {
+    "len": 213,
+    "location": "/login?next=/",
+    "path": "/",
+    "session": "anon",
+    "sha": "b0a6e3598738aaa5",
+    "stable": true,
+    "status": 302
+  },
+  "index_sorted": {
+    "len": 1250894,
+    "location": null,
+    "path": "/?sort=word_count&order=desc",
+    "session": "admin",
+    "sha": "872f0bd45d392e6b",
+    "stable": true,
+    "status": 200
+  },
+  "index_tagged": {
+    "len": 1248600,
+    "location": null,
+    "path": "/?tag=<tag>",
+    "session": "admin",
+    "sha": "708538bb4f0607bf",
+    "stable": true,
+    "status": 200
+  },
+  "login_anon": {
+    "len": 9157,
+    "location": null,
+    "path": "/login",
+    "session": "anon",
+    "sha": "221adde2c121dba5",
+    "stable": true,
+    "status": 200
+  },
+  "manifest": {
+    "len": 798,
+    "location": null,
+    "path": "/manifest.json",
+    "session": "anon",
+    "sha": "4a45b64d808fe451",
+    "stable": true,
+    "status": 200
+  },
+  "read_first": {
+    "len": 75573,
+    "location": null,
+    "path": "/read/<book>/<line>",
+    "session": "admin",
+    "sha": "85fb7b63234af7af",
+    "stable": true,
+    "status": 200
+  },
+  "read_last_line": {
+    "len": 71046,
+    "location": null,
+    "path": "/read/<book>/<line>",
+    "session": "admin",
+    "sha": "10f1574bbc7f4621",
+    "stable": true,
+    "status": 200
+  },
+  "service_worker": {
+    "len": 3711,
+    "location": null,
+    "path": "/service-worker.js",
+    "session": "anon",
+    "sha": "5dda97235ffdd1f8",
+    "stable": true,
+    "status": 200
+  },
+  "tag_manager": {
+    "len": 20623,
+    "location": null,
+    "path": "/tag_manager",
+    "session": "admin",
+    "sha": "db334c7dacfe3c6e",
+    "stable": true,
+    "status": 200
+  }
+}
