@@ -28,7 +28,7 @@
 
     <div class="random-card-main">
         <h4 class="random-title">
-            <a href="{{ url_for('library.novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}">{{ novel.title }}</a>
+            <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}">{{ novel.title }}</a>
         </h4>
 
         <div class="random-meta">
@@ -77,7 +77,7 @@
     </div>
 
     <div class="random-card-actions">
-        <a href="{{ url_for('library.novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}" class="btn btn-secondary">{{ icon('file', 'sm') }} 查看详情</a>
-        <a href="{{ url_for('reader.read_chapter', file_path=(novel.file_path or '').lstrip('/'), line_number=1) }}" class="btn btn-success">{{ icon('book-open', 'sm') }} 开始阅读</a>
+        <a href="{{ url_for('novel_detail', file_path=(novel.file_path or '').lstrip('/')) }}" class="btn btn-secondary">{{ icon('file', 'sm') }} 查看详情</a>
+        <a href="{{ url_for('read_chapter', file_path=(novel.file_path or '').lstrip('/'), line_number=1) }}" class="btn btn-success">{{ icon('book-open', 'sm') }} 开始阅读</a>
     </div>
 </div>

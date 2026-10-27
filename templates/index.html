@@ -122,7 +122,7 @@
                         {{ icon('tag', 'sm') }}<span>标签</span>
                     </a>
                     {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"
+                    <a href="{{ url_for('logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"
                         onclick="return confirm('确定要登出吗？');">
                         {{ icon('door-open', 'sm') }}<span>登出</span>
                     </a>
@@ -293,7 +293,7 @@
                                 <option value="title">书名</option>
                             </select>
                             <span class="recent-count" id="recentCountLabel">共 {{ recent_total }} 条</span>
-                            <form method="post" action="{{ url_for('reader.clear_records') }}" style="display: inline;"
+                            <form method="post" action="{{ url_for('clear_records') }}" style="display: inline;"
                                 onsubmit="return confirm('确定要清除自己的阅读记录吗？')">
                                 <button type="submit" class="clear-records-btn">{{ icon('trash-2', 'sm') }}️
                                     清除全部</button>
@@ -585,7 +585,7 @@
                 <tr>
                     <td>
                         <strong>
-                            <a href="{{ url_for('library.novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                            <a href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                                 class="novel-title">
                                 {{ novel.title }}
                                 {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
@@ -693,7 +693,7 @@
             <div class="novel-card">
                 <div class="novel-card-title">
                     <a
-                        href="{{ url_for('library.novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
+                        href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
                         {{ novel.title }}
                         {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
                             }}️</span>{% endif %}

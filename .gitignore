@@ -49,6 +49,3 @@ Thumbs.db
 .pat
 *.pat
 *.token
-
-# 提交信息临时文件（git commit -F 用），不要进仓库
-_msg.txt

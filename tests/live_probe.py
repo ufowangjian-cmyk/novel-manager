@@ -115,15 +115,6 @@ def main():
     status, body = fetch('/api/scan_progress', cookie)
     check('扫描进度接口 200', status == 200, str(status))
 
-    # auth 蓝图的路由（端点已加 auth. 前缀，URL 未变）
-    status, body = fetch('/api/users/list', cookie)
-    check('用户列表接口 200（auth 蓝图）', status == 200, str(status))
-    check('用户列表不含密码哈希', 'password_hash' not in body and 'scrypt' not in body)
-    status, body = fetch('/api/get_preferences', cookie)
-    check('个人偏好接口 200（auth 蓝图）', status == 200, str(status))
-    status, body = fetch('/api/avatar/options', cookie)
-    check('头像选项接口 200（auth 蓝图）', status == 200, str(status))
-
     print('\n' + '=' * 56)
     print(f'通过 {len(PASS)} 项，失败 {len(FAIL)} 项')
     if FAIL:

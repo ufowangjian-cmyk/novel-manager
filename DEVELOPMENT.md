@@ -197,117 +197,6 @@ docker restart novel-manager
 ---
 
 
-## 代码结构（Blueprint 拆分）
-
-`novel_manager.py` 原本是单文件，现在按功能域往 `app/` 里搬，**渐进拆分、每步可验收可回滚**。**已完成**：77 条路由全部迁入 5 个蓝图，`novel_manager.py` 里已经没有任何 `@app.route`。
-
-### 目录现状
-
-```
-novel_manager.py            # 入口 + 共享函数库（0 个路由）
-app/
-├── __init__.py             # create_app() 工厂、load_blueprints()/register_blueprints()
-├── auth/                   # ✅ 已迁：9 条路由
-│   ├── __init__.py         # auth_bp = Blueprint('auth', __name__)
-│   └── routes.py           # 登录 / 登出 / 用户管理 / 个人偏好
-├── library/                # ✅ 已迁：43 条路由
-│   ├── __init__.py         # library_bp = Blueprint('library', __name__)
-│   └── routes.py           # 列表 / 详情 / 扫描 / 标签体系 / 站点配置 / 筛选取数
-├── reader/                 # ✅ 已迁：10 条路由
-│   ├── __init__.py         # reader_bp = Blueprint('reader', __name__)
-│   └── routes.py           # 阅读页 / 进度 / 书内搜索 / 阅读记录清理
-├── media/                  # ✅ 已迁：10 条路由
-│   ├── __init__.py         # media_bp = Blueprint('media', __name__)
-│   └── routes.py           # 配图检测 / 音视频 / 映射表 / 头图
-└── core/                   # ✅ 已迁：4 条路由
-    ├── __init__.py         # core_bp = Blueprint('core', __name__)
-    └── routes.py           # PWA / 缓存统计 / 强制清理
-storage/cache_store.py      # 书籍缓存存储层（唯一 SQL 入口）
-tests/                      # 快照、回归、搬运与静态检查脚本
-docs/
-├── blueprint-roadmap.md    # 77 条路由 → 目标蓝图 的映射表
-├── url_map_before.txt      # 拆分前的 url_map 快照（验收基准）
-└── behavior_baseline.json  # 32 项页面/接口行为基线
-```
-
-### 路由归属（完整映射见 `docs/blueprint-roadmap.md`）
-
-| 蓝图 | 路由数 | 状态 | 内容 |
-|---|---|---|---|
-| `auth` | 9 | ✅ 已完成 | 登录、登出、用户增删改、个人阅读偏好 |
-| `library` | 43 | ✅ 已完成 | 列表、详情、扫描、标签体系、站点配置、筛选取数 |
-| `reader` | 10 | ✅ 已完成 | 阅读页、阅读进度、书内搜索、记录清理 |
-| `media` | 10 | ✅ 已完成 | 配图检测、音视频、映射表 |
-| `core` | 4 | ✅ 已完成 | PWA、缓存统计、强制清理 |
-| Flask 内置 | 1 | 不涉及 | `static` 端点 |
-
-**新增一个路由该放哪**：先查 `docs/blueprint-roadmap.md` 里同类端点在哪个域，放进对应 `app/<域>/routes.py`。只有新开一个域时才新建目录，并在 `app/__init__.py` 的 `BLUEPRINT_MODULES` 里补一行 `(模块名, 蓝图变量名, url_prefix)`。
-
-### 共享逻辑为什么还在主模块
-
-`CONFIG`、`novel_data`、各类缓存，以及 `is_admin` / `save_json_file` / `normalize_user_info` 这类被几十处复用的函数，**仍然住在 `novel_manager.py`**。没下沉到 `app/core/` 是有意的：这些名字被 200+ 处引用，整体搬迁风险远大于收益。
-
-代价是**蓝图要反向 import 主模块**：
-
-```python
-# app/auth/routes.py
-import novel_manager as nm
-from novel_manager import is_admin, save_json_file, ...
-```
-
-因此有个硬性前提 —— **蓝图模块只能在主模块初始化完成之后 import**。这由主模块末尾的 `register_blueprints(app)` 保证（它在所有函数定义之后才跑）。不要在 `create_app()` 里、也不要在模块顶层 `import app.auth.routes`，会拿到半初始化的模块并报 ImportError。
-
-⚠️ **凡是被重新赋值的全局量，必须走模块属性访问**：
-
-```python
-nm.CONFIG.get('users')            # ✅ 永远读到最新对象
-from novel_manager import CONFIG  # ❌ 绑死旧对象
-```
-
-因为 `save_config_api` / `reload_config_api` 里有 `global CONFIG; CONFIG = 新dict`。用 from-import 的表现是「在配置页保存一次之后，用户管理读到旧用户表」——这个坑已经写进 `tests/auth_behavior_test.py` 当回归项。
-
-### 端点名的变化
-
-Flask 注册蓝图时会**强制**给端点加 `<蓝图>.` 前缀，所以端点是 `auth.login`、`auth.logout`；URL 规则一个字没变。
-
-改端点必须顺着改 `url_for`：
-
-- 代码里：`url_for('login')` → `url_for('auth.login')`；`url_for('index')` → `url_for('library.index')`
-- 模板里：`url_for('logout')` → `url_for('auth.logout')`；`url_for('novel_detail')` → `url_for('library.novel_detail')`；`url_for('read_chapter')` → `url_for('reader.read_chapter')`
-
-漏改不会在启动时报错，而是运行时 `BuildError`（500），所以**改完必须跑页面回归**。
-
-⚠️ **代码和模板必须同一批改**：只搬路由不改模板，页面立刻 500；只改模板不搬路由，
-同样 500。这也意味着「用旧代码 + 新模板」采出来的基线是废的（全是 500 页）。
-
-### 每阶段的验收方法
-
-```bash
-# 1. 路由表：方法+规则逐条一致，端点剥掉蓝图前缀后一致
-docker exec novel-manager sh -c 'cd /app && python tests/snapshot_url_map.py 2>/dev/null > /tmp/now.txt'
-docker exec novel-manager python /app/tests/diff_url_map.py /app/docs/url_map_before.txt /tmp/now.txt
-
-# 2. Flask 实例属性（钩子清单 / jinja 路径 / session 配置）逐行 diff
-docker exec novel-manager python /app/tests/snapshot_app_props.py 2>/dev/null > /tmp/props_now.txt
-
-# 3. 页面行为（32 项状态码 + 响应哈希）+ auth 专项，都在隔离副本里跑
-docker exec novel-manager sh /app/tests/prepare_modtest.sh
-docker exec novel-manager python /app/tests/auth_behavior_test.py
-```
-
-`tests/snapshot_behavior.py` 有两个讲究：请求前固定 `random.seed()`（首页有随机推荐卡片），采集前清空副本的 `reading_records/`（否则上一轮采集会污染下一轮）。副本必须用 `cp -a` —— 静态资源的 `?v=` 指纹取文件 mtime，`cp -r` 会让所有指纹变成同一个值，导致所有页面哈希集体误报。
-
-### 回滚
-
-```bash
-git checkout pre-modularization   # 回到拆分前（SQLite 已完成的 0a98925）
-docker restart novel-manager
-```
-
-每阶段一个独立 commit，可单独 `git revert`。`app/` 目录在旧版本里不存在，回滚后留不留都行（旧入口不 import 它）。
-
----
-
 ## 构建与更新
 
 ```bash
@@ -341,9 +230,6 @@ docker restart novel-manager
 
 | 想改什么 | 位置 |
 |---|---|
-| 新增一个路由 | 对应域 `app/<域>/routes.py`；归属查 `docs/blueprint-roadmap.md` |
-| 登录 / 登出 / 用户管理 | `app/auth/routes.py` |
-| 共享状态（CONFIG / novel_data） | `novel_manager.py`（暂不下沉，见「代码结构」小节） |
 | 端口 / 挂载路径 | `.env` + `docker-compose.yml` |
 | 用户表结构 | `data/config.json` 的 `users`，密码用 `generate_password_hash`（scrypt） |
 | 默认配置 | 主程序里的 `DEFAULT_CONFIG` 字典 |

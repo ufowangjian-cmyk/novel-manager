@@ -149,7 +149,7 @@
             {% set _chapter_label = '全文阅读' if is_virtual_chapter else (current_chapter.text if current_chapter else '正文') %}
             <span class="reader-book-title" title="{{ _chapter_label }}">{{ _chapter_label }}</span>
             <div class="reader-top-actions">
-                <a href="{{ url_for('library.novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="reader-ic" title="返回详情页" aria-label="返回详情页">{{ icon('book-open', 'lg') }}</a>
                 <button class="reader-ic" onclick="readerSearchOpen()" title="全书搜索 (Ctrl+Shift+F / F3)"
                     aria-label="全书搜索">{{ icon('search', 'lg') }}</button>
@@ -184,7 +184,7 @@
                     {{ chapter.text }}<span class="toc-empty-badge">空</span>
                 </span>
                 {% else %}
-                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="toc-item toc-level{{ chapter.level }}"
                     data-line="{{ chapter.line_number }}"
                     data-text="{{ chapter.text }}">
@@ -194,7 +194,7 @@
                 {% endfor %}
             </div>
             <div class="toc-drawer-footer">
-                <a href="{{ url_for('library.novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('novel_detail', file_path=file_path, page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="toc-drawer-detail-btn" title="查看详情"><span class="ic-text">{{ icon('book-open', 'sm') }}详情</span></a>
                 <button class="toc-drawer-close" onclick="closeTocDrawer()" aria-label="关闭">{{ icon('x', 'sm') }}</button>
             </div>
@@ -467,7 +467,7 @@
     </div>
     {% endif %}
     <div class="back-to-list-wrapper">
-        <a href="{{ url_for('library.index') }}?page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+        <a href="{{ url_for('index') }}?page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
             class="back-to-list-btn">
             <span class="ic-text">{{ icon('list', 'sm') }}返回列表</span>
         </a>
@@ -484,11 +484,11 @@
             {% if prev_page %}
                 <!-- 有上一页：显示上一页 -->
                 {% set chapter_line = current_chapter.line_number if current_chapter else 1 %}
-                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ prev_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ prev_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
                 class="chapter-switch-btn page-nav" title="上一页" aria-label="上一页">{{ icon('chevron-left', 'lg') }}</a>
             {% elif prev_chapter %}
                 <!-- 没有上一页，但有上一章：显示上一章 -->
-                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=prev_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=prev_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
                 class="chapter-switch-btn chapter-nav" title="上一章" aria-label="上一章">{{ icon('chevron-left', 'lg') }}</a>
             {% else %}
                 <!-- 都没有：禁用 -->
@@ -505,11 +505,11 @@
             {% if next_page %}
                 <!-- 有下一页：显示下一页 -->
                 {% set chapter_line = current_chapter.line_number if current_chapter else 1 %}
-                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ next_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter_line) }}?page={{ next_page }}&list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
                 class="chapter-switch-btn page-nav" title="下一页" aria-label="下一页">{{ icon('chevron-right', 'lg') }}</a>
             {% elif next_chapter %}
                 <!-- 没有下一页，但有下一章：显示下一章 -->
-                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=next_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
+                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=next_chapter.line_number) }}?list_page={{ back_page }}{% if search_text %}&search={{ search_text }}{% endif %}{% if search_author %}&author={{ search_author }}{% endif %}{% if search_tag %}&tag={{ search_tag }}{% endif %}{% if search_site %}&site={{ search_site }}{% endif %}"
                 class="chapter-switch-btn chapter-nav" title="下一章" aria-label="下一章">{{ icon('chevron-right', 'lg') }}</a>
             {% else %}
                 <!-- 都没有：禁用 -->

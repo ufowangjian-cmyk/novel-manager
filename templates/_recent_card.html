@@ -10,7 +10,7 @@
      data-progress="{% if record.progress_percent is not none %}{{ record.progress_percent }}{% endif %}"
      data-progress-known="{{ '1' if record.progress_known else '0' }}"
      data-finished="{{ '1' if record.finished else '0' }}">
-    <a href="{{ url_for('reader.continue_reading', file_path=(record.file_path or '').lstrip('/')) }}" class="recent-card">
+    <a href="{{ url_for('continue_reading', file_path=(record.file_path or '').lstrip('/')) }}" class="recent-card">
         <div class="recent-card-head">
             <div class="recent-card-title" title="{{ record.title }}">{{ record.title }}</div>
         </div>
@@ -45,7 +45,7 @@
     <div class="recent-card-actions">
         {# url_for 自身会处理 path 参数的编码，不要再用 |urlencode，否则二次编码。
            这里只放图标：按钮是 24x24 圆形，带文字会被裁掉（与 main.js 客户端模板保持一致）。 #}
-        <a href="{{ url_for('reader.read_chapter', file_path=(record.file_path or '').lstrip('/'), line_number=1) }}"
+        <a href="{{ url_for('read_chapter', file_path=(record.file_path or '').lstrip('/'), line_number=1) }}"
            class="recent-restart-btn" title="从头开始读" aria-label="从头开始读">{{ icon('rotate-ccw', 'sm') }}</a>
         <button type="button" class="recent-delete-btn" onclick="deleteSingleRecord(this)"
                 data-work-id="{{ record.work_id }}" data-file-path="{{ record.file_path }}"
