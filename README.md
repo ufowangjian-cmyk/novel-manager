@@ -336,7 +336,6 @@ novel-manager/
 ├── storage/                      # 存储层：所有 SQL 只允许写在这里
 │   └── cache_store.py
 ├── tests/                        # 自测脚本（存储层 / 应用级 / 线上探针）
-├── docs/                         # 迁移记录
 ├── Dockerfile
 ├── docker-compose.example.yml    # 配置模板，复制为 docker-compose.yml 后修改
 ├── .env.example                  # 环境变量模板

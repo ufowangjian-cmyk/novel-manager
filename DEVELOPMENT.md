@@ -194,10 +194,30 @@ docker restart novel-manager
 ```
 
 `pre-sqlite-migration` 是迁移前打的 tag，`git show pre-sqlite-migration:novel_manager.py`
-可以单独取出旧版主程序。回滚演练记录见 `docs/sqlite-migration-report.md`。
+可以单独取出旧版主程序。这条路径演练过一次：旧主程序能正常读回整库，路由表与迁移前
+逐字节一致，说明回滚可用。
 
 > 本机的 `novel_cache.json.bak` 已清理，第 2 步的旧 JSON 要从 zip 备份里取；
 > 或者干脆跳过第 2 步——旧代码在没有 JSON 时会重新扫描生成缓存（慢一点，但结果一样）。
+
+### 查询计划与索引取舍
+
+生产库实测（`EXPLAIN QUERY PLAN`）：
+
+```
+按路径查单本   -> SEARCH books USING INDEX sqlite_autoindex_books_1 (path=?)
+按 mtime 排序  -> SCAN books USING INDEX idx_books_mtime
+章节连表       -> SEARCH b USING COVERING INDEX sqlite_autoindex_books_1 (path=?)
+               | SEARCH c USING COVERING INDEX sqlite_autoindex_chapters_1 (book_id=?)
+全量加载       -> SCAN books
+按作者筛选     -> SCAN books          ← 故意不建索引
+```
+
+- `path` 走的是 `UNIQUE` 约束自带的 `sqlite_autoindex_books_1`。`idx_books_path` 与它
+  功能重叠，但显式建了、保留（多一棵小索引，开销可忽略）。
+- **作者 / 标签故意不建索引**：程序从不按作者查库——所有筛选都在内存的 `novel_data`
+  上做，建索引只会拖慢写入。将来真要把筛选下推到 SQL，再加也不迟。
+- `journal_mode=delete`、`mmap_size=0` 均已确认生效（本次不切 WAL）。
 
 ---
 

@@ -23,7 +23,6 @@ CHECK_FILES = [
 # 文档会随日常维护持续更新，与 tag 不一致是正常的，只提示不判失败。
 DOC_FILES = [
     'DEVELOPMENT.md',
-    'docs/sqlite-migration-report.md',
 ]
 
 
