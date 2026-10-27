@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """导出 Flask 的 url_map 快照，用于模块化前后逐条 diff。
 
-    python tests/snapshot_url_map.py                # 打印到 stdout，同时写 docs/url_map_before.txt
-    python tests/snapshot_url_map.py --stdout       # 只打印
-    python tests/snapshot_url_map.py --with-line    # 额外输出去重后的源码行号（拆分前定位用）
+    python tests/snapshot_url_map.py                     # 打印到 stdout
+    python tests/snapshot_url_map.py > docs/url_map_x.txt  # 落盘（显式重定向，别偷偷写文件）
+    python tests/snapshot_url_map.py --with-line         # 附源码行号，拆分前定位用
 
-输出格式固定为「方法 | 规则 | 端点」，按规则排序，方便直接 diff。
+输出格式固定为「方法 | 规则 | 端点」，按规则排序，可直接 diff。
 容器内跑：docker exec novel-manager python /app/tests/snapshot_url_map.py
 """
 
@@ -84,11 +84,7 @@ def main():
             print(f'{lineno:5d}  {endpoint:38s} {filename}')
 
     if not ONLY_STDOUT:
-        target = os.path.join(APP_DIR, 'docs', 'url_map_snapshot.txt')
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-        with open(target, 'w', encoding='utf-8', newline='\n') as handle:
-            handle.write(output + '\n')
-        print(f'\n# 已写入 {target}', file=sys.stderr)
+        pass  # 需要落盘请自行重定向；不默认写文件，避免产生意料之外的文件
     return 0
 
 

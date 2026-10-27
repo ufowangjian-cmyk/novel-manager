@@ -105,11 +105,12 @@ SCAN_LOCK_FILE = os.path.join(DATA_DIR, 'scan.lock')
 EMOJI_MAPPING_FILE = os.path.join(DATA_DIR, 'emoji_mapping.json')
 IMAGE_MAPPING_FILE = os.path.join(DATA_DIR, 'image_mapping.json')
 
-# ===================== 存储层（SQLite） =====================
-# 书籍缓存的唯一 SQLite 入口；本文件不再直接拼 SQL、不再读写 novel_cache.json。
+# ===================== 项目内模块 =====================
+# 放在这里而不是文件顶部：要先算出 BASE_DIR 并确保它在 sys.path 上
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 from storage import cache_store
+from app import create_app
 
 # ===================== 通用 JSON 文件操作 =====================
 # 所有写盘操作共用一把进程内写锁 + 原子替换，避免并发写/崩溃写坏 JSON
@@ -284,7 +285,10 @@ def load_or_create_secret_key():
         return secrets.token_hex(32)
 
 # ===== 初始化 Flask 应用 =====
-app = Flask(__name__, template_folder='templates')
+# 实例改由 app/create_app() 创建（阶段1：工厂只建实例，路由仍在本文件用
+# @app.route 注册）。root_path 显式指向本文件所在目录，保证 templates/ 与
+# static/ 的解析结果和原来 Flask(__name__) 完全一致。
+app = create_app(root_path=BASE_DIR)
 app.secret_key = load_or_create_secret_key()
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
