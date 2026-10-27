@@ -2,7 +2,10 @@
 """线上探针：用真实 secret_key 签一个会话 cookie，走 HTTP 验证真实服务。
 
 不导入 novel_manager（避免在独立进程里再起一遍 bootstrap），只读 data/ 下的
-secret_key 与 config.json，因此对正在运行的服务没有任何副作用。
+secret_key 与 config.json。
+
+注意：/read/ 会把访问位置写进真实的阅读记录文件。所以脚本在跑之前把
+data/reading_records/*.json 全量读进内存，结束时原样写回，做到真正只读。
 
     python tests/live_probe.py [base_url]
 """
@@ -73,6 +76,36 @@ def fetch(path, cookie):
         return response.status, response.read().decode('utf-8', 'replace')
 
 
+def snapshot_reading_records():
+    """阅读页会真的写进度。探针要访问 /read/，所以先把 records 全量备份到内存。"""
+    directory = os.path.join(DATA_DIR, 'reading_records')
+    snapshot = {}
+    if not os.path.isdir(directory):
+        return snapshot
+    for name in sorted(os.listdir(directory)):
+        path = os.path.join(directory, name)
+        if os.path.isfile(path) and name.endswith('.json'):
+            with open(path, 'rb') as handle:
+                snapshot[path] = handle.read()
+    return snapshot
+
+
+def restore_reading_records(snapshot):
+    """把被探针改写的记录原样写回，返回实际还原的文件名。"""
+    restored = []
+    for path, blob in snapshot.items():
+        try:
+            with open(path, 'rb') as handle:
+                if handle.read() == blob:
+                    continue
+        except OSError:
+            pass
+        with open(path, 'wb') as handle:
+            handle.write(blob)
+        restored.append(os.path.basename(path))
+    return restored
+
+
 def main():
     from storage import cache_store
 
@@ -126,4 +159,12 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    # /read/ 会把访问位置写进真实的阅读记录，跑完必须还原，否则等于改用户进度
+    records = snapshot_reading_records()
+    try:
+        code = main()
+    finally:
+        changed = restore_reading_records(records)
+        if changed:
+            print(f'   ↩️ 已还原被探针改写的阅读记录：{", ".join(changed)}')
+    sys.exit(code)
