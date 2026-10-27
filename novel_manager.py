@@ -95,11 +95,21 @@ if not os.path.exists(DATA_DIR):
 
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 TAG_RULES_FILE = os.path.join(DATA_DIR, 'tag_rules.json')
+# 书籍缓存已迁移到 SQLite（见 storage/cache_store.py）：
+#   CACHE_FILE     仅作为「迁移源」存在，迁移成功后会被改名成 .bak，不再读写
+#   CACHE_DB_FILE  真正的缓存存储
 CACHE_FILE = os.path.join(DATA_DIR, 'novel_cache.json')
+CACHE_DB_FILE = os.path.join(DATA_DIR, 'novel_cache.db')
 SECRET_KEY_FILE = os.path.join(DATA_DIR, 'secret_key')
 SCAN_LOCK_FILE = os.path.join(DATA_DIR, 'scan.lock')
 EMOJI_MAPPING_FILE = os.path.join(DATA_DIR, 'emoji_mapping.json')
 IMAGE_MAPPING_FILE = os.path.join(DATA_DIR, 'image_mapping.json')
+
+# ===================== 存储层（SQLite） =====================
+# 书籍缓存的唯一 SQLite 入口；本文件不再直接拼 SQL、不再读写 novel_cache.json。
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from storage import cache_store
 
 # ===================== 通用 JSON 文件操作 =====================
 # 所有写盘操作共用一把进程内写锁 + 原子替换，避免并发写/崩溃写坏 JSON
@@ -1985,7 +1995,9 @@ line_cache = OrderedDict()
 MAX_LINE_CACHE_FILES = 1
 MAX_LINE_CACHE_FILE_MB = 5
 
-_last_cache_mtime = 0
+# 缓存版本号（对应 meta.revision），替代原来的「缓存文件 mtime」：
+# 库里的 revision 一变说明有人写过缓存，需要重新加载
+_last_cache_rev = 0
 _scan_active = False
 
 def invalidate_filter_cache():
@@ -3701,19 +3713,29 @@ def extract_intro_clean(lines):
 
 # ==================== 缓存加载和保存 ====================
 def load_cache():
-    global novel_data
+    global novel_data, _last_cache_rev
     # 注意：不再需要 chapter_cache、image_cache
 
-    if not os.path.exists(CACHE_FILE):
-        print(f"⚠️ 缓存文件不存在: {CACHE_FILE}")
+    # 冷启动自动迁移：库不存在 + 旧 JSON 还在 → 导入后把 JSON 改名 .bak。
+    # 热启动直接返回 existing，不重复导入（migrate 内部幂等）。
+    try:
+        imported, state = cache_store.ensure_ready(CACHE_FILE, CACHE_DB_FILE)
+        if imported:
+            print(f"✅ 已将 {imported} 本小说从 novel_cache.json 迁移到 SQLite")
+    except Exception as e:
+        print(f"⚠️ 缓存库初始化失败：{e}")
+        traceback.print_exc()
+        return False
+
+    if state == 'empty':
+        print(f"⚠️ 缓存为空: {CACHE_DB_FILE}")
         return False
 
     try:
-        data = load_json_file(CACHE_FILE)
-        if not data:
+        loaded_novel_data = cache_store.list_books()
+        if not loaded_novel_data:
             return False
 
-        loaded_novel_data = data.get('novel_data', [])
         novel_data = []
 
         for novel in loaded_novel_data:
@@ -3736,11 +3758,13 @@ def load_cache():
             novel_data.append(novel_copy)
 
         # 🔥 chapter_cache 不加载（运行时缓存，重启后从空开始）
+        # 记下当前版本号：本次加载之后由自己引起的写入不再触发重复重载
+        _last_cache_rev = cache_store.get_revision()
         print(f"✅ 从缓存加载了 {len(novel_data)} 本小说")
         return True
 
     except Exception as e:
-        print(f"⚠️ 缓存文件加载失败：{e}")
+        print(f"⚠️ 缓存库加载失败：{e}")
         traceback.print_exc()
         return False
 
@@ -3781,18 +3805,22 @@ def save_cache():
         print(f"❌ 缓存保存失败：{e}")
         traceback.print_exc()
 
-#==================== 检测缓存文件更新 =====================
+#==================== 检测缓存更新 =====================
 def should_reload_cache():
-    global _last_cache_mtime
-    if not os.path.exists(CACHE_FILE):
-        return False
+    """库里的 revision 变了就说明缓存被写过，需要重新加载。
+
+    原实现比对 novel_cache.json 的 mtime；迁到 SQLite 后没有这个文件了，
+    改用 meta.revision（每次写入 +1），语义等价且不用 stat 文件。
+    """
+    global _last_cache_rev
     try:
-        current_mtime = os.path.getmtime(CACHE_FILE)
-        if current_mtime > _last_cache_mtime:
-            _last_cache_mtime = current_mtime
-            return True
-    except:
-        pass
+        current_rev = cache_store.get_revision()
+    except Exception as e:
+        logger.error(f"读取缓存版本失败: {e}")
+        return False
+    if current_rev != _last_cache_rev:
+        _last_cache_rev = current_rev
+        return True
     return False
 
 @app.before_request
@@ -3802,7 +3830,7 @@ def check_cache_update():
     if _scan_active:
         return  # 扫描进行中不重载，避免读到写了一半的缓存
     if should_reload_cache():
-        print("🔄 检测到缓存文件已更新，重新加载...")
+        print("🔄 检测到缓存已更新，重新加载...")
         load_cache()
 
 # ==================== 扫描函数 ====================
@@ -7862,7 +7890,7 @@ def bootstrap():
     print("📚 小说管理系统启动中...")
     print("=" * 50)
     print(f"📁 扫描目录：{NOVEL_DIR}")
-    print(f"💾 缓存文件：{CACHE_FILE}")
+    print(f"💾 缓存库：{CACHE_DB_FILE}")
     print("=" * 50)
 
     if not any(normalize_user_info(v, k).get('role') == 'admin'
