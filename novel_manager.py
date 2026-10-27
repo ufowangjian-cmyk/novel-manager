@@ -3770,6 +3770,13 @@ def load_cache():
 
 #==================== 缓存保存 =====================
 def save_cache():
+    """把内存里的 novel_data 增量同步进 SQLite。
+
+    原来是「重建整份 JSON 再 dump」——5000 本要写 10MB，在 NAS 上这一步能占到
+    整个扫描耗时的一半。现在交给 cache_store.sync_all 做 diff：只有内容真的变了的
+    书才会写行，其余既不写也不重算，没变化时一次写入都不会发生。
+    """
+    global _last_cache_rev
     # 注意：不再需要 chapter_cache
     try:
         relative_novel_data = []
@@ -3793,14 +3800,16 @@ def save_cache():
 
             relative_novel_data.append(novel_copy)
 
-        cache_data = {
-            'novel_data': relative_novel_data,
-            # 🔥 chapter_cache 不再持久化（运行时缓存）
-        }
+        # 🔥 chapter_cache 不再持久化（运行时缓存）
+        result = cache_store.sync_all(relative_novel_data)
+        # 自己写的不需要再触发一次重新加载（原实现靠 mtime 触发，属白读一遍）
+        _last_cache_rev = cache_store.get_revision()
 
-        # 缓存是机器读的，用紧凑格式：12MB → 约 7MB，写出时间减半
-        save_json_file(CACHE_FILE, cache_data, indent=None)
-        print(f"✅ 已缓存 {len(novel_data)} 本小说")
+        print(
+            f"✅ 已缓存 {len(novel_data)} 本小说"
+            f"（新增 {result['inserted']} / 更新 {result['updated']} / "
+            f"删除 {result['deleted']} / 未变跳过 {result['unchanged']}）"
+        )
     except Exception as e:
         print(f"❌ 缓存保存失败：{e}")
         traceback.print_exc()
