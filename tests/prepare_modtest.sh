@@ -10,14 +10,17 @@ rm -rf "$DST"
 mkdir -p "$DST"
 
 # 代码（app/ 拆分后也要带上；现在还没有就先跳过）
+# ⚠️ 必须用 cp -a（保留 mtime）：静态资源的 ?v= 指纹取的是文件 mtime，
+# 用 cp -r 复制会让副本里所有静态文件变成"刚刚修改"，指纹全变，
+# 导致行为基线里所有页面的哈希都误报不一致（血泪教训）。
 for item in storage tests templates static novel_manager.py migrate_cache.py docs app; do
     if [ -e "$APP/$item" ]; then
-        cp -r "$APP/$item" "$DST/"
+        cp -a "$APP/$item" "$DST/"
     fi
 done
 
 # 运行时数据全量复制（含 novel_cache.db，避免副本里重新迁移）
-cp -r "$APP/data" "$DST/data"
+cp -a "$APP/data" "$DST/data"
 
 # 自测期间关掉自动扫描，避免 5000 次 stat 干扰计时
 python - <<'PY'

@@ -26,17 +26,18 @@ from flask import Flask
 # 项目根目录 = novel_manager.py 所在目录（app/ 的上一级）
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 已注册的蓝图。阶段 2 起往里加 (blueprint, url_prefix) —— 集中在这里，
-# 便于一眼看出「哪个 URL 前缀归哪个模块」。
-BLUEPRINTS = []
+# 已迁入蓝图的域：(模块名, 蓝图变量名, url_prefix)。加新域时补一行。
+# 顺序 = 注册顺序；url_prefix 为 None 表示路由里自带完整路径前缀。
+BLUEPRINT_MODULES = [
+    ('app.auth', 'auth_bp', None),
+]
 
 
 def create_app(import_name='novel_manager', root_path=None, template_folder='templates'):
     """建 Flask 实例。
 
     只做「造实例」这一件事。配置（secret_key / session / 缓存头 / 压缩）仍留在
-    novel_manager.py，因为它们依赖那边的 CONFIG 与工具函数；等阶段 2 拆 auth 时
-    再逐步判断哪些可以搬过来。
+    novel_manager.py，因为它们依赖那边的 CONFIG 与工具函数。
     """
     app = Flask(
         import_name,
@@ -46,10 +47,29 @@ def create_app(import_name='novel_manager', root_path=None, template_folder='tem
     return app
 
 
+def load_blueprints():
+    """import 各域路由模块，返回 [(blueprint, url_prefix), ...]。
+
+    ⚠️ 必须在主模块（novel_manager）初始化完成之后才调用。
+    蓝图模块反向 import 主模块的共享状态（CONFIG / is_admin / save_json_file…），
+    提前 import 会拿到半初始化的模块，报 ImportError。
+
+    所以这里用「函数内 import」而不是模块顶层 import。
+    """
+    import importlib
+
+    loaded = []
+    for module_name, bp_attr, url_prefix in BLUEPRINT_MODULES:
+        package = importlib.import_module(module_name)
+        # 触发 routes 子模块的装饰器执行，路由才会挂到 blueprint 上
+        importlib.import_module(f'{module_name}.routes')
+        loaded.append((getattr(package, bp_attr), url_prefix))
+    return loaded
+
+
 def register_blueprints(app):
-    """把 BLUEPRINTS 里的蓝图挂到 app 上（阶段 2 起才会真正有内容）。"""
-    for entry in BLUEPRINTS:
-        blueprint, url_prefix = entry
+    """把已迁出的域挂到 app 上。"""
+    for blueprint, url_prefix in load_blueprints():
         if url_prefix:
             app.register_blueprint(blueprint, url_prefix=url_prefix)
         else:

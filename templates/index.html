@@ -122,7 +122,7 @@
                         {{ icon('tag', 'sm') }}<span>标签</span>
                     </a>
                     {% endif %}
-                    <a href="{{ url_for('logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"
+                    <a href="{{ url_for('auth.logout') }}" class="user-menu-item user-menu-item--danger" role="menuitem"
                         onclick="return confirm('确定要登出吗？');">
                         {{ icon('door-open', 'sm') }}<span>登出</span>
                     </a>
