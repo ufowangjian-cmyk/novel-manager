@@ -153,18 +153,51 @@ def main():
     check('revision 一致时不重载', nm.should_reload_cache() is False)
 
     # ------------------------------------------------------------ 阅读进度
-    print('\n[5] 阅读进度落盘（不在本次迁移范围，验证未被带坏）')
-    record_file = os.path.join(DATA_DIR, 'reading_records')
-    existed = os.path.isdir(record_file)
-    check('reading_records/ 仍在', existed)
-    if existed:
-        nm.save_reading_record(sample['filename'], 1, 100) if hasattr(
-            nm, 'save_reading_record') else None
-        records = nm.load_reading_records()
-        check('阅读记录可读', isinstance(records, dict))
+    print('\n[5] 阅读进度落盘（不在本次迁移范围，仅确认未被带坏）')
+    record_dir = os.path.join(DATA_DIR, 'reading_records')
+    check('reading_records/ 仍在', os.path.isdir(record_dir))
+    if admin_key:
+        from flask import session as flask_session
+
+        record = {
+            'work_id': sample.get('work_id') or 'selftest',
+            'file_path': sample['filename'],
+            'title': sample.get('title'),
+            'line_number': 42,
+            'progress': 12.5,
+            'updated_at': '2026-10-27 09:00:00',
+        }
+        with nm.app.test_request_context('/'):
+            flask_session['authenticated'] = True
+            flask_session['user_key'] = admin_key
+            flask_session['user_role'] = 'admin'
+            flask_session['user_id'] = admin_info.get('user_id', 'admin')
+            saved = nm.save_reading_record(record)
+            records = nm.load_reading_records()
+        check('阅读记录可写入', bool(saved))
+        check('阅读记录可读回', isinstance(records, dict) and bool(records))
+        dumped = json.dumps(records, ensure_ascii=False)
+        check('进度值 42 已落盘并可读回', '"line_number": 42' in dumped or ': 42' in dumped,
+              dumped[:120])
+
+    # ------------------------------------------------------------ 真实扫描
+    print('\n[7] 真实增量扫描（/novels 只读，验证 扫描→save_cache→SQLite 全链路）')
+    rev_before = nm.cache_store.get_revision()
+    count_before = nm.cache_store.count_books()
+    started = time.time()
+    nm.scan_novel_files_background(full_scan=False)
+    elapsed = time.time() - started
+    count_after = nm.cache_store.count_books()
+    rev_after = nm.cache_store.get_revision()
+    print(f'    扫描耗时 {elapsed:.1f}s，内存 {len(nm.novel_data)} 本 / 库 {count_after} 本，'
+          f'revision {rev_before}->{rev_after}')
+    check('扫描后 库中本数 == 内存中本数',
+          count_after == len(nm.novel_data), f'{count_after} vs {len(nm.novel_data)}')
+    check('扫描未误删数据（与扫描前相差不超过 5 本）',
+          abs(count_after - count_before) <= 5, f'{count_before} -> {count_after}')
 
     # ------------------------------------------------------------ 内存
-    print('\n[6] 内存')
+    print('\n[8] 内存')
     rss = _rss()
     print(f'    RSS ≈ {rss:.0f}MB（5123 本全部在内存，与迁移前同量级）')
     check('RSS 未异常膨胀（< 400MB）', rss < 400, f'{rss:.0f}MB')
