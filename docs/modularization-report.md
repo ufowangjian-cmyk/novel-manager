@@ -17,11 +17,11 @@
 | 1 | `create_app()` 工厂骨架，零行为变更 | ✅ 已上线 |
 | 2 | 拆 `auth` 蓝图（9 条路由） | ✅ 已上线 |
 | 3 | 拆 `library` 蓝图（43 条） | ✅ 已上线 |
-| 4 | 拆 `reader`（10 条） | ⏸ 未开始 |
+| 4 | 拆 `reader` 蓝图（10 条） | ✅ 已上线 |
 | 5 | 拆 `media`（10 条） | ⏸ 未开始 |
 | 6 | 清理，`novel_manager.py` 收敛到入口 | ⏸ 未开始 |
 
-`novel_manager.py`：7943 → 6492 行，`@app.route` 76 → 24。
+`novel_manager.py`：7943 → 5785 行，`@app.route` 76 → 14。
 
 library 内部按风险分三批搬，每批都跑了同一套快照：
 

@@ -293,7 +293,7 @@
                                 <option value="title">书名</option>
                             </select>
                             <span class="recent-count" id="recentCountLabel">共 {{ recent_total }} 条</span>
-                            <form method="post" action="{{ url_for('clear_records') }}" style="display: inline;"
+                            <form method="post" action="{{ url_for('reader.clear_records') }}" style="display: inline;"
                                 onsubmit="return confirm('确定要清除自己的阅读记录吗？')">
                                 <button type="submit" class="clear-records-btn">{{ icon('trash-2', 'sm') }}️
                                     清除全部</button>

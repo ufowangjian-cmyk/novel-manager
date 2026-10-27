@@ -31,6 +31,7 @@ APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLUEPRINT_MODULES = [
     ('app.auth', 'auth_bp', None),
     ('app.library', 'library_bp', None),
+    ('app.reader', 'reader_bp', None),
 ]
 
 

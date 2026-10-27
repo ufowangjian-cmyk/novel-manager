@@ -126,7 +126,7 @@
                     <span class="chapter-line">空</span>
                 </span>
                 {% else %}
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="chapter-item chapter-level{{ lv }}">
                     {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
 
@@ -145,14 +145,14 @@
 
             <div class="action-buttons">
                 {% if continue_line %}
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="action-btn continue-btn"
                     title="{% if continue_chapter %}上次读到：{{ continue_chapter }}{% else %}继续上次阅读进度{% endif %}">
                     {{ icon('play', 'sm') }} 继续阅读{% if continue_chapter %}<span class="continue-chapter">（{{ continue_chapter }}）</span>{% endif %}
                 </a>
                 {% endif %}
 
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('reader.read_chapter', file_path=file_path, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="action-btn secondary">
                     {{ icon('book-open', 'sm') }} 从头阅读
                 </a>

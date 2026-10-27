@@ -199,20 +199,23 @@ docker restart novel-manager
 
 ## 代码结构（Blueprint 拆分）
 
-`novel_manager.py` 原本是单文件，现在按功能域往 `app/` 里搬，**渐进拆分、每步可验收可回滚**。当前进度：阶段 1（工厂骨架）+ 阶段 2（auth）已完成并上线。
+`novel_manager.py` 原本是单文件，现在按功能域往 `app/` 里搬，**渐进拆分、每步可验收可回滚**。当前进度：阶段 1（骨架）+ 阶段 2（auth）+ 阶段 3（library）+ 阶段 4（reader）已完成并上线。
 
 ### 目录现状
 
 ```
-novel_manager.py            # 主程序 + 入口（还有 24 个路由没搬）
+novel_manager.py            # 主程序 + 入口（还有 14 个路由没搬）
 app/
 ├── __init__.py             # create_app() 工厂、load_blueprints()/register_blueprints()
 ├── auth/                   # ✅ 已迁：9 条路由
 │   ├── __init__.py         # auth_bp = Blueprint('auth', __name__)
 │   └── routes.py           # 登录 / 登出 / 用户管理 / 个人偏好
-└── library/                # ✅ 已迁：43 条路由
-    ├── __init__.py         # library_bp = Blueprint('library', __name__)
-    └── routes.py           # 列表 / 详情 / 扫描 / 标签体系 / 站点配置 / 筛选取数
+├── library/                # ✅ 已迁：43 条路由
+│   ├── __init__.py         # library_bp = Blueprint('library', __name__)
+│   └── routes.py           # 列表 / 详情 / 扫描 / 标签体系 / 站点配置 / 筛选取数
+└── reader/                 # ✅ 已迁：10 条路由
+    ├── __init__.py         # reader_bp = Blueprint('reader', __name__)
+    └── routes.py           # 阅读页 / 进度 / 书内搜索 / 阅读记录清理
 storage/cache_store.py      # 书籍缓存存储层（唯一 SQL 入口）
 tests/                      # 快照、回归、搬运与静态检查脚本
 docs/
@@ -227,7 +230,7 @@ docs/
 |---|---|---|---|
 | `auth` | 9 | ✅ 已完成 | 登录、登出、用户增删改、个人阅读偏好 |
 | `library` | 43 | ✅ 已完成 | 列表、详情、扫描、标签体系、站点配置、筛选取数 |
-| `reader` | 10 | ⏳ 待迁 | 阅读页、阅读进度、书内搜索、记录清理 |
+| `reader` | 10 | ✅ 已完成 | 阅读页、阅读进度、书内搜索、记录清理 |
 | `media` | 10 | ⏳ 待迁 | 配图检测、音视频、映射表 |
 | 主模块 | 5 | 不需迁 | PWA、静态资源、缓存统计、强制清理 |
 
@@ -263,7 +266,7 @@ Flask 注册蓝图时会**强制**给端点加 `<蓝图>.` 前缀，所以端点
 改端点必须顺着改 `url_for`：
 
 - 代码里：`url_for('login')` → `url_for('auth.login')`；`url_for('index')` → `url_for('library.index')`
-- 模板里：`url_for('logout')` → `url_for('auth.logout')`；`url_for('novel_detail')` → `url_for('library.novel_detail')`
+- 模板里：`url_for('logout')` → `url_for('auth.logout')`；`url_for('novel_detail')` → `url_for('library.novel_detail')`；`url_for('read_chapter')` → `url_for('reader.read_chapter')`
 
 漏改不会在启动时报错，而是运行时 `BuildError`（500），所以**改完必须跑页面回归**。
 
