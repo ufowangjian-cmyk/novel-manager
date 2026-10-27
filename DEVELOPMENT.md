@@ -199,12 +199,12 @@ docker restart novel-manager
 
 ## 代码结构（Blueprint 拆分）
 
-`novel_manager.py` 原本是单文件，现在按功能域往 `app/` 里搬，**渐进拆分、每步可验收可回滚**。当前进度：阶段 1（骨架）+ 阶段 2（auth）+ 阶段 3（library）+ 阶段 4（reader）+ 阶段 5（media）已完成并上线。
+`novel_manager.py` 原本是单文件，现在按功能域往 `app/` 里搬，**渐进拆分、每步可验收可回滚**。**已完成**：77 条路由全部迁入 5 个蓝图，`novel_manager.py` 里已经没有任何 `@app.route`。
 
 ### 目录现状
 
 ```
-novel_manager.py            # 主程序 + 入口 + 共享函数（还有 4 个 core 路由）
+novel_manager.py            # 入口 + 共享函数库（0 个路由）
 app/
 ├── __init__.py             # create_app() 工厂、load_blueprints()/register_blueprints()
 ├── auth/                   # ✅ 已迁：9 条路由
@@ -216,9 +216,12 @@ app/
 ├── reader/                 # ✅ 已迁：10 条路由
 │   ├── __init__.py         # reader_bp = Blueprint('reader', __name__)
 │   └── routes.py           # 阅读页 / 进度 / 书内搜索 / 阅读记录清理
-└── media/                  # ✅ 已迁：10 条路由
-    ├── __init__.py         # media_bp = Blueprint('media', __name__)
-    └── routes.py           # 配图检测 / 音视频 / 映射表 / 头图
+├── media/                  # ✅ 已迁：10 条路由
+│   ├── __init__.py         # media_bp = Blueprint('media', __name__)
+│   └── routes.py           # 配图检测 / 音视频 / 映射表 / 头图
+└── core/                   # ✅ 已迁：4 条路由
+    ├── __init__.py         # core_bp = Blueprint('core', __name__)
+    └── routes.py           # PWA / 缓存统计 / 强制清理
 storage/cache_store.py      # 书籍缓存存储层（唯一 SQL 入口）
 tests/                      # 快照、回归、搬运与静态检查脚本
 docs/
@@ -235,7 +238,8 @@ docs/
 | `library` | 43 | ✅ 已完成 | 列表、详情、扫描、标签体系、站点配置、筛选取数 |
 | `reader` | 10 | ✅ 已完成 | 阅读页、阅读进度、书内搜索、记录清理 |
 | `media` | 10 | ✅ 已完成 | 配图检测、音视频、映射表 |
-| 主模块 | 5 | 不需迁 | PWA、静态资源、缓存统计、强制清理 |
+| `core` | 4 | ✅ 已完成 | PWA、缓存统计、强制清理 |
+| Flask 内置 | 1 | 不涉及 | `static` 端点 |
 
 **新增一个路由该放哪**：先查 `docs/blueprint-roadmap.md` 里同类端点在哪个域，放进对应 `app/<域>/routes.py`。只有新开一个域时才新建目录，并在 `app/__init__.py` 的 `BLUEPRINT_MODULES` 里补一行 `(模块名, 蓝图变量名, url_prefix)`。
 
