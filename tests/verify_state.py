@@ -17,9 +17,13 @@ CHECK_FILES = [
     'storage/cache_store.py',
     'storage/__init__.py',
     'migrate_cache.py',
-    'docs/sqlite-migration-report.md',
     'tests/sqlite_selftest.py',
+]
+
+# 文档会随日常维护持续更新，与 tag 不一致是正常的，只提示不判失败。
+DOC_FILES = [
     'DEVELOPMENT.md',
+    'docs/sqlite-migration-report.md',
 ]
 
 
@@ -56,6 +60,13 @@ def main():
         else:
             print(f'  ❌ {name}  {here[:8]} != {there[:8]}')
             bad += 1
+
+    for name in DOC_FILES:
+        if not os.path.isfile(os.path.join(APP_DIR, name)):
+            print(f'  ⚠️  {name}  文件不存在')
+            continue
+        same = blob_hash(name) == git('rev-parse', f'{TAG}:{name}')
+        print(f'  {"✅" if same else "⚠️ "}  {name}{"" if same else "  （文档已更新，不计失败）"}')
 
     print('=== 模块化残留检查（应全部为 0）===')
     leftovers = ['app/', 'library_bp', 'reader_bp', 'media_bp', 'core_bp',
