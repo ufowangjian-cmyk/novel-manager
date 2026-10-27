@@ -174,16 +174,24 @@
  六、数据备份
 ────────────────────────────────────────────────────────────────────────────
 
- 全部状态都在 data/ 目录下（纯 JSON，无数据库）。
+ 全部状态都在 data/ 目录下。书籍缓存是 SQLite 库 novel_cache.db，
+ 其余（配置、阅读记录、标签规则）仍是 JSON。
 
- 完整备份：
+ 完整备份（缓存也带上 —— 需要先停机，见下方说明）：
 
+     docker stop novel-manager
      tar czf ~/novel-data-$(date +%Y%m%d).tar.gz data/
+     docker start novel-manager
 
- 备份但排除大缓存（推荐，缓存可重建）：
+ 备份但排除大缓存（推荐，缓存扫描一次就能重建，不用停机）：
 
      tar czf ~/novel-data-$(date +%Y%m%d).tar.gz \
-         --exclude='data/novel_cache.json*' data/
+         --exclude='data/novel_cache.db*' \
+         --exclude='data/novel_cache.json*' \
+         data/
+
+ ⚠️ novel_cache.db 是 SQLite 库，运行中直接 tar 可能拷到未提交的事务
+    （得到损坏/回退的库）。要连缓存一起备份就先 stop 容器，或者干脆排除它。
 
  ⚠️ 注意：data/config.json 含用户表和密码哈希，
     data/secret_key 丢了会导致所有人重新登录。这两个务必带上。

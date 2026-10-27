@@ -1,6 +1,7 @@
 # ========== 运行时数据 ==========
-# 含用户表、密码哈希（scrypt）、会话密钥 secret_key、
-# 书库扫描缓存 novel_cache.json、每用户阅读记录 reading_records/
+# 含用户表、密码哈希（scrypt）、会话密钥 secret_key、每用户阅读记录 reading_records/
+# 书库缓存 novel_cache.db 是 SQLite 库（5000+ 本书完整路径），
+# 迁移前的 novel_cache.json.bak 同样含路径，一并排除
 # 这些一旦公开等于泄露账号与隐私，永远不要提交
 # 用 data/* 而非 data/，才能用 ! 放行个别文件（目录被整体忽略后 git 不会再进入）
 data/*

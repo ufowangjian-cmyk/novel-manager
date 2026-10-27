@@ -17,6 +17,8 @@ env
 README.md
 .DS_Store
 *.log
-data/novel_cache.json
+# 书籍缓存：novel_cache.db（SQLite）及其 .db-journal / .bak / .pre-sqlite
+# 这些是运行时派生数据，镜像不该带，也不该进构建上下文
+data/novel_cache.*
 data/reading_records.json
 data/novel_manager.log

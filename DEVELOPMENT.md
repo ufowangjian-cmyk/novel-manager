@@ -248,6 +248,10 @@ docker restart novel-manager
 
 注意 `data/secret_key` 要一起带走，否则所有用户需要重新登录。
 
+`data/novel_cache.db` 可以不带（15MB，启动后扫一遍就有）：不带时新机器首次启动
+会走「库不存在 + 无旧 JSON」的分支，直接进入全量扫描。要带的话请先 `docker stop`，
+运行中的 SQLite 库直接拷可能拿到未提交的事务。
+
 ---
 
 ## 自动化维护（给 AI 助手）
@@ -277,11 +281,15 @@ Python 模块名不能含连字符。
 | 改了 requirements.txt | `docker compose build && docker compose up -d` |
 | 改了 compose | `docker compose up -d` |
 | 看日志 | `docker logs novel-manager --tail 100` |
-| 数据备份 | 打包 `data/`，建议排除 `novel_cache.json*` |
+| 数据备份 | 打包 `data/`，建议排除 `novel_cache.db*` 与 `novel_cache.json*` |
+| 改完存储层要重跑自测 | `docker exec novel-manager python /app/tests/sqlite_selftest.py` |
 
 **注意事项**
 
 - 所有状态在 `data/`，`config.json` 含用户表和密码哈希，截屏或分享时必须隐去
+- `storage/` 是**必需目录**，主程序启动时就 `from storage import cache_store`；
+  只挂主程序文件、或复制项目时漏掉这个目录，容器会直接起不来（ModuleNotFoundError）
 - 单 worker 是刻意设计，不要为"提速"提高 worker 数
 - PID 1 由 compose 的 `init: true` 提供，Dockerfile 里没有 tini 也没有 ENTRYPOINT，两者配套
-- 如果是通过 SSH 操作宿主机，注意该环境下 git 推送需要走代理，直连会被重置
+- 如果是通过 SSH 操作宿主机，git 推送走 SSH over 443（deploy key 已配好），
+  **不需要开代理**；只有回退到 HTTPS + PAT 时才需要，详见 `推送指南.md`

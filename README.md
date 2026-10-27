@@ -299,11 +299,18 @@ docker exec novel-manager ls /novels | head
 `scan.lock` 存在说明已有扫描在进行，不会重复启动。
 
 **数据怎么备份？**
-打包整个 `data/` 目录即可，里面是全部状态。缓存可以排除：
+打包整个 `data/` 目录即可，里面是全部状态。书籍缓存可以排除，扫描一次就能重建：
 
 ```bash
-tar czf backup.tar.gz --exclude='data/novel_cache.json*' data/
+tar czf backup.tar.gz \
+  --exclude='data/novel_cache.db*' \
+  --exclude='data/novel_cache.json*' \
+  data/
 ```
+
+⚠️ 缓存现在是 SQLite 库（`novel_cache.db`），不像 JSON 那样能随便拷：如果要把库一起打包，
+先 `docker stop novel-manager` 再 tar —— 运行中拷贝可能拿到未提交的事务。
+只备份账号与阅读记录的话，上面排除掉缓存就够了，不需要停机。
 
 **外网访问很慢、要卡几秒？**
 容器同时监听 IPv4 和 IPv6。如果你的网络 IPv6 不通，客户端会在两条路线上竞争，
@@ -313,7 +320,7 @@ tar czf backup.tar.gz --exclude='data/novel_cache.json*' data/
 
 | 改了什么 | 做什么 |
 |---|---|
-| `.py` / 模板 / 静态文件 | `docker restart novel-manager` |
+| `.py` / `storage/` / 模板 / 静态文件 | `docker restart novel-manager` |
 | `requirements.txt` | `docker compose build && docker compose up -d` |
 
 代码是挂载进容器的，不在镜像里，所以绝大多数改动重启就够，不必重建。
@@ -325,6 +332,11 @@ tar czf backup.tar.gz --exclude='data/novel_cache.json*' data/
 ```
 novel-manager/
 ├── novel_manager.py              # 主程序（注意是下划线）
+├── migrate_cache.py              # 独立迁移脚本（novel_cache.json → SQLite）
+├── storage/                      # 存储层：所有 SQL 只允许写在这里
+│   └── cache_store.py
+├── tests/                        # 自测脚本（存储层 / 应用级 / 线上探针）
+├── docs/                         # 迁移记录
 ├── Dockerfile
 ├── docker-compose.example.yml    # 配置模板，复制为 docker-compose.yml 后修改
 ├── .env.example                  # 环境变量模板
@@ -334,6 +346,7 @@ novel-manager/
 ├── templates/                    # 网页模板
 ├── static/                       # CSS / JS / 素材
 └── data/                         # 运行时数据（自动创建，不进版本库）
+    └── novel_cache.db            # 书籍缓存（SQLite）
 ```
 
 部署细节、容器内部结构、二次开发注意事项见 **[DEVELOPMENT.md](DEVELOPMENT.md)**。
