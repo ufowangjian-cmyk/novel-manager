@@ -218,6 +218,24 @@ let scanning = false;
 let progressInterval = null;
 let displayedProgress = 0;   // 进度条已显示的百分比，只增不减
 
+// 扫描期间联动所有扫描入口的按钮态：
+// - 首页胶囊右侧的「增量扫描」快捷按钮：disabled + .is-scanning（CSS 里让图标转圈）
+// - 「扫描管理」里的增量/全量按钮：disabled 由各自调用处负责，这里只补快捷按钮
+// 关掉转圈的时机只有一个 —— scanning 变回 false（完成/出错/启动失败），
+// 保证「按钮在转 ⇔ 后端真的在工作」，不会转圈停了但扫描还在跑。
+function syncScanButtons() {
+    const statsScanBtn = document.getElementById('statsScanBtn');
+    if (!statsScanBtn) return;
+    statsScanBtn.disabled = scanning;
+    statsScanBtn.classList.toggle('is-scanning', scanning);
+    // 读屏友好：转圈时告诉辅助技术"正在扫描"
+    if (scanning) {
+        statsScanBtn.setAttribute('aria-busy', 'true');
+    } else {
+        statsScanBtn.removeAttribute('aria-busy');
+    }
+}
+
 function startScan(fullScan = false) {
     console.log('startScan 被调用, fullScan=', fullScan, 'scanning=', scanning);
 
@@ -232,6 +250,7 @@ function startScan(fullScan = false) {
     const scanFullBtn = document.getElementById('scanFullBtn');
     if (scanBtn) scanBtn.disabled = true;
     if (scanFullBtn) scanFullBtn.disabled = true;
+    syncScanButtons();
 
     const progressContainer = document.getElementById('progressContainer');
     if (progressContainer) progressContainer.style.display = 'block';
@@ -259,6 +278,7 @@ function startScan(fullScan = false) {
                 scanning = false;
                 if (scanBtn) scanBtn.disabled = false;
                 if (scanFullBtn) scanFullBtn.disabled = false;
+                syncScanButtons();
                 showNotification('启动扫描失败: ' + (data.message || '未知错误'), 'error');
                 if (progressMessage) progressMessage.textContent = '启动失败';
             }
@@ -268,8 +288,66 @@ function startScan(fullScan = false) {
             scanning = false;
             if (scanBtn) scanBtn.disabled = false;
             if (scanFullBtn) scanFullBtn.disabled = false;
+            syncScanButtons();
             showNotification('网络错误，无法启动扫描', 'error');
         });
+}
+
+// ===== 扫描完成后只换书架区，不整页刷新 =====
+// 保留滚动位置、工具面板展开状态、头像与背景图，避免整页重载的白屏和跳顶。
+// 拿当前 URL 重新请求首页（带分页/排序/筛选参数），只取其中的 .table-wrapper 换上去。
+// 任何一步不顺利都返回 false，由调用方回退到整页刷新，保证数据不会停在半新半旧的状态。
+async function refreshNovelList() {
+    const oldWrap = document.querySelector('.table-wrapper');
+    if (!oldWrap) return false;
+
+    const prevScroll = window.scrollY;
+    const oldMeta = document.getElementById('app-data');
+
+    try {
+        const resp = await fetch(window.location.href, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (!resp.ok) return false;
+
+        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+        const newWrap = doc.querySelector('.table-wrapper');
+        if (!newWrap) return false;
+
+        // 总页数可能变了（新增/删除书）：meta 和全局变量一起更新，跳页才不会越界。
+        // 后端 index() 有页码 clamp，所以即使当前页超出新页数也会返回最后一页。
+        const newMeta = doc.getElementById('app-data');
+        if (newMeta && oldMeta) {
+            const pages = newMeta.dataset.paginationPages || '1';
+            oldMeta.dataset.paginationPages = pages;
+            window.paginationPages = parseInt(pages, 10) || 1;
+        }
+
+        oldWrap.replaceWith(newWrap);
+
+        // 头部胶囊里的「共 N 本小说」
+        const newCount = doc.querySelector('.count-info');
+        const curCount = document.querySelector('.count-info');
+        if (newCount && curCount) curCount.innerHTML = newCount.innerHTML;
+
+        // 筛选提示条上的「共 N 本」（只在有筛选时存在）
+        const newNotice = doc.querySelector('.filter-notice');
+        const curNotice = document.querySelector('.filter-notice');
+        if (newNotice && curNotice) curNotice.replaceWith(newNotice);
+
+        // 新 DOM 需要重新跑一遍：书名格式化/高亮、分页跳转、列表区那几处直接绑定的事件
+        if (typeof formatNovelTitlesAndHighlight === 'function') formatNovelTitlesAndHighlight();
+        if (typeof initPagination === 'function') initPagination(window.paginationPages);
+        if (typeof window.bindListInteractions === 'function') window.bindListInteractions();
+
+        // 回到原来的滚动位置（新列表更短时浏览器会自动夹到底部）
+        window.scrollTo(0, prevScroll);
+        return true;
+    } catch (err) {
+        console.error('局部刷新书架失败，将回退整页刷新:', err);
+        return false;
+    }
 }
 
 function checkProgress() {
@@ -283,25 +361,59 @@ function checkProgress() {
 
             if (data.status === 'completed') {
                 clearInterval(progressInterval);
+                progressInterval = null;
                 scanning = false;
                 const scanBtn = document.getElementById('scanBtn');
                 const scanFullBtn = document.getElementById('scanFullBtn');
                 if (scanBtn) scanBtn.disabled = false;
                 if (scanFullBtn) scanFullBtn.disabled = false;
-                showNotification('扫描完成！正在刷新页面...', 'success');
-                setTimeout(() => window.location.reload(), 1500);
+                syncScanButtons();
+                // 后端 message 里已经写好了「更新 3 本, 保留 5105 本, 删除 2 本」这类明细，
+                // 直接拿来当提示，比只说"扫描完成"有用
+                showNotification(data.message || '扫描完成', 'success');
+                // 只换书架区，不整页刷新；失败才回退（延迟一点让提示先出来）
+                refreshNovelList().then(function (ok) {
+                    if (!ok) setTimeout(() => window.location.reload(), 600);
+                });
             } else if (data.status === 'error') {
                 clearInterval(progressInterval);
+                progressInterval = null;
                 scanning = false;
                 const scanBtn = document.getElementById('scanBtn');
                 const scanFullBtn = document.getElementById('scanFullBtn');
                 if (scanBtn) scanBtn.disabled = false;
                 if (scanFullBtn) scanFullBtn.disabled = false;
+                syncScanButtons();
                 showNotification('扫描出错: ' + data.message, 'error');
             }
         })
         .catch(err => {
             console.error('获取进度失败:', err);
+        });
+}
+
+// 接管"打开页面时已有扫描在跑"的情况：比如启动时的自动增量扫描、或扫描中途刷新页面。
+// 先看一次后端真实状态，扫描中就直接接上轮询并让快捷按钮转圈。
+function attachToRunningScan() {
+    fetch('/api/scan_progress', {
+        headers: { 'Cache-Control': 'no-cache' }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status !== 'scanning' || scanning) return;
+            console.log('检测到后台扫描进行中，接上进度轮询');
+            scanning = true;
+            const scanBtn = document.getElementById('scanBtn');
+            const scanFullBtn = document.getElementById('scanFullBtn');
+            if (scanBtn) scanBtn.disabled = true;
+            if (scanFullBtn) scanFullBtn.disabled = true;
+            syncScanButtons();
+            if (progressInterval) clearInterval(progressInterval);
+            progressInterval = setInterval(checkProgress, 400);
+            updateProgressUI(data);
+        })
+        .catch(err => {
+            console.error('获取初始扫描状态失败:', err);
         });
 }
 
@@ -1358,7 +1470,11 @@ function bindScanButtons() {
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindScanButtons);
+    document.addEventListener('DOMContentLoaded', () => {
+        bindScanButtons();
+        attachToRunningScan();
+    });
 } else {
     bindScanButtons();
+    attachToRunningScan();
 }

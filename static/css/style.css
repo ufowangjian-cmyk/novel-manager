@@ -310,6 +310,89 @@ body {
     font-family: 'Segoe UI', '微软雅黑', sans-serif;
 }
 
+/* 胶囊右侧的「增量扫描」快捷按钮：纯图标、无文字 */
+.stats-scan-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    flex: none;
+    border: none;
+    border-radius: 50%;
+    background: var(--opacity-white-20);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.stats-scan-btn:hover {
+    background: var(--opacity-white-30);
+}
+
+.stats-scan-btn:active {
+    transform: scale(0.9);
+}
+
+.stats-scan-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 2px;
+}
+
+/* 图标按容器缩放，sm 尺寸在 24px 圆里偏大 */
+.stats-scan-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+body.dark-mode .stats-scan-btn {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+body.dark-mode .stats-scan-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* 扫描进行中：图标转圈 + 按钮半透明不可点（由 main.js syncScanButtons 切换 .is-scanning）
+   暂停态必须给 .is-scanning 同级更高的优先级，否则 .stats-scan-btn:active 的
+   scale(0.9) 会和 rotate 抢同一个 transform，转圈会"卡"一下。 */
+.stats-scan-btn.is-scanning {
+    background: var(--opacity-white-20);
+    cursor: progress;
+}
+
+.stats-scan-btn.is-scanning:hover,
+.stats-scan-btn.is-scanning:active {
+    background: var(--opacity-white-20);
+    transform: none;
+}
+
+.stats-scan-btn.is-scanning svg {
+    animation: spin 0.9s linear infinite;
+    /* 以图标几何中心为轴：sprite 里多数图标不是严格居中，绕中心转更稳 */
+    transform-origin: 50% 50%;
+}
+
+/* 尊重系统"减少动态效果"：不转圈，改为呼吸式透明度，避免完全静止像按钮坏了 */
+@media (prefers-reduced-motion: reduce) {
+    .stats-scan-btn.is-scanning svg {
+        animation: scan-breathe 1.2s ease-in-out infinite;
+    }
+}
+
+@keyframes scan-breathe {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.35;
+    }
+}
+
 .dir-info {
     color: rgba(255, 255, 255, 0.9);
     max-width: 300px;
@@ -4462,13 +4545,3 @@ body.dark-mode .user-menu-subitem.active {
     border-color: #fff;
     box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
 }
-
-/* ============================================
-   维护约定（2026-10-25 加）
-   本文件是全局基础样式（所有页面都加载），改这里等于改全站，动手前先确认影响面。
-   新增或修改样式，请直接改上方已有的对应规则，不要在本文件末尾追加「覆盖段」。
-   同名规则一旦层层叠加，实际生效值必须从末尾往回倒推才能确定 —— config.css 就出现过
-   单个副标题 5 处定义（基础 / 收紧段 / @768 / @480 / 末尾再压缩），之后没人敢动。
-   确实需要覆盖时：① 在同一条规则里写全所有相关属性；② 注释里注明覆盖的是哪一条。
-   目前本文件重复定义 12 组 / 14 条（约 2%），请保持这个水平。
-   ============================================ */

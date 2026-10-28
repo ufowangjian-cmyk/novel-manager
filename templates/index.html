@@ -38,6 +38,14 @@
                     <span class="dir-info">{{ icon('folder-open', 'sm') }}小说目录： {{ novel_dir }}</span>
                     <span class="sep">|</span>
                     <span class="count-info">{{ icon('library', 'sm') }} 共 {{ total_count }} 本小说</span>
+                    {% if session.user_role == 'admin' %}
+                    {# 增量扫描快捷入口：复用 main.js 的 startScan(false)，它自带防重入和进度条。
+                    扫描中由 syncScanButtons() 加 .is-scanning 让图标转圈；
+                    aria-busy 由 JS 在扫描期间补上，这里不写死。 #}
+                    <button type="button" class="stats-scan-btn" id="statsScanBtn"
+                            title="增量扫描" aria-label="增量扫描"
+                            onclick="startScan(false)">{{ icon('refresh-cw', 'sm') }}</button>
+                    {% endif %}
                 </div>
             </div>
 
@@ -933,39 +941,48 @@ main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
 
         // 清除全部记录：确认逻辑已在表单的 onsubmit 里，避免二次弹窗
 
-        // 绑定分页跳转按钮
-        const gotoPageBtn = document.getElementById('gotoPageBtn');
-        if (gotoPageBtn) {
-            gotoPageBtn.addEventListener('click', function () {
-                if (typeof gotoPage === 'function') gotoPage(window.paginationPages);
-            });
-        }
-
-        // 移动端卡片标签点击跳转
-        document.querySelector('.mobile-card-list')?.addEventListener('click', function (e) {
-            const tag = e.target.closest('.tag-badge');
-            if (tag && !tag.classList.contains('tag-more')) {
-                e.preventDefault();
-                const tagText = tag.textContent;
-                if (tagText && !tagText.startsWith('+')) {
-                    window.location.href = `?tag=${encodeURIComponent(tagText)}`;
-                }
+        // ===== 列表区交互（分页跳转 / 移动端标签 / 移动端跳页）=====
+        // 抽成函数的原因：扫描完成后只替换 .table-wrapper（见 main.js 的 refreshNovelList），
+        // 新 DOM 需要重新绑定一次。每次替换都是全新元素，重复调用不会叠加监听。
+        function bindListInteractions() {
+            // 绑定分页跳转按钮
+            const gotoPageBtn = document.getElementById('gotoPageBtn');
+            if (gotoPageBtn) {
+                gotoPageBtn.addEventListener('click', function () {
+                    if (typeof gotoPage === 'function') gotoPage(window.paginationPages);
+                });
             }
-        });
-        // 移动端跳转 - 下拉选择直接跳转
-        const mobileGotoSelect = document.getElementById('mobileGotoPage');
-        if (mobileGotoSelect) {
-            mobileGotoSelect.addEventListener('change', function () {
-                const page = parseInt(this.value);
 
-                // 获取当前 URL 的所有参数
-                const urlParams = new URLSearchParams(window.location.search);
-                urlParams.set('page', page);
-
-                // 重新跳转
-                window.location.href = '?' + urlParams.toString();
+            // 移动端卡片标签点击跳转
+            document.querySelector('.mobile-card-list')?.addEventListener('click', function (e) {
+                const tag = e.target.closest('.tag-badge');
+                if (tag && !tag.classList.contains('tag-more')) {
+                    e.preventDefault();
+                    const tagText = tag.textContent;
+                    if (tagText && !tagText.startsWith('+')) {
+                        window.location.href = `?tag=${encodeURIComponent(tagText)}`;
+                    }
+                }
             });
+
+            // 移动端跳转 - 下拉选择直接跳转
+            const mobileGotoSelect = document.getElementById('mobileGotoPage');
+            if (mobileGotoSelect) {
+                mobileGotoSelect.addEventListener('change', function () {
+                    const page = parseInt(this.value);
+
+                    // 获取当前 URL 的所有参数
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('page', page);
+
+                    // 重新跳转
+                    window.location.href = '?' + urlParams.toString();
+                });
+            }
         }
+
+        bindListInteractions();
+        window.bindListInteractions = bindListInteractions;
     });
 </script>
 {% endblock %}
