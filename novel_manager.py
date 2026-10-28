@@ -6022,6 +6022,10 @@ def read_chapter(file_path, line_number):
                     )
                 line_number = current_chapter['line_number']
 
+        # 是否已经在「整章」维度做过跨行高亮（分页前）。
+        # 放在 if/else 之外初始化，保证任何分支走到末尾都取得到。
+        lines_highlighted = False
+
         if current_chapter:
             chapter_start = current_chapter['line_number'] - 1
             chapter_end = total_lines
@@ -6034,6 +6038,18 @@ def read_chapter(file_path, line_number):
             processed_lines = [line.lstrip(' \t\u3000') if line.strip() else '' for line in chapter_lines]
 
             total_words = sum(len(line) for line in chapter_lines)
+
+            # 跨行引号/括号必须按「整章」配对后再切页：
+            # 若按页各跑一遍，页首正好落在长引号段落中间时，左引号在上页、
+            # 本页只剩右引号，正则配不上对，整段高亮就丢了。
+            # 高亮器对每一行输出各自闭合的 span、不改变行数，
+            # 所以下面按「原始行字数」算出的切页下标依然有效。
+            # 例外：虚拟章节（整本当作一章）不做预高亮——那等于每次翻页都把
+            # 整本书过一遍正则，NAS 上成本太高，这类书保持原有的按页高亮。
+            if total_words > per_page_words and not is_virtual_chapter:
+                processed_lines = highlight_crossline_brackets(
+                    '\n'.join(processed_lines)).split('\n')
+                lines_highlighted = True
 
             if total_words > per_page_words:
                 total_pages = (total_words + per_page_words - 1) // per_page_words
@@ -6102,7 +6118,8 @@ def read_chapter(file_path, line_number):
             prev_page = page - 1 if page > 1 else None
             next_page = page + 1 if page < total_pages else None
 
-        if current_lines:
+        # 已经在整章维度高亮过就不要再按页跑一遍，否则会重复包裹 span。
+        if current_lines and not lines_highlighted:
             full_text = '\n'.join(current_lines)
             processed_text = highlight_crossline_brackets(full_text)
             current_lines = processed_text.split('\n')
