@@ -110,32 +110,22 @@
                 {% endif %}
             </div>
 
-            <div class="chapters-tree">
-                {# 层级图标：统一用 Lucide sprite（/static/icons.svg），随 currentColor 适配明暗主题 #}
-                {% set level_icons = {1: 'table-of-contents', 2: 'chevron-right', 3: 'list-ordered'} %}
-                {% for chapter in all_chapters %}
-                {% set lv = chapter.level %}
-                {% set lv_icon = level_icons.get(lv, 'list') %}
-                {% if chapter.is_empty %}
-                {# 空章节（只有标题没有正文）：渲染成不可点击的占位条目 #}
-                <span class="chapter-item chapter-level{{ lv }} is-empty"
-                    title="本章为空白章节，暂无正文"
-                    aria-disabled="true">
-                    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
-                    <span class="chapter-title">{{ chapter.text }}</span>
-                    <span class="chapter-line">空</span>
-                </span>
-                {% else %}
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
-                    class="chapter-item chapter-level{{ lv }}">
-                    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
-
-                    <span class="chapter-title">{{ chapter.text }}</span>
-                    <span class="chapter-line">第{{ chapter.line_number }}行</span>
-                </a>
-                {% endif %}
-                {% endfor %}
+            <div class="chapters-tree" id="chaptersTree">
+                {# 只渲染前 visible_chapters 条：几百章的书全部塞进首屏会让 HTML 涨到 400KB+，
+                   剩下的点「展开」按批走 /api/novel_chapters 拉取，结构由 _chapter_items.html 统一提供 #}
+                {% with chapters = all_chapters[:visible_chapters] %}
+                {% include '_chapter_items.html' %}
+                {% endwith %}
             </div>
+            {% if all_chapters|length > visible_chapters %}
+            <button type="button" class="chapters-more" id="moreChaptersBtn"
+                    data-url="{{ url_for('api_novel_chapters', file_path=file_path) }}"
+                    data-offset="{{ visible_chapters }}"
+                    data-batch="{{ chapter_batch }}"
+                    data-total="{{ all_chapters|length }}">
+                {{ icon('chevron-down', 'sm') }} 展开剩余 {{ all_chapters|length - visible_chapters }} 章（共 {{ all_chapters|length }} 章）
+            </button>
+            {% endif %}
             {% else %}
             <div class="no-chapters">
                 <p>{{ icon('file-text', 'sm') }} 本文暂无章节结构</p>
@@ -340,6 +330,53 @@
                 btn.disabled = false;
             }
         }
+
+        // ===== 章节目录懒加载 =====
+        // 几百章的书首屏只渲染前 visible_chapters 条，剩下的点按钮按批拉取。
+        // 拉回来的 HTML 由服务端用同一份 _chapter_items.html 渲染，
+        // 所以链接/图标/层级样式不会和首屏出现两套。
+        (function () {
+            var moreBtn = document.getElementById('moreChaptersBtn');
+            var tree = document.getElementById('chaptersTree');
+            if (!moreBtn || !tree) return;
+
+            moreBtn.addEventListener('click', async function () {
+                if (moreBtn.disabled) return;
+                var total = parseInt(moreBtn.dataset.total, 10) || 0;
+                var offset = parseInt(moreBtn.dataset.offset, 10) || 0;
+                var batch = parseInt(moreBtn.dataset.batch, 10) || 300;
+                var label = moreBtn.innerHTML;
+
+                moreBtn.disabled = true;
+                moreBtn.textContent = '加载中…';
+                try {
+                    // 把当前页的筛选/页码状态原样带给服务端，拼出来的章节链接才不会丢条件
+                    var params = new URLSearchParams(window.location.search);
+                    params.set('offset', offset);
+                    params.set('limit', batch);
+                    var resp = await fetch(moreBtn.dataset.url + '?' + params.toString(), { cache: 'no-store' });
+                    var data = await resp.json();
+                    if (!data.success) throw new Error(data.message || '加载失败');
+
+                    tree.insertAdjacentHTML('beforeend', data.html);
+                    moreBtn.dataset.offset = data.next_offset;
+                    if (data.has_more) {
+                        moreBtn.disabled = false;
+                        moreBtn.innerHTML = '{{ icon('chevron-down', 'sm') }} 展开剩余 '
+                            + (total - data.next_offset) + ' 章（共 ' + total + ' 章）';
+                    } else {
+                        moreBtn.remove();
+                    }
+                } catch (err) {
+                    console.error('章节加载失败:', err);
+                    moreBtn.disabled = false;
+                    moreBtn.innerHTML = label;
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification('章节加载失败：' + err.message, 'error');
+                    }
+                }
+            });
+        })();
 
     </script>
 {% endblock %}

@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS chapters (
     start_line  INTEGER,
     end_line    INTEGER,
     word_count  INTEGER,
+    level       INTEGER,
+    is_empty    INTEGER,
     PRIMARY KEY (book_id, idx)
 );
 
@@ -101,8 +103,8 @@ ON CONFLICT(path) DO UPDATE SET
 
 _INSERT_CHAPTER = """
 INSERT OR REPLACE INTO chapters
-    (book_id, idx, title, start_line, end_line, word_count)
-VALUES (?, ?, ?, ?, ?, ?)
+    (book_id, idx, title, start_line, end_line, word_count, level, is_empty)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 # ---------------------------------------------------------------------------
@@ -201,8 +203,24 @@ def init_db(db_path):
     conn = _get_conn(path)
     with _write_lock:
         conn.executescript(_SCHEMA)
+        _ensure_chapter_columns(conn)
         conn.commit()
     return path
+
+
+def _ensure_chapter_columns(conn):
+    """给老库的 chapters 表补列（幂等）。
+
+    chapters 表最初只有标题/行号/字数，后来要能从库里还原整份章节结构
+    （详情页不必再读全文），才加了 level（1 册 / 2 章 / 3 节）和
+    is_empty（仅标题无正文）。CREATE TABLE IF NOT EXISTS 不会给已存在的
+    表加列，所以必须显式 ALTER。
+    """
+    cols = {row['name'] for row in conn.execute('PRAGMA table_info(chapters)')}
+    if 'level' not in cols:
+        conn.execute('ALTER TABLE chapters ADD COLUMN level INTEGER')
+    if 'is_empty' not in cols:
+        conn.execute('ALTER TABLE chapters ADD COLUMN is_empty INTEGER')
 
 
 # ---------------------------------------------------------------------------
@@ -299,9 +317,11 @@ def _chapter_rows(book_id, chapters):
                 _to_int(chapter.get('start_line')),
                 _to_int(chapter.get('end_line')),
                 _to_int(chapter.get('word_count')),
+                _to_int(chapter.get('level')) or None,
+                1 if chapter.get('is_empty') else 0,
             ))
-        else:  # (idx, title, start, end, words) 之类的元组
-            values = list(chapter) + [None] * (5 - len(chapter))
+        else:  # (idx, title, start, end, words[, level, is_empty]) 之类的元组
+            values = list(chapter) + [None] * (7 - len(chapter))
             rows.append((
                 book_id,
                 _to_int(values[0], index),
@@ -309,6 +329,8 @@ def _chapter_rows(book_id, chapters):
                 _to_int(values[2]),
                 _to_int(values[3]),
                 _to_int(values[4]),
+                _to_int(values[5]) or None,
+                1 if values[6] else 0,
             ))
     return rows
 
@@ -383,7 +405,8 @@ def get_chapters(path, db_path=None):
         return []
     conn = _get_conn(db_path)
     rows = conn.execute(
-        "SELECT c.idx, c.title, c.start_line, c.end_line, c.word_count "
+        "SELECT c.idx, c.title, c.start_line, c.end_line, c.word_count, "
+        "       c.level, c.is_empty "
         "FROM chapters c JOIN books b ON b.id = c.book_id "
         "WHERE b.path = ? ORDER BY c.idx",
         (path,),
@@ -395,6 +418,8 @@ def get_chapters(path, db_path=None):
             'start_line': row['start_line'],
             'end_line': row['end_line'],
             'word_count': row['word_count'],
+            'level': row['level'],
+            'is_empty': bool(row['is_empty']),
         }
         for row in rows
     ]
@@ -477,7 +502,7 @@ def sync_all(books, chapters_map=None, db_path=None):
     """
     conn = _get_conn(db_path)
     chapters_map = chapters_map or {}
-    result = {'inserted': 0, 'updated': 0, 'deleted': 0, 'unchanged': 0}
+    result = {'inserted': 0, 'updated': 0, 'deleted': 0, 'unchanged': 0, 'chapters': 0}
 
     with _write_lock:
         existing = {}
@@ -512,28 +537,18 @@ def sync_all(books, chapters_map=None, db_path=None):
         to_delete = [path for path in existing if path not in seen]
         result['deleted'] = len(to_delete)
 
-        if not to_write and not to_delete:
+        if not to_write and not to_delete and not chapters_map:
             return result
 
         try:
             conn.execute('BEGIN IMMEDIATE')
             if to_write:
                 conn.executemany(_UPSERT_BOOK, to_write)
-                if chapters_map:
-                    id_rows = conn.execute(
-                        'SELECT id, path FROM books WHERE path IN (%s)'
-                        % ','.join('?' * len(chapters_map)),
-                        list(chapters_map.keys()),
-                    ).fetchall()
-                    ids = {row['path']: int(row['id']) for row in id_rows}
-                    for path, chapter_list in chapters_map.items():
-                        book_id = ids.get(path)
-                        if book_id is None:
-                            continue
-                        conn.execute('DELETE FROM chapters WHERE book_id = ?', (book_id,))
-                        chapter_rows = _chapter_rows(book_id, chapter_list)
-                        if chapter_rows:
-                            conn.executemany(_INSERT_CHAPTER, chapter_rows)
+            # 章节写入不能挂在 to_write 上：全量重扫时书的元数据通常没变
+            # （unchanged），但章节索引可能是第一次落库；只更新章节这场景
+            # 也会因为 to_write 为空而整段被跳过。
+            if chapters_map:
+                result['chapters'] = _write_chapters(conn, chapters_map)
             if to_delete:
                 conn.executemany(
                     'DELETE FROM books WHERE path = ?',
@@ -546,6 +561,38 @@ def sync_all(books, chapters_map=None, db_path=None):
             raise
 
     return result
+
+
+def _write_chapters(conn, chapters_map):
+    """按书籍路径整体替换章节索引，返回写入的章节行数。
+
+    chapters_map: {book_path: [{'title','start_line','end_line','word_count','level','is_empty'}]}
+    只处理 map 里出现的书；不在 map 里的书章节保持原样（增量扫描没解析到的书）。
+    """
+    id_rows = []
+    paths = list(chapters_map.keys())
+    # 分批查 id：全量扫描一次可能带 5000+ 本书，SQLite 对单条语句的
+    # 变量个数有上限（旧版本 999），分批最稳
+    for i in range(0, len(paths), 500):
+        chunk = paths[i:i + 500]
+        id_rows.extend(conn.execute(
+            'SELECT id, path FROM books WHERE path IN (%s)'
+            % ','.join('?' * len(chunk)),
+            chunk,
+        ).fetchall())
+    ids = {row['path']: int(row['id']) for row in id_rows}
+
+    written = 0
+    for path, chapter_list in chapters_map.items():
+        book_id = ids.get(path)
+        if book_id is None:
+            continue
+        conn.execute('DELETE FROM chapters WHERE book_id = ?', (book_id,))
+        rows = _chapter_rows(book_id, chapter_list)
+        if rows:
+            conn.executemany(_INSERT_CHAPTER, rows)
+            written += len(rows)
+    return written
 
 
 # ---------------------------------------------------------------------------

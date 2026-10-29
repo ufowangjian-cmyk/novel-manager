@@ -1990,10 +1990,17 @@ cache = {
     'data_hash': None
 }
 
-# 阅读页行内容缓存（受限，避免把大文件常驻内存）
+# 阅读页行内容缓存（按总预算的 LRU，避免把大文件常驻内存）
+#
+# 以前是「最多 1 本 + 单本 ≤5MB」：超过 5MB 的书完全进不了缓存，
+# 每次翻页都要重读整本（NAS 上 13MB 的书实测 340-470ms）。
+# 改成整池预算后，几本大书能同时留在内存里，翻页降到 0.1ms 量级。
+# 预算按 line_cache_bytes() 的估算内存算（content×2 + 行对象开销），
+# 不是磁盘字节 —— 后者会低估 1.5~2 倍。
+LINE_CACHE_BUDGET_MB = 64
+MAX_LINE_CACHE_FILE_MB = 32      # 单本上限：再大就干脆不缓存，别一本吃光整池
+
 line_cache = OrderedDict()
-MAX_LINE_CACHE_FILES = 1
-MAX_LINE_CACHE_FILE_MB = 5
 
 # 缓存版本号（对应 meta.revision），替代原来的「缓存文件 mtime」：
 # 库里的 revision 一变说明有人写过缓存，需要重新加载
@@ -3325,6 +3332,45 @@ def mark_empty_chapters(all_chapters, lines):
     return empty_count
 
 
+def build_chapter_index(all_chapters, content):
+    """把章节列表整理成可落库的索引行（补上结束行号和本章字数）。
+
+    落库后详情页/目录可以直接查表，不必为了拿章节结构再读一遍全文。
+    行号口径与 load_novel_content 保持一致（\\r\\n / \\n / \\r 都算换行）。
+    """
+    if not all_chapters:
+        return []
+    lines = re.split(r'\r?\n|\r', content or '')
+    total = len(lines)
+    out = []
+    for i, ch in enumerate(all_chapters):
+        try:
+            start = int(ch.get('line_number') or 1)
+        except (TypeError, ValueError):
+            start = 1
+        if i + 1 < len(all_chapters):
+            try:
+                end = int(all_chapters[i + 1].get('line_number') or start) - 1
+            except (TypeError, ValueError):
+                end = total
+        else:
+            end = total
+        if end < start:
+            end = start
+        # 正文 = 标题行之后到本章末行（0-based 的 lines[start] 正好是标题的下一行）
+        body = lines[start:end] if start < total else []
+        out.append({
+            'idx': i,
+            'title': ch.get('text') or '',
+            'start_line': start,
+            'end_line': end,
+            'word_count': sum(len(line) for line in body),
+            'level': ch.get('level') or 2,
+            'is_empty': bool(ch.get('is_empty')),
+        })
+    return out
+
+
 # ==================== 解析章节信息 =====================
 def parse_novel_details_from_content(content, lines):
     """从已读取的内容解析章节信息"""
@@ -3383,6 +3429,56 @@ def is_valid_intro(intro):
         return False
     return len(intro) > 10 and bool(re.search(r'[，。！？；：、]', intro))
 
+def load_details_from_index(file_path):
+    """用 SQLite 里的章节索引拼出 detail_info，不必读全文。
+
+    命中条件三条：书在库里、file_hash 与磁盘一致、chapters 表里有行。
+    任一条不满足返回 None，调用方回退到「读全文 + 正则分章」。
+    索引由扫描流程写入（见 build_chapter_index / save_cache），
+    所以文件一改 hash 就变，老索引自然失效，不会出现「目录对不上正文」。
+    """
+    try:
+        filename = os.path.basename(file_path)
+        book = cache_store.get_book(filename)
+        if not book:
+            return None
+        if book.get('file_hash') != get_file_hash(file_path):
+            return None
+        rows = cache_store.get_chapters(filename)
+        if not rows:
+            return None
+    except Exception as e:
+        logger.warning(f"读取章节索引失败，回退读全文: {e}")
+        return None
+
+    all_chapters = []
+    for r in rows:
+        all_chapters.append({
+            'text': r.get('title') or '',
+            'line_number': int(r.get('start_line') or 1),
+            'level': int(r.get('level') or 2),
+            'is_empty': bool(r.get('is_empty')),
+        })
+    levels = {1: [], 2: [], 3: []}
+    for ch in all_chapters:
+        levels.setdefault(ch['level'], []).append(ch)
+
+    return {
+        'intro': book.get('intro') or '无简介',
+        'preview': book.get('preview'),
+        'chapters_level1': levels.get(1, []),
+        'chapters_level2': levels.get(2, []),
+        'chapters_level3': levels.get(3, []),
+        'all_chapters': all_chapters,
+        'empty_chapter_count': sum(1 for c in all_chapters if c['is_empty']),
+        'encoding': None,
+        'has_images': bool(book.get('has_images')),
+        'image_folder': book.get('image_folder'),
+        'image_files': [],
+        'file_hash': book.get('file_hash'),
+    }
+
+
 @monitor_cache
 def parse_novel_details(file_path, prefetched=None):
     """解析详情（简介/章节等）。
@@ -3406,6 +3502,18 @@ def parse_novel_details(file_path, prefetched=None):
             else:
                 chapter_cache.move_to_end(file_path)  # LRU：标记最近使用
                 return cached_info
+
+    # 内存没命中：先试 SQLite 章节索引。命中就不必读整本 + 跑一遍分章正则
+    # （13MB 的书这一跳能省 500ms 左右），详情页因此从 800ms 降到几十毫秒。
+    if prefetched is None:
+        indexed = load_details_from_index(file_path)
+        if indexed:
+            print(f"⚡ 命中章节索引（跳过全文解析）: {os.path.basename(file_path)}")
+            chapter_cache[file_path] = indexed
+            if len(chapter_cache) > 200:
+                for key in list(chapter_cache.keys())[:20]:
+                    del chapter_cache[key]
+            return indexed
 
     image_info = get_novel_image_info(file_path)
     file_size = os.path.getsize(file_path)
@@ -3769,12 +3877,16 @@ def load_cache():
         return False
 
 #==================== 缓存保存 =====================
-def save_cache():
+def save_cache(chapters_map=None):
     """把内存里的 novel_data 增量同步进 SQLite。
 
     原来是「重建整份 JSON 再 dump」——5000 本要写 10MB，在 NAS 上这一步能占到
     整个扫描耗时的一半。现在交给 cache_store.sync_all 做 diff：只有内容真的变了的
     书才会写行，其余既不写也不重算，没变化时一次写入都不会发生。
+
+    chapters_map：{文件名: [{title, start_line, end_line, word_count, level, is_empty}]}
+    本次扫描解析过的书才会带上，交给 sync_all 整体替换该书的章节索引。
+    没在 map 里的书（增量扫描时未变化的）章节保持原样。
     """
     global _last_cache_rev
     # 注意：不再需要 chapter_cache
@@ -3801,7 +3913,8 @@ def save_cache():
             relative_novel_data.append(novel_copy)
 
         # 🔥 chapter_cache 不再持久化（运行时缓存）
-        result = cache_store.sync_all(relative_novel_data)
+        #    章节索引走 chapters 表，由 chapters_map 单独维护
+        result = cache_store.sync_all(relative_novel_data, chapters_map)
         # 自己写的不需要再触发一次重新加载（原实现靠 mtime 触发，属白读一遍）
         _last_cache_rev = cache_store.get_revision()
 
@@ -3809,6 +3922,7 @@ def save_cache():
             f"✅ 已缓存 {len(novel_data)} 本小说"
             f"（新增 {result['inserted']} / 更新 {result['updated']} / "
             f"删除 {result['deleted']} / 未变跳过 {result['unchanged']}）"
+            f"，章节索引 {result.get('chapters', 0)} 条"
         )
     except Exception as e:
         print(f"❌ 缓存保存失败：{e}")
@@ -3886,6 +4000,7 @@ def _scan_core(full_scan=False):
     existing_map = {}       # 仅增量扫描时填充；全量扫描保持为空
     renamed_count = 0
     media_changed = False   # 未变化文件的配图/视频/音频标签是否被刷新过
+    chapters_map = {}       # 本次解析过的书 → 章节索引，交给 save_cache 落库
 
     try:
         scan_progress['status'] = 'scanning'
@@ -4119,6 +4234,15 @@ def _scan_core(full_scan=False):
                     elif 'intro' not in content_info:
                         content_info['intro'] = '无简介'
 
+                    # 章节索引落库：详情页/目录以后直接查表，不必再读全文分章。
+                    # 只有本次真的读过全文（prefetched 非空）才收 —— 增量扫描时
+                    # 未变化的书不走这里，它们的章节索引保持原样。
+                    if prefetched is not None:
+                        _index = build_chapter_index(
+                            detail_info.get('all_chapters'), prefetched[1])
+                        if _index:
+                            chapters_map[filename] = _index
+
                     novel_info = {**base_info, **content_info}
 
                     # 🔥 修复：全量扫描/重新解析的条目必须补上配图目录字段。
@@ -4173,8 +4297,8 @@ def _scan_core(full_scan=False):
             # 只有真的发生变化才重写缓存。全量扫描必然有 files_to_scan；
             # 增量扫描若全部未变化（最常见的情况），跳过可省下重写十几 MB 的开销
             # —— 在 NAS 上这一步原本占整个扫描耗时的一半。
-            if files_to_scan or removed_files or renamed_count or media_changed:
-                save_cache()
+            if files_to_scan or removed_files or renamed_count or media_changed or chapters_map:
+                save_cache(chapters_map)
                 print(f"✅ 扫描完成，最终小说数: {len(novel_data)}")
             else:
                 print(f"✅ 扫描完成（无任何变化，跳过写盘），共 {len(novel_data)} 本")
@@ -5528,6 +5652,13 @@ def render_missing_page(file_path, reason):
     ), 404
 
 #==================== 小说详情页 =====================
+# 目录首屏最多渲染多少章：601 章全量渲染是 429KB HTML（每条约 547 字节），
+# 首屏砍到 200 条约 110KB；超出部分由前端点「展开」走 /api/novel_chapters 按批拉。
+# 阈值定 200 是为了让绝大多数书（<200 章）完全无感，只有大书才出现展开按钮。
+DETAIL_CHAPTERS_FIRST = 200
+DETAIL_CHAPTERS_BATCH = 300
+
+
 @app.route('/novel_detail/<path:file_path>')
 def novel_detail(file_path):
     # 安全解析：只允许小说目录内的 .txt，禁止绝对路径/../ 穿越
@@ -5756,8 +5887,59 @@ def novel_detail(file_path):
         has_record=has_record,
         detail_work_id=detail_work_id,
         user_prefs=user_prefs,
-        similar_novels=similar_novels
+        similar_novels=similar_novels,
+        # 目录懒加载：首屏只渲染前这么多条，其余走 /api/novel_chapters
+        visible_chapters=min(len(detail_info['all_chapters'] or []), DETAIL_CHAPTERS_FIRST),
+        chapter_batch=DETAIL_CHAPTERS_BATCH
     )
+
+
+@app.route('/api/novel_chapters/<path:file_path>')
+def api_novel_chapters(file_path):
+    """详情页目录懒加载：返回一段章节项 HTML（与首屏同一份模板渲染）。
+
+    只读，不改任何状态。章节取自 parse_novel_details（命中 SQLite 章节索引时几毫秒）。
+    返回 {success, html, total, next_offset, has_more}。
+    """
+    resolved = resolve_novel_path(file_path)
+    if not resolved or not os.path.isfile(resolved):
+        return jsonify({'success': False, 'message': '文件不存在'}), 404
+
+    offset = request.args.get('offset', 0, type=int) or 0
+    limit = request.args.get('limit', DETAIL_CHAPTERS_BATCH, type=int) or DETAIL_CHAPTERS_BATCH
+    offset = max(0, offset)
+    limit = max(1, min(1000, limit))
+
+    try:
+        detail_info = parse_novel_details(resolved)
+    except Exception as e:
+        logger.warning(f"目录懒加载解析失败: {e}")
+        return jsonify({'success': False, 'message': '解析失败'}), 500
+
+    all_chapters = detail_info.get('all_chapters') or []
+    total = len(all_chapters)
+    chunk = all_chapters[offset:offset + limit]
+
+    html = render_template(
+        '_chapter_items.html',
+        chapters=chunk,
+        file_path=urllib.parse.quote(resolved.lstrip('/')),
+        back_page=request.args.get('page', 1, type=int),
+        search_text=request.args.get('search', ''),
+        search_author=request.args.get('author', ''),
+        search_tag=request.args.get('tag', ''),
+        search_site=request.args.get('site', ''),
+    )
+    next_offset = offset + len(chunk)
+    return jsonify({
+        'success': True,
+        'html': html,
+        'total': total,
+        'next_offset': next_offset,
+        'has_more': next_offset < total,
+    })
+
+
 #==================== 阅读章节路由 =====================
 def load_novel_content(file_path):
     """读取并解码小说文件；带受限行缓存，翻页时不再重复读整本
@@ -5805,7 +5987,8 @@ def load_novel_content(file_path):
     lines = re.split(r'\r?\n|\r', content)
 
     # 只缓存中小文件，避免大文件把内存撑满
-    if len(raw_data) <= MAX_LINE_CACHE_FILE_MB * 1024 * 1024:
+    nbytes = len(raw_data)
+    if nbytes <= MAX_LINE_CACHE_FILE_MB * 1024 * 1024:
         line_cache[file_path] = {
             'hash': current_hash,
             'content': content,
@@ -5813,8 +5996,11 @@ def load_novel_content(file_path):
             'encoding': encoding,
         }
         line_cache.move_to_end(file_path)
-        while len(line_cache) > MAX_LINE_CACHE_FILES:
-            line_cache.popitem(last=False)
+        # 超预算就淘汰最久没用的；len > 1 保证刚插入的这本不会被自己挤掉
+        budget = LINE_CACHE_BUDGET_MB * 1024 * 1024
+        while len(line_cache) > 1 and line_cache_bytes() > budget:
+            evicted_path, _ = line_cache.popitem(last=False)
+            print(f"🧹 行缓存超预算，淘汰 {os.path.basename(evicted_path)}")
 
     return content, lines, encoding
 

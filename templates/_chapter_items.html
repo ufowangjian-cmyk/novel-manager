@@ -1,0 +1,33 @@
+{#
+  章节列表片段 —— 详情页首屏与 /api/novel_chapters 懒加载共用同一份结构，
+  避免 HTML 在 Jinja 和 JS 里各写一遍（以后改样式/加字段只改这里）。
+
+  依赖变量：
+    chapters      要渲染的章节列表（每项含 text / line_number / level / is_empty）
+    file_path     已 quote 的书籍路径（拼阅读页链接）
+    back_page / search_text / search_author / search_tag / search_site  列表页的状态
+#}
+{% from "_icons.html" import icon %}
+{% set level_icons = {1: 'table-of-contents', 2: 'chevron-right', 3: 'list-ordered'} %}
+{% for chapter in chapters %}
+{% set lv = chapter.level %}
+{% set lv_icon = level_icons.get(lv, 'list') %}
+{% if chapter.is_empty %}
+{# 空章节（只有标题没有正文）：渲染成不可点击的占位条目 #}
+<span class="chapter-item chapter-level{{ lv }} is-empty"
+    title="本章为空白章节，暂无正文"
+    aria-disabled="true">
+    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
+    <span class="chapter-title">{{ chapter.text }}</span>
+    <span class="chapter-line">空</span>
+</span>
+{% else %}
+<a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+    class="chapter-item chapter-level{{ lv }}">
+    {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
+
+    <span class="chapter-title">{{ chapter.text }}</span>
+    <span class="chapter-line">第{{ chapter.line_number }}行</span>
+</a>
+{% endif %}
+{% endfor %}
