@@ -375,6 +375,10 @@ function checkProgress() {
                 refreshNovelList().then(function (ok) {
                     if (!ok) setTimeout(() => window.location.reload(), 600);
                 });
+                // 进度条挂在「扫描管理」面板里，容器默认 display:none。
+                // 以前扫完是整页 reload，靠重新渲染复位；改成局部刷新书架后
+                // 没人替它复位，就会一直卡在面板里。这里自己收。
+                hideProgress(1000);
             } else if (data.status === 'error') {
                 clearInterval(progressInterval);
                 progressInterval = null;
@@ -385,6 +389,8 @@ function checkProgress() {
                 if (scanFullBtn) scanFullBtn.disabled = false;
                 syncScanButtons();
                 showNotification('扫描出错: ' + data.message, 'error');
+                // 出错信息让人多看一眼再收
+                hideProgress(3000);
             }
         })
         .catch(err => {
@@ -415,6 +421,20 @@ function attachToRunningScan() {
         .catch(err => {
             console.error('获取初始扫描状态失败:', err);
         });
+}
+
+// 收起进度条（扫描结束/出错后调用）
+// delay 用来让「100% / 扫描完成！」多停留一会儿再收
+function hideProgress(delay) {
+    setTimeout(function () {
+        // 这期间用户又点了扫描：别把刚弹出来的新进度条藏掉
+        if (scanning) return;
+        const progressContainer = document.getElementById('progressContainer');
+        if (progressContainer) progressContainer.style.display = 'none';
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) progressFill.style.width = '0%';
+        displayedProgress = 0;
+    }, delay || 1000);
 }
 
 function updateProgressUI(data) {
