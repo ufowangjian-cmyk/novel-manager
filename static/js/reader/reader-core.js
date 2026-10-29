@@ -331,7 +331,15 @@
         return new Promise(async (resolve) => {
             console.log('🔍 initLocalImagesAsync 被调用，filePath:', filePath);
 
-            const decodedPath = decodeURIComponent(filePath);
+            // filePath 由后端 url_for 编码一次（中文原样编码成 %XX）。
+            // 老链接里可能是被编码过两次的 %25XX，所以这里解码一次；
+            // 文件名本身带 % 时 decodeURIComponent 会抛 URIError，兜底用原值。
+            let decodedPath = filePath;
+            try {
+                decodedPath = decodeURIComponent(filePath);
+            } catch (err) {
+                console.warn('配图路径解码失败，按原值处理:', filePath);
+            }
             const normalizedPath = decodedPath.replace(/\\/g, '/');
             let fileName, dirPath;
 

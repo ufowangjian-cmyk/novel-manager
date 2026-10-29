@@ -205,8 +205,8 @@
             }
 
             // ===== 4. 初始化配图路径（reader-core.js）=====
-            if (typeof initLocalImagesAsync === 'function' && '{{ file_path }}') {
-                await initLocalImagesAsync('{{ file_path }}');
+            if (typeof initLocalImagesAsync === 'function' && {{ file_path | tojson }}) {
+                await initLocalImagesAsync({{ file_path | tojson }});
             }
 
             // ===== 5. 处理简介/预览内容 =====

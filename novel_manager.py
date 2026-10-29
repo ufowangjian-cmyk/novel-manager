@@ -5867,7 +5867,7 @@ def novel_detail(file_path):
         site=base_info['site'],
         word_count=base_info['word_count'],
         publish_date=publish_date,
-        file_path=urllib.parse.quote(file_path.lstrip('/')),
+        file_path=file_path.lstrip('/'),
         link=link,
         intro=final_intro,
         preview=final_preview,
@@ -5923,7 +5923,9 @@ def api_novel_chapters(file_path):
     html = render_template(
         '_chapter_items.html',
         chapters=chunk,
-        file_path=urllib.parse.quote(resolved.lstrip('/')),
+        # 不要再手动 quote：url_for 会按路径规则编码一次，
+        # 手动再编一次就变成 %25xx，URL 白白长一倍（详见 detail 页注释）
+        file_path=resolved.lstrip('/'),
         back_page=request.args.get('page', 1, type=int),
         search_text=request.args.get('search', ''),
         search_author=request.args.get('author', ''),
@@ -6388,7 +6390,7 @@ def read_chapter(file_path, line_number):
     return render_template('read_chapter.html',
         title=base_info['title'],
         author=base_info['author'],
-        file_path=urllib.parse.quote(file_path.lstrip('/')),
+        file_path=file_path.lstrip('/'),
         content_lines=current_lines,
         start_line=start_line,
         end_line=end_line,
@@ -6443,14 +6445,14 @@ def continue_reading(file_path):
             kwargs['page'] = target_page
 
         url = url_for('read_chapter',
-                      file_path=urllib.parse.quote(file_path.lstrip('/')),
+                      file_path=file_path.lstrip('/'),
                       line_number=record.get('line_number', 1),
                       **kwargs)
 
         return redirect(url)
     else:
         return redirect(url_for('read_chapter',
-                               file_path=urllib.parse.quote(file_path.lstrip('/')),
+                               file_path=file_path.lstrip('/'),
                                line_number=1))
 
 #==================== 模板过滤器 =====================

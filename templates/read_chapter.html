@@ -96,7 +96,7 @@
                 else document.addEventListener('DOMContentLoaded', apply, { once: true });
             }
         })();
-        const filePath = '{{ file_path }}';
+        const filePath = {{ file_path | tojson }};
     </script>
 {% endblock %}
 {% block content %}
