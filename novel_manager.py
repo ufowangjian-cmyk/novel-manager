@@ -439,6 +439,10 @@ app.jinja_env.globals['url_for'] = versioned_url_for
 NOVEL_DIR = CONFIG.get('novel_dir', '/novels')
 PER_PAGE = CONFIG.get('per_page', 100)
 WORDS_PER_PAGE = CONFIG.get('words_per_page', 8000)
+# 「整本当一章」的书按行分页时，高亮要往前多圈这么多行：
+# 页首落在跨行引号段落中间时左引号在上一页，只高亮本页会让整段丢高亮。
+# 500 行 ≈ 1.5 万字，覆盖绝大多数跨行段落，NAS 上多花约 5ms。
+VIRTUAL_HIGHLIGHT_LOOKBACK = 500
 
 # ==================== 用户阅读记录目录 ====================
 READING_RECORD_DIR = os.path.join(DATA_DIR, 'reading_records')
@@ -6260,7 +6264,19 @@ def read_chapter(file_path, line_number):
                 if page == 1:
                     start_idx = 0
 
-                current_lines = processed_lines[start_idx:end_idx]
+                if is_virtual_chapter:
+                    # 整本当一章：不能整本预高亮（那要把整本书过一遍正则，翻页成本太高），
+                    # 但只高亮本页又会丢跨行段落——页首落在引号中间时左引号在上一页，
+                    # 页尾切断段落时右引号在下一页。所以前后各扩一圈再裁回本页。
+                    lookback = min(VIRTUAL_HIGHLIGHT_LOOKBACK, start_idx)
+                    ahead = min(VIRTUAL_HIGHLIGHT_LOOKBACK, len(chapter_lines) - end_idx)
+                    seg = processed_lines[start_idx - lookback:end_idx + ahead]
+                    highlighted = highlight_crossline_brackets('\n'.join(seg)).split('\n')
+                    page_len = end_idx - start_idx
+                    current_lines = highlighted[lookback:lookback + page_len]
+                    lines_highlighted = True
+                else:
+                    current_lines = processed_lines[start_idx:end_idx]
                 start_line = chapter_start + start_idx + 1
                 end_line = chapter_start + end_idx
                 prev_page = page - 1 if page > 1 else None
@@ -6300,7 +6316,17 @@ def read_chapter(file_path, line_number):
                 end_idx = len(all_lines)
                 total_pages = 1
 
-            current_lines = [line.lstrip(' \t\u3000') if line.strip() else '' for line in all_lines[start_idx:end_idx]]
+            # 这本书没有章节结构（或章节解析为空）：整本按字数分页。
+            # 高亮区间要**双向**扩一圈再裁：往前是为了「页首落在跨行段落中间」，
+            # 往后是为了「页尾把段落切断」—— 只扩一边的话另一边照样配不上对。
+            lookback = min(VIRTUAL_HIGHLIGHT_LOOKBACK, start_idx)
+            ahead = min(VIRTUAL_HIGHLIGHT_LOOKBACK, len(all_lines) - end_idx)
+            seg = all_lines[start_idx - lookback:end_idx + ahead]
+            seg_lines = [line.lstrip(' \t\u3000') if line.strip() else '' for line in seg]
+            highlighted = highlight_crossline_brackets('\n'.join(seg_lines)).split('\n')
+            page_len = end_idx - start_idx
+            current_lines = highlighted[lookback:lookback + page_len]
+            lines_highlighted = True
             start_line = start_idx + 1
             end_line = end_idx
             prev_page = page - 1 if page > 1 else None
