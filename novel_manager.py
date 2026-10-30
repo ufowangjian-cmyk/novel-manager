@@ -5435,12 +5435,17 @@ def index():
 
     if search_text:
         needle = search_text.lower()
+        # 简介也参与搜索，但只在搜索词 ≥2 字时：单字（比如「母」）在 50 万字简介里
+        # 会命中一大片，既慢又没有指向性。实测全书 5143 本时多这一项约 +9ms。
+        search_intro = len(search_text) >= 2
 
         def _match(n):
-            return (needle in (n.get('title') or '').lower() or
+            if (needle in (n.get('title') or '').lower() or
                     needle in (n.get('author') or '').lower() or
                     needle in (n.get('tags') or '').lower() or
-                    needle in (n.get('site') or '').lower())
+                    needle in (n.get('site') or '').lower()):
+                return True
+            return search_intro and needle in (n.get('intro') or '').lower()
 
         filtered_data = [n for n in filtered_data if _match(n)]
 

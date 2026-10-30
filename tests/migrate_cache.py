@@ -17,7 +17,9 @@ import os
 import sys
 import time
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 本脚本在 tests/ 下，项目根是上一级目录（storage/ 和 data/ 都在根上）。
+# 用 __file__ 的上一级而不是自身目录，挪目录后也不会失效。
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 from storage import cache_store  # noqa: E402
