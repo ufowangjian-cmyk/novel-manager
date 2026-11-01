@@ -195,6 +195,20 @@ def load_config():
         "auto_tag_enabled": True,
         "enable_derived_tags": True,
         "custom_tags": [],
+        # 主页书名淡色高亮词（配置页「列表与显示」可改）。
+        # 命中这些词的书名片段会被包成 .faint-highlight（斜体 + 灰色点线）。
+        # 顺序有意义：长词放前面，避免「番外篇」先被「番外」切碎。清空 = 完全不高亮。
+        "title_highlight_words": [
+            "同人续写", "同人续", "同人",
+            "续写", "续写版", "增容", "增容版",
+            "番外篇", "番外", "特别篇", "独立篇",
+            "外传", "前传", "后传",
+            "修改", "加料版", "修改版",
+            "改编版", "改编", "新编", "新编版",
+            "扩编", "扩编版", "扩写", "扩写版", "狼增版",
+            "改写版", "改写",
+            "修订版", "无绿版", "非绿版", "精修版",
+        ],
         # 段落排版（原先只在保存白名单里、代码从未读取，属半成品；
         # 这里补上默认值并在阅读页真正生效）
         "indent_paragraph": True,
@@ -248,6 +262,8 @@ CONFIG_SAVE_WHITELIST = {
     'auto_tag_enabled', 'enable_derived_tags', 'custom_tags',
     'default_sort_by', 'default_sort_order',
     'indent_paragraph', 'paragraph_spacing',
+    # 主页书名淡色高亮词（列表与显示）
+    'title_highlight_words',
     # 阅读默认值：字体设置（管理员设定的「新用户初始字体/排版」，经 resolve_reader_prefs 作为第一层默认值）
     'font_family', 'title_font_family', 'double_quote_font_family',
     'single_quote_font_family', 'bracket_font_family', 'square_bracket_font_family',
@@ -1361,6 +1377,76 @@ def save_reading_record(record):
     return True
 
 
+#==================== 阅读记录：按书名主干认领（改名 + 更新内容的兜底） =====================
+# work_id 是全文哈希，作者更新章节后必然改变，文件名的【1-10】也会变成【1-12】。
+# 这时扫描会把旧条目标成「删除」、新条目当成「新书」，阅读记录按 work_id /
+# 路径都对不上。但两边的书名主干（去掉进度段）是一样的，据此认领。
+_TITLE_STEM_RE = re.compile(r'[【\[（(][^】\]）)]*[】\]）)]')
+
+
+def novel_title_stem(name):
+    """把书名/文件名归一成「主干」：去扩展名、去掉【1-12】【完】（全本）这类段。
+
+    '爱脸红的岳母_番外【1-12】.txt' -> '爱脸红的岳母_番外'
+    """
+    if not name:
+        return ''
+    stem = os.path.splitext(os.path.basename(str(name)))[0]
+    # 可能连着好几段（【1-12】【完】），反复剥到不再变化为止
+    previous = None
+    while previous != stem:
+        previous = stem
+        stem = _TITLE_STEM_RE.sub('', stem)
+    return stem.strip().lower()
+
+
+def find_record_by_title_stem(file_path, records):
+    """在阅读记录里按书名主干找同一本书，返回 (work_id, record)；不唯一则放弃。
+
+    要求「唯一命中」是有意的：像《某某【1-10】》和《某某【11-20】》这种同书不同卷，
+    主干完全相同，猜错会把进度串到另一卷上。宁可认不出，也不要认错。
+    """
+    stem = novel_title_stem(file_path)
+    if len(stem) < 2:          # 主干太短（例如整名都是【】）不参与匹配
+        return None
+
+    hits = []
+    for work_id, record in records.items():
+        if not isinstance(record, dict):
+            continue
+        record_name = record.get('filename') or os.path.basename(
+            str(record.get('file_path') or ''))
+        if novel_title_stem(record_name) == stem:
+            hits.append((work_id, record))
+
+    if len(hits) != 1:
+        return None
+    return hits[0]
+
+
+def _adopt_reading_record(file_path, new_work_id, old_work_id, old_record):
+    """把旧记录迁到新 work_id 下，让「改名 + 更新内容」后还能接着读。
+
+    line_number / chapter_index 原样保留：作者更新基本都是往后追加章节，
+    前面的行号没变，续读位置依然准确。万一是从开头插入内容，行号会偏，
+    但阅读页本身有「找不到章节就回第一章」的兜底，不会报错。
+    """
+    adopted = dict(old_record)
+    adopted['work_id'] = new_work_id
+    adopted['file_path'] = file_path
+    adopted['filename'] = os.path.basename(file_path)
+    try:
+        if save_reading_record(adopted):
+            # 新记录已落盘后再删旧的，中途失败也不会把记录搞没
+            delete_reading_record_by_work_id(old_work_id)
+            logger.info(f"🔗 阅读记录已迁移到新版本: {os.path.basename(file_path)} "
+                        f"({old_work_id[:8]} -> {new_work_id[:8]})")
+            return adopted
+    except Exception as e:
+        logger.warning(f"阅读记录迁移失败（本次仍可续读，下次再试）: {e}")
+    return old_record
+
+
 def resolve_record_by_path(file_path):
     """按路径解析阅读记录，返回 (work_id, record)；找不到返回 (None, None)
 
@@ -1369,6 +1455,7 @@ def resolve_record_by_path(file_path):
       2. 扫描缓存中的 work_id —— 目录内按文件名查找
       3. 内容指纹 —— 需要读文件（有 size/mtime 缓存，文件没变不会重读）
       4. 指纹集合相似度匹配 —— 内容被大改时的兜底
+      5. 书名主干匹配 —— 改名 + 更新内容时的兜底（对比相似度可靠，见下）
     """
     if not file_path:
         return None, None
@@ -1403,6 +1490,17 @@ def resolve_record_by_path(file_path):
             logger.info(f"🔗 阅读记录相似度匹配成功 score={score:.2f} "
                         f"{os.path.basename(file_path)} -> {similar_id[:8]}")
             return similar_id, records[similar_id]
+
+    # 5) 书名主干匹配（改名 + 更新内容的兜底）
+    #    上一级依赖内容指纹集合，而它只是内存 LRU（800 条 / 5000+ 本书），
+    #    日常基本已被挤掉 —— 所以真正能兜住「作者更新两章、文件名跟着改」的是这一级。
+    matched = find_record_by_title_stem(file_path, records)
+    if matched:
+        old_work_id, old_record = matched
+        if work_id and work_id != old_work_id:
+            return work_id, _adopt_reading_record(
+                file_path, work_id, old_work_id, old_record)
+        return old_work_id, old_record
 
     return None, None
 
@@ -2344,6 +2442,109 @@ def is_inside_novel_dir(path, base_real=None):
         return False
     return real == base or real.startswith(base + os.sep)
 
+#==================== 书籍短链接（URL 里不再出现中文文件名） =====================
+# 原来 /novel_detail/<中文文件名>.txt —— 中文必须百分号编码，复制出来是一长串
+# %E5%B9%B4，既难认也难分享。改用文件名短哈希：
+#
+#     /novel_detail/12年娇妻….txt   ->   /novel_detail/a3f9c81b2e04
+#
+# 为什么用文件名、而不是 work_id（全文哈希）：
+#   - 作者更新章节 → 正文变 → work_id 变 → 全量扫描后一大批链接跟着漂移；
+#   - 文件名由人控制，书库里没有重名文件，且算 token 完全不用读正文（零 IO）。
+# 代价：改名后 token 会变。但改名是你主动操作，阅读记录那边有「书名主干匹配」
+# 自动认领，进度不会丢。
+#
+# 索引由 novel_data 重建（缓存加载 / 扫描完成后各一次）。旧的编码链接仍然可用 ——
+# resolve_novel_path 先试 token，不命中才走原来的文件名解析。
+_NOVEL_TOKEN_RE = re.compile(r'^[0-9a-f]{8,32}$')
+_NOVEL_TOKEN_LEN = 12
+
+_novel_token_to_path = {}    # token -> 绝对路径
+_novel_path_to_token = {}    # 绝对路径 / 文件名 -> token
+_novel_token_ready = False
+
+
+def novel_token_for_name(filename):
+    """文件名 -> 12 位短哈希（只看文件名：同一本书更新内容，token 不变）。"""
+    name = os.path.basename(str(filename or ''))
+    if not name:
+        return ''
+    return hashlib.blake2b(name.encode('utf-8'), digest_size=8).hexdigest()[:_NOVEL_TOKEN_LEN]
+
+
+def _rebuild_novel_token_index():
+    """按 novel_data 重建 token 索引（O(n)，只做一次，不碰磁盘、不读正文）。
+
+    token 由文件名决定，正常情况下天然唯一。真撞了（重名文件，或 12 位哈希
+    极小概率碰撞）就退回更长的哈希，保证「一个 token 只对应一本书」。
+    """
+    global _novel_token_to_path, _novel_path_to_token, _novel_token_ready
+
+    by_token = {}
+    path_to_token = {}
+    taken = set()
+
+    for novel in novel_data:
+        path = novel.get('file_path') or ''
+        name = os.path.basename(path)
+        if not path or not name:
+            continue
+
+        token = novel_token_for_name(name)
+        if token in taken:
+            # 罕见兜底：先升到 16 位哈希，仍撞再带上完整路径一起算
+            long_token = hashlib.blake2b(name.encode('utf-8'), digest_size=16).hexdigest()
+            token = long_token if long_token not in taken else hashlib.blake2b(
+                (name + '|' + path).encode('utf-8'), digest_size=16).hexdigest()
+
+        taken.add(token)
+        by_token[token] = path
+        path_to_token[path] = token
+        # 详情页里的记录/相似项常常只有文件名，两个键都登记一遍
+        path_to_token[name] = token
+
+    _novel_token_to_path = by_token
+    _novel_path_to_token = path_to_token
+    _novel_token_ready = True
+
+
+def _ensure_novel_token_index():
+    """首次用到时兜底建一次索引；novel_data 还空着就留到下次。"""
+    if not _novel_token_ready and novel_data:
+        _rebuild_novel_token_index()
+
+
+@app.template_global()
+def novel_url_token(file_path, work_id=None):
+    """把书路径换成 URL token。
+
+    优先查索引（那里含重名/碰撞的加长处理），索引里没有该文件就按文件名现算 ——
+    即使缓存还没加载完，也能生成正确 token，不会退回中文文件名。
+    work_id 参数只为兼容既有模板调用而保留，不参与计算。
+    """
+    _ensure_novel_token_index()
+
+    key = str(file_path or '')
+    name = os.path.basename(key)
+    # 调用方可能传来绝对路径、去掉前导斜杠的路径、或只有文件名，三种都试
+    for candidate in (key, name, '/' + key if key and not key.startswith('/') else ''):
+        if candidate:
+            token = _novel_path_to_token.get(candidate)
+            if token:
+                return token
+
+    return novel_token_for_name(key) or name or key
+
+
+def path_from_novel_token(token):
+    """token -> 绝对路径；不是 token 或没登记过就返回 None。"""
+    _ensure_novel_token_index()
+    value = str(token or '').strip().lower()
+    if not _NOVEL_TOKEN_RE.match(value):
+        return None
+    return _novel_token_to_path.get(value)
+
+
 def resolve_novel_path(raw_path):
     """把 URL/参数里的路径安全解析成小说目录内的 .txt 文件路径；非法返回 None
 
@@ -2352,6 +2553,11 @@ def resolve_novel_path(raw_path):
     """
     if not raw_path:
         return None
+
+    # 短链优先：命中 token 索引就直接用登记过的真实路径
+    token_target = path_from_novel_token(raw_path)
+    if token_target:
+        return token_target
 
     value = str(raw_path).replace('\\', '/').strip()
     if not value:
@@ -3872,6 +4078,8 @@ def load_cache():
         # 🔥 chapter_cache 不加载（运行时缓存，重启后从空开始）
         # 记下当前版本号：本次加载之后由自己引起的写入不再触发重复重载
         _last_cache_rev = cache_store.get_revision()
+        # 书单变了，短链索引跟着重建（URL token ↔ 文件路径）
+        _rebuild_novel_token_index()
         print(f"✅ 从缓存加载了 {len(novel_data)} 本小说")
         return True
 
@@ -4298,6 +4506,8 @@ def _scan_core(full_scan=False):
 
             cleaned_data.sort(key=lambda x: x.get('filename', '').lower())
             novel_data = cleaned_data
+            # 扫描可能新增/删除/改名，短链索引必须跟着重建，否则新书没 token
+            _rebuild_novel_token_index()
             # 只有真的发生变化才重写缓存。全量扫描必然有 files_to_scan；
             # 增量扫描若全部未变化（最常见的情况），跳过可省下重写十几 MB 的开销
             # —— 在 NAS 上这一步原本占整个扫描耗时的一半。
@@ -4967,7 +5177,11 @@ def build_similar_urls(items, **query):
     """给相似项补详情页链接，并带上当前列表的筛选参数（返回列表不丢状态）。"""
     clean = {key: value for key, value in query.items() if value not in (None, '', 0)}
     for item in items:
-        item['detail_url'] = url_for('novel_detail', file_path=item['file_path'], **clean)
+        item['detail_url'] = url_for(
+            'novel_detail',
+            file_path=novel_url_token(item.get('file_path'), item.get('work_id')),
+            **clean
+        )
     return items
 
 
@@ -5152,9 +5366,14 @@ def api_random_novel():
     if not novel:
         return jsonify({'success': False, 'message': '书库为空，请先扫描目录'})
 
-    novel['detail_url'] = url_for('novel_detail', file_path=(novel.get('file_path') or '').lstrip('/'))
+    novel['detail_url'] = url_for(
+        'novel_detail',
+        file_path=novel_url_token(novel.get('file_path'), novel.get('work_id'))
+    )
     novel['read_url'] = url_for('read_chapter',
-                                file_path=(novel.get('file_path') or '').lstrip('/'), line_number=1)
+                                file_path=novel_url_token(novel.get('file_path'),
+                                                          novel.get('work_id')),
+                                line_number=1)
     return jsonify({'success': True, 'novel': novel})
 
 
@@ -5162,6 +5381,18 @@ def api_random_novel():
 _header_bg_cache = None
 _header_bg_cache_time = 0
 HEADER_BG_CACHE_TTL = 60  # 秒：文件很少变动，不必每次请求都 listdir 一遍
+
+
+def _header_bg_sort_key(name):
+    """按文件名里的序号排序：header-bg-2 要排在 header-bg-10 前面。
+
+    直接用 sorted(名字) 是字符串序（1, 10, 11, …, 2, 20），轮播顺序会很别扭。
+    认不出数字的文件排在最后，用名字兜底，保证顺序稳定。
+    """
+    m = re.search(r'header-bg-(\d+)', name)
+    if m:
+        return (0, int(m.group(1)), name)
+    return (1, 0, name)
 
 
 def list_header_bg_images():
@@ -5182,7 +5413,7 @@ def list_header_bg_images():
     images_dir = os.path.join(BASE_DIR, 'static', 'images')
     urls = []
     try:
-        for name in sorted(os.listdir(images_dir)):
+        for name in sorted(os.listdir(images_dir), key=_header_bg_sort_key):
             if not (name.startswith('header-bg-') and name.endswith('.webp')):
                 continue
             full = os.path.join(images_dir, name)
@@ -5345,6 +5576,48 @@ def human_words(num):
     if text.endswith('.0'):
         text = text[:-2]
     return f"{text}万字"
+
+
+def get_process_memory_mb():
+    """当前进程的常驻内存（RSS，MB）。
+
+    优先 psutil（最准），不可用时回退 /proc/self/statm。
+    取不到返回 None，模板会显示 —。首页头部胶囊和 /api/cache/stats 共用这一份逻辑。
+    """
+    try:
+        import psutil
+        return round(psutil.Process().memory_info().rss / 1024 / 1024, 1)
+    except Exception:
+        pass
+    try:
+        with open('/proc/self/statm', 'r') as f:
+            parts = f.read().split()
+        if len(parts) >= 2:
+            # 第一列是虚拟内存页数，第二列才是常驻（RSS），用第二列
+            return round(int(parts[1]) * 4 / 1024, 1)
+    except Exception:
+        pass
+    return None
+
+
+def get_system_memory():
+    """宿主内存 (总 MB, 可用 MB)，读 /proc/meminfo。
+
+    容器没设 cgroup 内存上限时，这里反映的是宿主机整体情况；
+    读不到返回 (None, None)。
+    """
+    try:
+        info = {}
+        with open('/proc/meminfo', 'r') as f:
+            for line in f:
+                key, _, rest = line.partition(':')
+                if rest:
+                    info[key.strip()] = int(rest.split()[0])  # 单位 kB
+        total = info.get('MemTotal', 0) / 1024
+        avail = info.get('MemAvailable', info.get('MemFree', 0)) / 1024
+        return (int(round(total)), int(round(avail))) if total else (None, None)
+    except Exception:
+        return (None, None)
 
 
 def get_cache_overview():
@@ -5592,6 +5865,11 @@ def index():
     # 与详情页简介/阅读页正文同一份值，保证三处字体一致）
     user_prefs = resolve_reader_prefs()
 
+    # 头部胶囊显示的内存占用（Docker 版目录固定 /novels、配置页也改不了，
+    # 原来那栏显示目录没有信息量，换成进程内存 + 系统可用）
+    mem_used_mb = get_process_memory_mb()
+    mem_total_mb, mem_avail_mb = get_system_memory()
+
     return render_template('index.html',
         novels=paginated_data,
         authors=authors,
@@ -5605,6 +5883,9 @@ def index():
         random_novel=pick_random_novel(),
         total_count=len(novel_data),
         cache_stats=get_cache_overview(),
+        mem_used_mb=mem_used_mb,
+        mem_total_mb=mem_total_mb,
+        mem_avail_mb=mem_avail_mb,
         scan_stats=load_scan_stats(),
         filtered_count=total,
         pagination=pagination,
@@ -5618,7 +5899,10 @@ def index():
         current_user_display=current_user_display,
         current_user_role=current_user_role,
         current_user_avatar=current_user_avatar,
-        user_prefs=user_prefs
+        user_prefs=user_prefs,
+        # 主页书名淡色高亮词（配置页「列表与显示」可改），注入给 main.js。
+        # load_config 已保证这个键存在，这里给空列表兜底只为防御。
+        title_highlight_words=CONFIG.get('title_highlight_words', [])
     )
 
 # ==================== 详情/阅读页文件失效提示 ====================
@@ -5877,6 +6161,8 @@ def novel_detail(file_path):
         word_count=base_info['word_count'],
         publish_date=publish_date,
         file_path=file_path.lstrip('/'),
+        # URL 里用的短链 token；file_path 保持真实路径给前端 JS 与图片加载用
+        url_token=novel_url_token(file_path, detail_work_id),
         link=link,
         intro=final_intro,
         preview=final_preview,
@@ -5932,9 +6218,8 @@ def api_novel_chapters(file_path):
     html = render_template(
         '_chapter_items.html',
         chapters=chunk,
-        # 不要再手动 quote：url_for 会按路径规则编码一次，
-        # 手动再编一次就变成 %25xx，URL 白白长一倍（详见 detail 页注释）
-        file_path=resolved.lstrip('/'),
+        # 章节链接改用短链 token，不再把中文文件名塞进 URL
+        url_token=novel_url_token(resolved),
         back_page=request.args.get('page', 1, type=int),
         search_text=request.args.get('search', ''),
         search_author=request.args.get('author', ''),
@@ -6422,6 +6707,7 @@ def read_chapter(file_path, line_number):
         title=base_info['title'],
         author=base_info['author'],
         file_path=file_path.lstrip('/'),
+        url_token=novel_url_token(file_path),
         content_lines=current_lines,
         start_line=start_line,
         end_line=end_line,
@@ -6476,14 +6762,14 @@ def continue_reading(file_path):
             kwargs['page'] = target_page
 
         url = url_for('read_chapter',
-                      file_path=file_path.lstrip('/'),
+                      file_path=novel_url_token(file_path, record.get('work_id')),
                       line_number=record.get('line_number', 1),
                       **kwargs)
 
         return redirect(url)
     else:
         return redirect(url_for('read_chapter',
-                               file_path=file_path.lstrip('/'),
+                               file_path=novel_url_token(file_path),
                                line_number=1))
 
 #==================== 模板过滤器 =====================
@@ -6533,10 +6819,13 @@ def _recent_record_to_json(record):
         'progress_known': bool(record.get('progress_known', record.get('progress_percent') is not None)),
         'finished': bool(record.get('finished')),
         'missing_file': bool(record.get('missing_file')),
-        'url': url_for('continue_reading', file_path=(record.get('file_path') or '').lstrip('/')),
+        'url': url_for('continue_reading',
+                       file_path=novel_url_token(record.get('file_path'),
+                                                 record.get('work_id'))),
         # url_for 会对 path 参数做一次编码，这里不要再手动 quote，否则会二次编码
         'restart_url': url_for('read_chapter',
-                               file_path=(record.get('file_path') or '').lstrip('/'),
+                               file_path=novel_url_token(record.get('file_path'),
+                                                         record.get('work_id')),
                                line_number=1),
         'file_path': record.get('file_path', '')
     }
@@ -6719,28 +7008,7 @@ def get_cache_stats():
     if not is_authenticated():
         return jsonify({'error': '未登录'}), 401
 
-    memory_mb = None
-
-    # 优先用 psutil（最准确）
-    try:
-        import psutil
-        process = psutil.Process()
-        memory_mb = round(process.memory_info().rss / 1024 / 1024, 1)
-    except Exception:
-        pass
-
-    # psutil 不可用，回退到 /proc/self/statm
-    if memory_mb is None or memory_mb == 0:
-        try:
-            with open('/proc/self/statm', 'r') as f:
-                parts = f.read().split()
-                if len(parts) >= 2:
-                    # 第一列是总虚拟内存页数，第二列是常驻内存页数(RSS)
-                    # 用第二列更准确
-                    rss_pages = int(parts[1])
-                    memory_mb = round(rss_pages * 4 / 1024, 1)
-        except Exception:
-            pass
+    memory_mb = get_process_memory_mb()
 
     # 指纹缓存条数（前缀之和）+ 估算占用，前端「其他缓存」用
     work_id_count = len(_work_id_file_cache) + len(_work_id_sets)
@@ -6944,6 +7212,21 @@ def save_config_api():
                     value = float(value)
                 except (TypeError, ValueError):
                     return jsonify({'success': False, 'message': '扫描间隔必须是数字'})
+
+            if key == 'title_highlight_words':
+                # 前端已按换行/逗号切好，这里再去空去重、限个数
+                if not isinstance(value, list):
+                    return jsonify({'success': False, 'message': '书名高亮词必须是数组'})
+                cleaned, seen = [], set()
+                for w in value:
+                    w = str(w).strip()
+                    if not w or w in seen:
+                        continue
+                    seen.add(w)
+                    cleaned.append(w)
+                if len(cleaned) > 200:
+                    return jsonify({'success': False, 'message': '书名高亮词最多 200 个'})
+                value = cleaned
 
             current_config[key] = value
 

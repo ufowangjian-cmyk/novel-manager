@@ -1386,6 +1386,13 @@ body.dark-mode .set-bi:focus-visible {
     margin-top: 10px;
 }
 
+/* 独占整行的表单项：书名高亮词的胶囊编辑器需要铺满整行，
+   否则会被网格挤成一列（内容区是 repeat(auto-fit, minmax(260px,1fr))）。
+   类名沿用桌面版的 .full-width 约定。 */
+.card-content > .form-group.full-width {
+    grid-column: 1 / -1;
+}
+
 /* ---------- 4. 表单元素瘦身 ---------- */
 .form-group {
     margin-bottom: 12px;
@@ -1398,6 +1405,83 @@ body.dark-mode .set-bi:focus-visible {
 .form-group select {
     padding: 8px 12px;
     font-size: 13.5px;
+}
+
+/* 书名高亮词：胶囊式编辑器（形状与配色对齐主页标签徽章 .tag-badge） */
+.form-group .hlw-editor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 46px;
+    padding: 8px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    cursor: text;
+    transition: all 0.3s;
+}
+.form-group .hlw-editor:focus-within {
+    border-color: var(--border-input-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-opacity-15);
+}
+.form-group .hlw-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 5px 3px 11px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    line-height: 1.75;
+    white-space: nowrap;
+    background: rgba(114, 139, 71, 0.10);
+    border: 1px solid rgba(114, 139, 71, 0.26);
+    color: var(--color-primary-link);
+}
+.form-group .hlw-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.10);
+    color: inherit;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+.form-group .hlw-x:hover {
+    background: rgba(0, 0, 0, 0.22);
+    opacity: 1;
+}
+.form-group .hlw-input {
+    flex: 1 1 140px;
+    width: auto;
+    min-width: 140px;
+    padding: 4px 2px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 13px;
+    color: inherit;
+    outline: none;
+}
+body.dark-mode .form-group .hlw-editor {
+    background: var(--dark-bg-input);
+    border-color: var(--dark-border-secondary);
+}
+body.dark-mode .form-group .hlw-chip {
+    background: rgba(212, 197, 160, 0.10);
+    border-color: rgba(212, 197, 160, 0.22);
+    color: var(--dark-badge-tag-text);
 }
 .form-hint {
     margin-top: 3px;

@@ -651,7 +651,11 @@ async function collapseItems(containerId, type) {
 }
 
 // ===== 书名处理 =====
-const specialWords = [
+// 需要高亮的特殊词：优先用配置页维护的词表（index 注入 window.titleHighlightWords），
+// 取不到时才用下面这份内置默认，保证未注入场景行为不变。
+// 用 Array.isArray 判定而不是看长度：配置页把词表清空时后台会注入 []，
+// 此时应当「一个都不高亮」，不能因为长度为 0 就退回默认表。
+const DEFAULT_SPECIAL_WORDS = [
     '同人续写', '同人续', '同人',
     '续写', '续写版', '增容', '增容版',
     '番外篇', '番外', '特别篇', '独立篇',
@@ -662,6 +666,9 @@ const specialWords = [
     '改写版', '改写',
     '修订版', '无绿版', '非绿版', '精修版'
 ];
+const specialWords = Array.isArray(window.titleHighlightWords)
+    ? window.titleHighlightWords
+    : DEFAULT_SPECIAL_WORDS;
 
 // 需要格式化的书名容器：书架页的 .novel-title、卡片标题，以及「最近阅读」的标题。
 // 统一维护在这里，避免以后新增一种书名容器时又漏掉一处。

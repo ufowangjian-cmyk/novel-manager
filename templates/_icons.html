@@ -8,15 +8,17 @@
      {{ icon('search', cls='ic--danger') }}      附加类名
      {{ icon('trash-2', title='删除') }}          带无障碍标签
 
-   图标清单见 /static/icons.svg（或 static/icons/ 目录）
+   图标清单见 static/icons/ 目录（sprite 由 _sprite_build.py 生成）
+   href 走 url_for 而不是写死路径：sprite 的 mtime 变 → URL 变 →
+   加新图标后不会被 30 天强缓存的旧 sprite 挡住（2026-11-01 加 memory-stick 时发现）
    ============================================ #}
 
 {% macro icon(name, size='', cls='', title='') -%}
 {%- set size_cls = ' ic--' ~ size if size else '' -%}
 {%- set extra = ' ' ~ cls if cls else '' -%}
 {%- if title -%}
-<svg class="ic{{ size_cls }}{{ extra }}" role="img" aria-label="{{ title }}"><title>{{ title }}</title><use href="/static/icons.svg#ic-{{ name }}"></use></svg>
+<svg class="ic{{ size_cls }}{{ extra }}" role="img" aria-label="{{ title }}"><title>{{ title }}</title><use href="{{ url_for('static', filename='icons.svg') }}#ic-{{ name }}"></use></svg>
 {%- else -%}
-<svg class="ic{{ size_cls }}{{ extra }}" aria-hidden="true"><use href="/static/icons.svg#ic-{{ name }}"></use></svg>
+<svg class="ic{{ size_cls }}{{ extra }}" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ic-{{ name }}"></use></svg>
 {%- endif -%}
 {%- endmacro %}

@@ -35,7 +35,12 @@
             挤到第二行（直接给胶囊设 basis 会把胶囊本身撑满，踩过坑） #}
             <div class="stats-row">
                 <div class="stats-badge">
-                    <span class="dir-info">{{ icon('folder-open', 'sm') }}小说目录： {{ novel_dir }}</span>
+                    {# Docker 版目录固定为 /novels、配置页改不了，原来那栏没信息量；
+                       换成进程内存占用，hover 看系统可用（NAS 4G 内存，这个更有用） #}
+                    <span class="count-info"
+                          title="当前进程常驻内存{% if mem_total_mb %}；系统可用 {{ mem_avail_mb }} MB / 共 {{ mem_total_mb }} MB{% endif %}">
+                        {{ icon('memory-stick', 'sm') }} 内存 {% if mem_used_mb %}{{ '%.0f'|format(mem_used_mb) }} MB{% else %}—{% endif %}
+                    </span>
                     <span class="sep">|</span>
                     <span class="count-info">{{ icon('library', 'sm') }} 共 {{ total_count }} 本小说</span>
                     {% if session.user_role == 'admin' %}
@@ -593,7 +598,7 @@
                 <tr>
                     <td>
                         <strong>
-                            <a href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                            <a href="{{ url_for('novel_detail', file_path=novel_url_token(novel['file_path'], novel.work_id), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                                 class="novel-title">
                                 {{ novel.title }}
                                 {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
@@ -701,7 +706,7 @@
             <div class="novel-card">
                 <div class="novel-card-title">
                     <a
-                        href="{{ url_for('novel_detail', file_path=(novel['file_path'] or '').lstrip('/'), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
+                        href="{{ url_for('novel_detail', file_path=novel_url_token(novel['file_path'], novel.work_id), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
                         {{ novel.title }}
                         {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
                             }}️</span>{% endif %}
@@ -857,6 +862,11 @@ main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
         font = font || localStorage.getItem('reader_font_family');
         if (typeof window.warmupBuiltinFont === 'function') window.warmupBuiltinFont(font);
     })();
+</script>
+<script>
+    // 书名高亮词由「配置页 → 列表与显示」维护，注入给 main.js。
+    // 没注入到时 main.js 退回内置默认表，行为与改这一版之前一致。
+    window.titleHighlightWords = {{ title_highlight_words | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>

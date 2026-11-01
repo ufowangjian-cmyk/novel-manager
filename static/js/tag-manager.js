@@ -13,7 +13,7 @@ async function loadTagRules() {
     renderRuleList(rules.implications);
 }
 
-// 渲染关键词列表（可删除、可编辑）
+// 渲染关键词列表（只删除，不在此处编辑 —— 打错了就删掉重加，和配置页「书名高亮词」一致）
 function renderKeywordList(keywords) {
     const container = document.getElementById('keywordListContainer');
     if (!keywords || keywords.length === 0) {
@@ -26,8 +26,7 @@ function renderKeywordList(keywords) {
             ${keywords.map((keyword, index) => `
                 <div class="tag-item" data-index="${index}">
                     <span class="tag-name">${escapeHtml(keyword)}</span>
-                    <button class="tag-edit"onclick="editKeyword(${index})">${icon('pencil', 'sm')}</button>
-                    <button class="tag-delete"onclick="deleteKeyword(${index})">${icon('x', 'sm')}</button>
+                    <button class="tag-delete" onclick="deleteKeyword(${index})" title="删除">${icon('x', 'sm')}</button>
                 </div>
             `).join('')}
         </div>

@@ -421,6 +421,20 @@ italic_default=False) %}
                             </select>
                         </div>
                     </div>
+
+                    <div class="form-group full-width">
+                        <label title="主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）">{{ icon('sparkles', 'sm') }} 书名高亮词</label>
+                        <div class="hlw-editor" id="hlw-editor">
+                            <input type="text" class="hlw-input" id="hlw-input"
+                                   placeholder="输入一个词，回车或逗号添加" autocomplete="off">
+                        </div>
+                        <input type="hidden" id="title_highlight_words" name="title_highlight_words"
+                               value='{{ config.title_highlight_words | tojson | forceescape }}'>
+                        <div class="form-hint">
+                            {{ icon('lightbulb', 'sm') }} 主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）。回车或逗号添加，点 × 删除；
+                            长词建议放前面（避免「番外篇」被「番外」先切开），全部删空 = 不高亮任何词
+                        </div>
+                    </div>
                 </div>
             </div>
 

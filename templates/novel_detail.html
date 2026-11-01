@@ -135,14 +135,14 @@
 
             <div class="action-buttons">
                 {% if continue_line %}
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('read_chapter', file_path=url_token, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="action-btn continue-btn"
                     title="{% if continue_chapter %}上次读到：{{ continue_chapter }}{% else %}继续上次阅读进度{% endif %}">
                     {{ icon('play', 'sm') }} 继续阅读{% if continue_chapter %}<span class="continue-chapter">（{{ continue_chapter }}）</span>{% endif %}
                 </a>
                 {% endif %}
 
-                <a href="{{ url_for('read_chapter', file_path=file_path, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+                <a href="{{ url_for('read_chapter', file_path=url_token, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
                     class="action-btn secondary">
                     {{ icon('book-open', 'sm') }} 从头阅读
                 </a>
@@ -377,6 +377,17 @@
                 }
             });
         })();
+
+        // 简介里的图片加载完成后摘掉骨架屏（.inline-image:not(.loaded) 的绿白渐变）。
+        // 阅读页由 reader-ui.js 在 #readingContent 上委托处理，详情页没引那个脚本，
+        // 所以在这里补一份 document 级捕获 —— 两边加的是同一个类，重复加也无害。
+        document.addEventListener('load', function (e) {
+            var img = e.target;
+            if (img && img.tagName === 'IMG' && img.classList
+                && img.classList.contains('inline-image')) {
+                img.classList.add('loaded');
+            }
+        }, true);
 
     </script>
 {% endblock %}

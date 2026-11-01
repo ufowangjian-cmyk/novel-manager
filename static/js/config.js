@@ -998,6 +998,114 @@ function adminBiState(id) {
     return el ? el.getAttribute('aria-pressed') === 'true' : false;
 }
 
+// 书名高亮词：换行 / 逗号 / 顿号 / 分号 都能分隔
+function parseHighlightWords(raw) {
+    if (!raw) return [];
+    return raw.split(/[\n\r,，、;；]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+// ===== 书名高亮词：胶囊式编辑器 =====
+// 真正的数据存在隐藏域 #title_highlight_words（JSON 数组），界面上编辑的是 #hlw-editor 里的胶囊。
+const HLW = (function () {
+    let words = [];
+    const SPLIT = /[\n\r,，、;；]+/;
+
+    function hidden() { return document.getElementById('title_highlight_words'); }
+    function box() { return document.getElementById('hlw-editor'); }
+    function field() { return document.getElementById('hlw-input'); }
+
+    function sync() {
+        const h = hidden();
+        if (h) h.value = JSON.stringify(words);
+    }
+
+    function makeChip(w) {
+        const s = document.createElement('span');
+        s.className = 'hlw-chip';
+        s.textContent = w;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'hlw-x';
+        b.setAttribute('aria-label', '删除 ' + w);
+        b.textContent = '×';
+        b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            remove(w);
+        });
+        s.appendChild(b);
+        return s;
+    }
+
+    function render() {
+        const el = box();
+        if (!el) return;
+        el.querySelectorAll('.hlw-chip').forEach(function (n) { n.remove(); });
+        const inp = field();
+        words.forEach(function (w) { el.insertBefore(makeChip(w), inp); });
+        sync();
+    }
+
+    function add(raw) {
+        String(raw || '').split(SPLIT).forEach(function (p) {
+            const w = p.trim();
+            if (w && words.indexOf(w) === -1) words.push(w);
+        });
+        render();
+    }
+
+    function remove(w) {
+        words = words.filter(function (x) { return x !== w; });
+        render();
+    }
+
+    function init() {
+        const el = box();
+        if (!el || el.dataset.bound === '1') return;
+        el.dataset.bound = '1';
+        const inp = field();
+
+        inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ',' || e.key === '，') {
+                e.preventDefault();
+                add(inp.value);
+                inp.value = '';
+            } else if (e.key === 'Backspace' && !inp.value && words.length) {
+                // 输入框空着时退格删掉最后一个词（和常见标签输入框一致）
+                words.pop();
+                render();
+            }
+        });
+        inp.addEventListener('blur', function () {
+            if (inp.value.trim()) { add(inp.value); inp.value = ''; }
+        });
+        // 点在空白处也能聚焦到输入框——整块看着像输入框，行为也要像
+        el.addEventListener('click', function (e) {
+            if (e.target === el) inp.focus();
+        });
+
+        let initWords = [];
+        try {
+            initWords = JSON.parse((hidden() && hidden().value) || '[]');
+        } catch (err) {
+            initWords = [];
+        }
+        words = Array.isArray(initWords) ? initWords.slice() : [];
+        render();
+    }
+
+    return {
+        init: init,
+        get: function () { return words.slice(); },
+        set: function (list) { words = Array.isArray(list) ? list.slice() : []; render(); }
+    };
+})();
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', HLW.init);
+} else {
+    HLW.init();
+}
+
 async function saveAllConfig() {
     safeLoading(true);
     // 普通用户看不到全局配置卡片，这些元素不存在；后端也会对非管理员返回 403。
@@ -1014,6 +1122,7 @@ async function saveAllConfig() {
         words_per_page: safeNumber('words_per_page', 8000, 1000, 50000),
         max_tags_display: safeNumber('max_tags_display', 3, 1, 10),
         date_format: document.getElementById('date_format')?.value ?? 'YYYY-MM-DD',
+        title_highlight_words: (typeof HLW !== 'undefined') ? HLW.get() : [],
         default_sort_by: document.getElementById('default_sort_by')?.value ?? 'title',
         default_sort_order: document.getElementById('default_sort_order')?.value ?? 'asc',
         auto_scan_on_start: safeBool('auto_scan_on_start', true),
@@ -1091,6 +1200,7 @@ function exportConfig() {
         words_per_page: parseInt(document.getElementById('words_per_page')?.value ?? 8000),
         max_tags_display: parseInt(document.getElementById('max_tags_display')?.value ?? 3),
         date_format: document.getElementById('date_format')?.value ?? 'YYYY-MM-DD',
+        title_highlight_words: (typeof HLW !== 'undefined') ? HLW.get() : [],
         scan_interval_hours: parseInt(document.getElementById('scan_interval_hours')?.value ?? 0),
         max_file_size_mb: parseInt(document.getElementById('max_file_size_mb')?.value ?? 100),
         auto_scan_on_start: document.getElementById('auto_scan_on_start')?.checked ?? true,
@@ -1153,6 +1263,10 @@ function importConfig() {
                 if (document.getElementById('words_per_page')) document.getElementById('words_per_page').value = config.words_per_page ?? 8000;
                 if (document.getElementById('max_tags_display')) document.getElementById('max_tags_display').value = config.max_tags_display ?? 3;
                 if (document.getElementById('date_format')) document.getElementById('date_format').value = config.date_format ?? 'YYYY-MM-DD';
+                if (document.getElementById('title_highlight_words')) {
+                    const hw = config.title_highlight_words;
+                    HLW.set(Array.isArray(hw) ? hw : parseHighlightWords(hw));
+                }
                 if (document.getElementById('scan_interval_hours')) document.getElementById('scan_interval_hours').value = config.scan_interval_hours ?? 0;
                 if (document.getElementById('max_file_size_mb')) document.getElementById('max_file_size_mb').value = config.max_file_size_mb ?? 100;
                 if (document.getElementById('auto_scan_on_start')) document.getElementById('auto_scan_on_start').checked = config.auto_scan_on_start ?? true;

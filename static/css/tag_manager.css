@@ -155,7 +155,40 @@
 .alias-delete:hover,
 .rule-delete:hover {
     background: rgba(184, 106, 90, 0.12);
-}.empty-hint {
+}/* ---------- 识别关键词：紧凑胶囊（对齐配置页「书名高亮词」的观感） ----------
+   只有关键词列表用 .tag-item / .tag-items / .tag-name / .tag-delete，
+   别名走 .alias-*、派生规则走 .rule-*，互不影响，所以这里可以放心收紧。 */.tag-items {
+    gap: 6px;
+}.tag-item {
+    gap: 5px;
+    padding: 3px 5px 3px 11px;
+    border-radius: 20px;
+    box-shadow: none;
+}.tag-item:hover {
+    transform: none;
+    box-shadow: none;
+}.tag-name {
+    font-size: 12.5px;
+    line-height: 1.7;
+}/* 删除按钮做成小圆点，不再占一个大方块 */.tag-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(184, 106, 90, 0.14);
+    color: var(--color-danger);
+    opacity: 0.8;
+}.tag-delete:hover {
+    background: rgba(184, 106, 90, 0.26);
+    opacity: 1;
+}.tag-delete .ic {
+    width: 12px;
+    height: 12px;
+}
+.empty-hint {
     text-align: center;
     padding: 20px;
     color: var(--text-muted);
@@ -561,6 +594,8 @@ body.dark-mode .modal-field textarea {
 .rule-item {
         font-size: 12px;
         padding: 4px 10px;
+    }/* 关键词胶囊在移动端同样保持紧凑，别被上面那条共用规则撑回去 */.tag-item {
+        padding: 2px 4px 2px 9px;
     }/* 底部按钮组 - 移动端两两一组 */.page-container>.button-group {
         gap: 8px;
     }.page-container>.button-group .btn {
