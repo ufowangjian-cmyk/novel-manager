@@ -599,13 +599,19 @@
                     <td>
                         <strong>
                             <a href="{{ url_for('novel_detail', file_path=novel_url_token(novel['file_path'], novel.work_id), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
-                                class="novel-title">
-                                {{ novel.title }}
-                                {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
-                                    'sm') }}️</span>{% endif %}
-                                {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x',
-                                    'sm') }}</span>{% endif %}
-                            </a>
+                                class="novel-title">{{ novel.title }}</a>
+                            {# 媒体标注与状态徽章必须放在 .novel-title 的 <a> 外面！
+                               main.js 的 formatNovelTitlesAndHighlight() 会执行
+                               el.innerHTML = formatNovelTitleText(el.textContent)，
+                               把 <a> 内部整个重写 —— 放在里面的 span 会被清掉（2026-11-02 排查）。
+                               数据来自扫描时的 has_images 与 tags（729/13/4 本）。 #}
+                            {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle',
+                                'sm') }}️</span>{% endif %}
+                            {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x',
+                                'sm') }}</span>{% endif %}
+                            {% if novel.has_images %}<span class="media-badge media-badge--image" title="含配图">{{ icon('image', 'sm') }}</span>{% endif %}
+                            {% if '视频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--video" title="含视频">{{ icon('film', 'sm') }}</span>{% endif %}
+                            {% if '音频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--audio" title="含音频">{{ icon('music', 'sm') }}</span>{% endif %}
                         </strong>
                         {% include "_reading_status.html" %}
                     </td>
@@ -708,11 +714,15 @@
                     <a
                         href="{{ url_for('novel_detail', file_path=novel_url_token(novel['file_path'], novel.work_id), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}">
                         {{ novel.title }}
-                        {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
-                            }}️</span>{% endif %}
-                        {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x', 'sm')
-                            }}</span>{% endif %}
                     </a>
+                    {# 同桌面表格：徽章放在 <a> 外面，否则会被书名高亮脚本覆盖 #}
+                    {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
+                        }}️</span>{% endif %}
+                    {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x', 'sm')
+                        }}</span>{% endif %}
+                    {% if novel.has_images %}<span class="media-badge media-badge--image" title="含配图">{{ icon('image', 'sm') }}</span>{% endif %}
+                    {% if '视频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--video" title="含视频">{{ icon('film', 'sm') }}</span>{% endif %}
+                    {% if '音频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--audio" title="含音频">{{ icon('music', 'sm') }}</span>{% endif %}
                     {% include "_reading_status.html" %}
                 </div>
                 <div class="novel-card-meta">

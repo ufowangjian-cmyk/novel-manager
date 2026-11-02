@@ -3760,6 +3760,44 @@ body.dark-mode .skeleton-cell {
     cursor: help;
 }
 
+/* 书名后的媒体标注（配图 / 视频 / 音频）：
+   论坛那种小图标做法 —— 只在有对应内容时出现，最多三个，hover 看具体类型。
+   用 inline-flex 而不是纯 inline，避免图标被行高挤得上下不齐。 */
+.media-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 5px;
+    opacity: 0.95;
+    cursor: help;
+    vertical-align: middle;
+}
+
+.media-badge .ic {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    /* 16px 下线稿本来就细，加粗一点轮廓才清楚 */
+    stroke-width: 2.3;
+}
+
+/* 三种媒体用颜色区分：单色线稿在这个尺寸下太难分辨，颜色是最省事的办法。
+   这几个中间调在深色背景上同样够读，不用再写一套 dark 覆盖。 */
+.media-badge--image .ic {
+    color: #5F8A2E;
+}
+
+.media-badge--video .ic {
+    color: #C2410C;
+}
+
+.media-badge--audio .ic {
+    color: #1D4ED8;
+}
+
+.media-badge:hover {
+    opacity: 1;
+}
+
 /* ============================================
    18. 全局按钮系统（统一所有页面按钮）
    ============================================ */
