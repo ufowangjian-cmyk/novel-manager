@@ -2172,6 +2172,16 @@ def strip_txt_ext(filename):
         return filename[:-4]
     return filename
 
+def title_from_filename(filename):
+    """书名「兜底来源」：把文件名变成 title，规则与 parse_file_content_fast 完全一致。
+
+    书名有两种来源：文件头部的「书名：」行（优先），以及文件名（上面那行兜底）。
+    截断规则必须跟解析里那行一模一样（超 50 字加 ...），否则两边比不相等，
+    改名时「这个 title 是不是来自文件名」就永远判断不出来（2026-11-02）。
+    """
+    title = strip_txt_ext(os.path.basename(filename or ''))
+    return title[:50] + '...' if len(title) > 50 else title
+
 def _media_tags_from(item):
     """从条目里取出 tags 字段（可能是字符串或列表）"""
     tags = item.get('tags') or ''
@@ -4240,7 +4250,8 @@ def _scan_core(full_scan=False):
 
         all_files = {}
         for filename in os.listdir(NOVEL_DIR):
-            if filename.endswith(('.txt', '.TXT')):
+            # 只认 .txt / .TXT 会让 .Txt、.tXt 这类漏掉（2026-11-02 剑哥有一本 .Txt 一直不入库）
+            if filename.lower().endswith('.txt'):
                 file_path = os.path.join(NOVEL_DIR, filename)
                 all_files[filename] = file_path
 
@@ -4344,6 +4355,17 @@ def _scan_core(full_scan=False):
                         adopted['mtime'] = current_mtime
                         adopted['file_size'] = os.path.getsize(file_path) // 1024
                         adopted['progress'] = parse_progress(filename)
+
+                        # 书名：内名优先，只有「内名失效（没有书名：行）」时才用文件名。
+                        # 判定方式就是看旧 title 是否等于旧文件名派生的值：
+                        #   - 相等 → 旧书名本来就来自文件名，改名后要跟着变
+                        #   - 不等 → 旧书名来自文件里的「书名：」行，内容没改就保持不动
+                        # 不能无脑改成文件名：库里约 1033 本的内名比文件名规整
+                        # （带「又名/原名」、全角修正），覆盖会让它们变差。
+                        old_title_from_name = title_from_filename(
+                            reused.get('filename') or reused.get('file_path') or '')
+                        if (reused.get('title') or '') == old_title_from_name:
+                            adopted['title'] = title_from_filename(filename)
                         new_image_folder = get_image_folder_for_novel(filename)
                         adopted['has_images'] = new_image_folder is not None
                         adopted['image_folder'] = new_image_folder
