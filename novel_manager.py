@@ -4522,14 +4522,26 @@ def _scan_core(full_scan=False):
         # ========== 更新状态 ==========
         if not full_scan:
             message_parts = []
+            # 「删除」里其实混着改名：书名里的【1-51】改成【1-52】后，旧文件名消失、
+            # 新文件名出现，但它是同一本书（work_id 实测不变）。这里用书名主干
+            # （novel_title_stem 去掉【…】）比一下，主干对得上的算“改名”，
+            # 从删除里剔出来记到更新后面 —— 否则提示会同时冒出「更新 1 本」和
+            # 「删除 1 本」，看着像丢了书。（2026-11-02 剑哥反馈）
+            scanned_stems = {novel_title_stem(f) for f in files_to_scan}
+            renamed_like = sum(1 for f in removed_files if novel_title_stem(f) in scanned_stems)
+            really_deleted = len(removed_files) - renamed_like
+
             if files_to_scan:
-                message_parts.append(f"更新 {len(files_to_scan)} 本")
+                part = f"更新 {len(files_to_scan)} 本"
+                if renamed_like:
+                    part += f"（含改名 {renamed_like} 本）"
+                message_parts.append(part)
             if unchanged_count > 0:
                 message_parts.append(f"保留 {unchanged_count} 本")
             if renamed_count > 0:
                 message_parts.append(f"识别改名 {renamed_count} 本")
-            if removed_files:
-                message_parts.append(f"删除 {len(removed_files)} 本")
+            if really_deleted:
+                message_parts.append(f"删除 {really_deleted} 本")
             if skipped_files:
                 message_parts.append(f"跳过 {len(skipped_files)} 本")
             scan_progress['message'] = f"扫描完成！{', '.join(message_parts)}" if message_parts else '扫描完成，没有变化'
