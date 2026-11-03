@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS chapters (
     word_count  INTEGER,
     level       INTEGER,
     is_empty    INTEGER,
+    media       TEXT,
     PRIMARY KEY (book_id, idx)
 );
 
@@ -103,8 +104,8 @@ ON CONFLICT(path) DO UPDATE SET
 
 _INSERT_CHAPTER = """
 INSERT OR REPLACE INTO chapters
-    (book_id, idx, title, start_line, end_line, word_count, level, is_empty)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (book_id, idx, title, start_line, end_line, word_count, level, is_empty, media)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 # ---------------------------------------------------------------------------
@@ -221,6 +222,11 @@ def _ensure_chapter_columns(conn):
         conn.execute('ALTER TABLE chapters ADD COLUMN level INTEGER')
     if 'is_empty' not in cols:
         conn.execute('ALTER TABLE chapters ADD COLUMN is_empty INTEGER')
+    if 'media' not in cols:
+        # media 记录本章正文里出现的媒体类型（i=配图 / v=视频 / a=音频），
+        # 详情页章节名后的小徽章靠它渲染。老库补列后为 NULL，
+        # 靠一次回填（或该书下次重解析）补上。
+        conn.execute('ALTER TABLE chapters ADD COLUMN media TEXT')
 
 
 # ---------------------------------------------------------------------------
@@ -319,9 +325,10 @@ def _chapter_rows(book_id, chapters):
                 _to_int(chapter.get('word_count')),
                 _to_int(chapter.get('level')) or None,
                 1 if chapter.get('is_empty') else 0,
+                _clean_text(chapter.get('media')) or '',
             ))
-        else:  # (idx, title, start, end, words[, level, is_empty]) 之类的元组
-            values = list(chapter) + [None] * (7 - len(chapter))
+        else:  # (idx, title, start, end, words[, level, is_empty, media]) 之类的元组
+            values = list(chapter) + [None] * (8 - len(chapter))
             rows.append((
                 book_id,
                 _to_int(values[0], index),
@@ -331,6 +338,7 @@ def _chapter_rows(book_id, chapters):
                 _to_int(values[4]),
                 _to_int(values[5]) or None,
                 1 if values[6] else 0,
+                _clean_text(values[7]) or '',
             ))
     return rows
 
@@ -406,7 +414,7 @@ def get_chapters(path, db_path=None):
     conn = _get_conn(db_path)
     rows = conn.execute(
         "SELECT c.idx, c.title, c.start_line, c.end_line, c.word_count, "
-        "       c.level, c.is_empty "
+        "       c.level, c.is_empty, c.media "
         "FROM chapters c JOIN books b ON b.id = c.book_id "
         "WHERE b.path = ? ORDER BY c.idx",
         (path,),
@@ -420,9 +428,40 @@ def get_chapters(path, db_path=None):
             'word_count': row['word_count'],
             'level': row['level'],
             'is_empty': bool(row['is_empty']),
+            'media': row['media'] or '',
         }
         for row in rows
     ]
+
+
+def chapter_rows_missing_media(db_path=None):
+    """还没算过媒体标注的章节行：[(book_id, idx, start_line, end_line, path)]。
+
+    media 为 NULL 表示「没算过」，空串表示「算过、确实没有媒体」。
+    扫描收尾用它找出要补算的书 —— 全部算过时返回空列表，等于零开销。
+    """
+    conn = _get_conn(db_path)
+    rows = conn.execute(
+        "SELECT c.book_id, c.idx, c.start_line, c.end_line, b.path "
+        "FROM chapters c JOIN books b ON b.id = c.book_id "
+        "WHERE c.media IS NULL ORDER BY c.book_id, c.idx"
+    ).fetchall()
+    return [(row['book_id'], row['idx'], row['start_line'], row['end_line'], row['path'])
+            for row in rows]
+
+
+def set_chapter_media(entries, db_path=None):
+    """批量写章节媒体标注。entries = [(media, book_id, idx)]，返回写入行数。"""
+    if not entries:
+        return 0
+    conn = _get_conn(db_path)
+    with _write_lock:
+        conn.executemany(
+            "UPDATE chapters SET media = ? WHERE book_id = ? AND idx = ?",
+            entries,
+        )
+        conn.commit()
+    return len(entries)
 
 
 def stats(db_path=None):

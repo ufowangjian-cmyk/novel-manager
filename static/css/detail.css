@@ -220,6 +220,41 @@
     border-radius: 20px;
     margin-left: 10px;
     white-space: nowrap;
+}
+/* ===== 章节名后的媒体徽章 =====
+   本章正文里出现 [img:] / [video:] / [audio:] 标记时显示（数据来自章节索引的 media 字段，
+   由 build_chapter_index 统计）。颜色与首页书名的媒体标注一致：配图绿 / 视频橙 / 音频蓝。
+   flex-shrink:0 保证标题挤压时徽章不被压扁；14px 是章节列表的字号尺度。 */
+.chapter-media {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.chapter-media-badge {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.chapter-media-badge .ic {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.3;
+}
+
+.chapter-media--image .ic {
+    color: #5F8A2E;
+}
+
+.chapter-media--video .ic {
+    color: #C2410C;
+}
+
+.chapter-media--audio .ic {
+    color: #1D4ED8;
 }/* ===== 空章节（只有标题没有正文）=====
    渲染为 <span> 而非 <a>：不可点击。
    视觉上保持和普通章节完全一致，只在右侧加一个小标记，

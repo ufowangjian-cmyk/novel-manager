@@ -3552,6 +3552,59 @@ def mark_empty_chapters(all_chapters, lines):
     return empty_count
 
 
+# 章节级媒体标记：判定与阅读页 static/js/reader/reader-core.js 的
+# localImagePattern / localVideoPattern / localAudioPattern 对齐（都是 [类型:名称 ...]，
+# 类型支持中英文别名）。这样「章节名后标了徽章」和「翻到这章真能看到媒体」是一回事。
+_CHAPTER_MEDIA_PATTERNS = (
+    ('i', re.compile(r'\[\s*(?:img|图|image)\s*[:：]\s*[^\s\]]+', re.IGNORECASE)),
+    ('v', re.compile(r'\[\s*(?:video|vid|视频)\s*[:：]\s*[^\s\]]+', re.IGNORECASE)),
+    ('a', re.compile(r'\[\s*(?:audio|aud|音乐|音频)\s*[:：]\s*[^\s\]]+', re.IGNORECASE)),
+)
+
+
+def chapter_media_flags(body_lines):
+    """统计一章正文里出现哪些媒体：返回 'i'（配图）/ 'v'（视频）/ 'a'（音频）的组合串。
+
+    只判断「有没有」，不数数量 —— 详情页章节名后是纯图标徽章。
+    单次遍历、带 '[' 快筛，13MB 的书实测开销在毫秒级。
+    """
+    found = set()
+    for line in body_lines:
+        if '[' not in line:
+            continue
+        for tag, pattern in _CHAPTER_MEDIA_PATTERNS:
+            if tag not in found and pattern.search(line):
+                found.add(tag)
+        if len(found) == len(_CHAPTER_MEDIA_PATTERNS):
+            break
+    return ''.join(tag for tag, _ in _CHAPTER_MEDIA_PATTERNS if tag in found)
+
+
+def annotate_chapter_media(all_chapters, lines):
+    """就地给每个章节对象补 `media` 字段（i/v/a 组合串）。
+
+    行号口径与 mark_empty_chapters / build_chapter_index 一致：
+    line_number 指向标题行（1-based），正文从下一行开始，到下一章标题前一行结束。
+    详情页有两条取章节的路（读全文解析 / 命中 SQLite 索引），这个函数保证
+    「全文路径」也带上 media，不会出现索引有徽章、回退解析就没了。
+    """
+    total = len(lines)
+    for idx, chapter in enumerate(all_chapters):
+        try:
+            start = int(chapter.get('line_number') or 1)
+        except (TypeError, ValueError):
+            start = 1
+        if idx + 1 < len(all_chapters):
+            try:
+                end = int(all_chapters[idx + 1].get('line_number') or start) - 1
+            except (TypeError, ValueError):
+                end = total
+        else:
+            end = total
+        chapter['media'] = chapter_media_flags(lines[start:max(start, end)])
+    return all_chapters
+
+
 def build_chapter_index(all_chapters, content):
     """把章节列表整理成可落库的索引行（补上结束行号和本章字数）。
 
@@ -3587,8 +3640,69 @@ def build_chapter_index(all_chapters, content):
             'word_count': sum(len(line) for line in body),
             'level': ch.get('level') or 2,
             'is_empty': bool(ch.get('is_empty')),
+            'media': chapter_media_flags(body),
         })
     return out
+
+
+def backfill_chapter_media(on_progress=None, limit=None):
+    """把 chapters.media 还没算过的书补一遍（读全文、按章节行范围统计）。
+
+    扫描收尾会自动调用，所以不需要单独跑脚本：
+      · 刚加这一列的老库 → 所有书都是 NULL，跑一次补齐；
+      · 之后只剩新增/改动的书（解析时就带上 media 了），这条 SQL 直接返回空，零开销。
+    读不到的文件也会记成「已处理（无媒体）」，避免每次扫描都重试同一本。
+    返回 {'books': 本数, 'rows': 行数, 'failed': 失败本数}。
+    """
+    rows = cache_store.chapter_rows_missing_media()
+    if not rows:
+        return {'books': 0, 'rows': 0, 'failed': 0}
+
+    by_book = {}
+    for book_id, idx, start, end, path in rows:
+        by_book.setdefault((book_id, path), []).append((idx, start, end))
+
+    total = len(by_book)
+    done = written = failed = 0
+    pending = []
+    t0 = time.time()
+
+    for (book_id, path), items in by_book.items():
+        if limit and done >= limit:
+            break
+        done += 1
+        fp = os.path.join(NOVEL_DIR, path)
+        try:
+            raw, content = read_and_decode_novel(fp)
+            lines = re.split(r'\r?\n|\r', content)
+            total_lines = len(lines)
+            for idx, start, end in items:
+                try:
+                    s = int(start or 1)
+                    e = int(end or total_lines)
+                except (TypeError, ValueError):
+                    s, e = 1, total_lines
+                pending.append((chapter_media_flags(lines[s:max(s, e)]), book_id, idx))
+            written += len(items)
+        except Exception as exc:
+            failed += 1
+            for idx, _s, _e in items:
+                pending.append(('', book_id, idx))
+            if failed <= 3:
+                logger.warning(f"补齐章节媒体失败 {path[:40]}: {str(exc)[:80]}")
+
+        if len(pending) >= 3000:
+            cache_store.set_chapter_media(pending)
+            pending = []
+        if on_progress and done % 100 == 0:
+            on_progress(done, total)
+
+    if pending:
+        cache_store.set_chapter_media(pending)
+
+    logger.info("章节媒体标注补齐：%d 本 / %d 行（失败 %d），用时 %.1fs"
+                % (total, written, failed, time.time() - t0))
+    return {'books': done, 'pending_books': total, 'rows': written, 'failed': failed}
 
 
 # ==================== 解析章节信息 =====================
@@ -3629,6 +3743,7 @@ def parse_novel_details_from_content(content, lines):
 
     all_chapters = sorted(all_chapters, key=lambda x: x['line_number'])
     mark_empty_chapters(all_chapters, lines)
+    annotate_chapter_media(all_chapters, lines)
 
     return {
         'intro': '\n'.join(intro_lines) if intro_lines else '无简介',
@@ -3678,6 +3793,7 @@ def load_details_from_index(file_path):
             'line_number': int(r.get('start_line') or 1),
             'level': int(r.get('level') or 2),
             'is_empty': bool(r.get('is_empty')),
+            'media': r.get('media') or '',
         })
     levels = {1: [], 2: [], 3: []}
     for ch in all_chapters:
@@ -4540,6 +4656,21 @@ def _scan_core(full_scan=False):
                 print(f"✅ 扫描完成（无任何变化，跳过写盘），共 {len(novel_data)} 本")
         else:
             print("⚠️ 扫描完成，没有变化")
+
+        # ========== 补齐章节媒体标注 ==========
+        # chapters.media 是后加的列：老库里的书 media 为 NULL，而「未变化的书」不会重解析，
+        # 章节名后的小徽章就永远不显示。这里在扫描收尾补一次，之后全部算过 →
+        # 一条 SQL 返回空，等于零开销（新增/改动的书解析时已带上 media）。
+        try:
+            bf = backfill_chapter_media(
+                on_progress=lambda d, t: scan_progress.update(
+                    {'message': f'补齐章节媒体标注：{d}/{t} 本'}
+                )
+            )
+            if bf['books']:
+                print(f"🏷️ 已补齐 {bf['books']} 本书的章节媒体标注（失败 {bf['failed']} 本）")
+        except Exception as e:
+            logger.warning(f"补齐章节媒体标注失败（不影响扫描）: {e}")
 
         # ========== 更新状态 ==========
         if not full_scan:
