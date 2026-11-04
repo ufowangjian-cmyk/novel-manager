@@ -651,11 +651,7 @@ async function collapseItems(containerId, type) {
 }
 
 // ===== 书名处理 =====
-// 需要高亮的特殊词：优先用配置页维护的词表（index 注入 window.titleHighlightWords），
-// 取不到时才用下面这份内置默认，保证未注入场景行为不变。
-// 用 Array.isArray 判定而不是看长度：配置页把词表清空时后台会注入 []，
-// 此时应当「一个都不高亮」，不能因为长度为 0 就退回默认表。
-const DEFAULT_SPECIAL_WORDS = [
+const specialWords = [
     '同人续写', '同人续', '同人',
     '续写', '续写版', '增容', '增容版',
     '番外篇', '番外', '特别篇', '独立篇',
@@ -666,9 +662,6 @@ const DEFAULT_SPECIAL_WORDS = [
     '改写版', '改写',
     '修订版', '无绿版', '非绿版', '精修版'
 ];
-const specialWords = Array.isArray(window.titleHighlightWords)
-    ? window.titleHighlightWords
-    : DEFAULT_SPECIAL_WORDS;
 
 // 需要格式化的书名容器：书架页的 .novel-title、卡片标题，以及「最近阅读」的标题。
 // 统一维护在这里，避免以后新增一种书名容器时又漏掉一处。
@@ -789,7 +782,13 @@ const RandomNovel = (function () {
             : '';
 
         const meta = [];
-        meta.push(`<span class="random-meta-item">${icon('pencil', 'sm')} ${escapeHtml(n.author || '未知作者')}${aliases}</span>`);
+        // 作者 + 马甲可能很长，包一层 .random-meta-text 让 CSS 做省略号；title 保留全名
+        const authorPlain = (n.author || '未知作者')
+            + ((n.author_aliases && n.author_aliases.length) ? `（${n.author_aliases.join('、')}）` : '');
+        meta.push(
+            `<span class="random-meta-item" title="${escapeHtml(authorPlain)}">${icon('pencil', 'sm')}`
+            + `<span class="random-meta-text">${escapeHtml(n.author || '未知作者')}${aliases}</span></span>`
+        );
         if (n.site && n.site !== '未知网站') {
             meta.push(`<span class="random-meta-item">${icon('globe', 'sm')} ${escapeHtml(n.site)}</span>`);
         }

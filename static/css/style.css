@@ -42,13 +42,7 @@ body {
     margin-bottom: 25px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     flex-wrap: wrap;
-    /* 头图上的白字：单层柔和阴影在浅色照片上会被冲掉，
-       改为「贴边的硬阴影 + 中层 + 大范围柔光」三层叠加：
-       浅色照片能压出清晰轮廓，深色照片也不会显得脏 */
-    text-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.92),
-        0 2px 6px rgba(0, 0, 0, 0.72),
-        0 8px 24px rgba(0, 0, 0, 0.48);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
     position: relative;
     z-index: 1;
 }
@@ -853,9 +847,27 @@ td:nth-child(6) a {
 }
 
 .novel-card-author {
-    background: var(--color-border-primary);
+    /* 底色跟标题（--color-primary-dark #728B47）拉开层次：
+       比标题浅一档，里面的文字统一用白色，实底上更跳、更突出。
+       之前用的 #4A6B2A 比标题深，大色块反而压过书名。 */
+    background: #7E9652;   /* 比标题色 #728B47 只浅一档，色相相同 */
     padding: 2px 10px;
     border-radius: 20px;
+    font-weight: 500;
+}
+
+/* 里面默认是深绿文字（.author-link），实底上发黑、压不住底色；
+   这里改白字，虚线下划线用淡白，保留「可点」的暗示。 */
+.novel-card-author .author-link {
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.45);
+}
+
+/* 马甲本来就靠透明度区分从属关系（.author-alias-link 自带 opacity .8，
+   白字再叠一层就够淡了，不要再压 color 的 alpha） */
+.novel-card-author .author-alias-link {
+    color: #fff;
+    opacity: 0.82;
 }
 
 .novel-card-tags {
@@ -894,6 +906,23 @@ td:nth-child(6) a {
 
     .novel-card-tags {
         margin-bottom: 4px;
+    }
+
+    /* 移动端卡片里的标签：原来是绿色实底白字，一屏小标签比书名还抢眼。
+       改成「透明底 + 浅色细边 + 中性绿文字」，把视觉重量让给标题。
+       选择器限定在 .novel-card-tags 内，桌面表格的 .tag-badge 不受影响。 */
+    .novel-card-tags .tag-badge {
+        background: transparent;
+        color: var(--color-primary-dark);
+        border: 1px solid var(--color-border-primary);
+        opacity: 0.72;
+    }
+
+    body.dark-mode .novel-card-tags .tag-badge {
+        background: transparent;
+        color: #9aa88f;
+        border-color: rgba(255, 255, 255, 0.16);
+        opacity: 1;
     }
 
     .novel-card-footer {
@@ -1977,6 +2006,20 @@ body.dark-mode .random-refresh-btn:disabled {
     align-items: center;
     gap: 4px;
     white-space: nowrap;
+    /* 作者 + 马甲可能很长（一本挂四五个马甲），不限制就会把卡片撑破：
+       每项最多占满一行，文字超出走省略号。min-width: 0 是关键 —— flex 子项
+       默认 min-width: auto，会被内容顶开。 */
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* 真正承载文字的那一层：省略号必须作用在它身上，
+   inline-flex 容器自身不吃 text-overflow（文字会被包成匿名 flex item）。 */
+.random-meta-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* 图标尺寸显式指定（font-size 对 SVG 无效） */
@@ -1984,6 +2027,7 @@ body.dark-mode .random-refresh-btn:disabled {
     width: 14px;
     height: 14px;
     vertical-align: middle;
+    flex: 0 0 auto; /* 图标别被压缩，省略号只落在文字上 */
 }
 
 .random-alias {
@@ -3067,8 +3111,20 @@ body.dark-mode .filter-section {
 }
 
 body.dark-mode .novel-card-author {
-    background: var(--dark-bg-quaternary);
-    color: var(--dark-primary-lighter);
+    /* 与浅色统一：深绿实底白字。原来跟标签同为浅底，层级拉不开 */
+    background: #5b7338;
+    color: #fff;
+}
+
+/* 深色主题下 .author-link 有自己的颜色规则，这里必须压过它，
+   否则深绿底上会出现浅绿字（对比不足） */
+body.dark-mode .novel-card-author .author-link {
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+body.dark-mode .novel-card-author .author-alias-link {
+    color: rgba(255, 255, 255, 0.85);
 }
 
 body.dark-mode .novel-card-footer {
@@ -4588,135 +4644,4 @@ body.dark-mode .user-menu-subitem.active {
 .av-color.on {
     border-color: #fff;
     box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
-}
-/* ============================================
-   2026-11-04 移动端降噪 + 配色统一
-   1) 卡片标签：胶囊 → 逗号分隔文本（仅移动端，桌面表格不受影响）
-   2) 「返回」按钮：琥珀橙实心 → 中性次按钮（不再是页面上最饱和的元素）
-   3) .btn-warning：暖橙实心 → 绿系描边；暖色只留给 .btn-danger 这类不可逆操作
-   ============================================ */
-
-@media (max-width: 768px) {
-    .novel-card-tags {
-        display: block;
-        margin-bottom: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .novel-card-tags .tag-badge {
-        display: inline;
-        padding: 0;
-        margin: 0;
-        background: none;
-        border: 0;
-        border-radius: 0;
-        color: #6B7A5E;
-        font-size: 0.74em;
-        line-height: 1.7;
-        white-space: nowrap;
-    }
-
-    /* 逗号用前置伪元素，第一个标签不会多出一个顿号 */
-    .novel-card-tags .tag-badge + .tag-badge::before {
-        content: "、";
-    }
-
-    /* 超出部分用省略号提示，不再单独占一个「+N」胶囊 */
-    .novel-card-tags .tag-badge + .tag-more::before {
-        content: none;
-    }
-
-    .novel-card-tags .tag-more {
-        display: inline;
-        padding: 0;
-        margin: 0;
-        background: none;
-        border: 0;
-        border-radius: 0;
-        font-size: 0;
-        color: #9AA88D;
-    }
-
-    .novel-card-tags .tag-more::after {
-        content: "…";
-        /* 父元素 font-size 为 0，这里必须用 rem 才能有实际字号 */
-        font-size: 0.74rem;
-    }
-}
-
-/* ----- 「返回」类按钮：中性次按钮 ----- */
-.btn-nav.btn-back-home {
-    background: rgba(255, 255, 255, 0.94);
-    color: var(--color-green-deepest, #4a5d23);
-    border: 1px solid rgba(114, 139, 71, 0.30);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    /* 按钮是浅底深字，不继承头图白字的阴影 */
-    text-shadow: none;
-}
-
-.btn-nav.btn-back-home:hover {
-    background: #ffffff;
-    color: var(--color-green-deepest, #4a5d23);
-    border-color: rgba(114, 139, 71, 0.55);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
-}
-
-body.dark-mode .btn-nav.btn-back-home {
-    background: rgba(255, 255, 255, 0.10);
-    color: var(--color-text-light);
-    border-color: rgba(255, 255, 255, 0.22);
-    box-shadow: none;
-}
-
-body.dark-mode .btn-nav.btn-back-home:hover {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.32);
-}
-
-/* ----- 维护类按钮：暖橙 → 绿系描边 ----- */
-.btn-warning {
-    background: transparent;
-    color: var(--color-green-deepest, #4a5d23);
-    border: 1px solid rgba(114, 139, 71, 0.45);
-    box-shadow: none;
-}
-
-.btn-warning:hover {
-    background: rgba(114, 139, 71, 0.12);
-    border-color: rgba(114, 139, 71, 0.70);
-    transform: none;
-    box-shadow: none;
-}
-
-body.dark-mode .btn-warning {
-    background: transparent;
-    color: var(--color-text-light);
-    border-color: rgba(255, 255, 255, 0.28);
-}
-
-body.dark-mode .btn-warning:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.42);
-}
-
-/* ============================================
-   2026-11-04 PWA 安全区
-   安装到桌面（standalone）后，iOS 的刘海与底部 Home 条会压住头图和
-   末行内容；浏览器里 env() 取值为 0，普通访问不受影响。
-   ============================================ */
-@supports (padding: env(safe-area-inset-top)) {
-    @media (display-mode: standalone), (display-mode: fullscreen) {
-        .header {
-            margin-top: calc(10px + env(safe-area-inset-top));
-        }
-
-        body {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-    }
 }

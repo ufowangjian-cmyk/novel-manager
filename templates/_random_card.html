@@ -32,9 +32,10 @@
         </h4>
 
         <div class="random-meta">
-            <span class="random-meta-item">{{ icon('pencil', 'sm') }} {{ novel.author }}
-                {%- if novel.author_aliases %} <span class="random-alias">（{{ novel.author_aliases|join('、') }}）</span>{% endif %}
-            </span>
+            {# 作者 + 马甲可能很长（一本挂四五个马甲），移动端会把卡片撑破。
+               文字包一层 .random-meta-text 由 CSS 做省略号；title 保留全名供桌面悬停查看。 #}
+            <span class="random-meta-item"
+                title="{{ novel.author }}{% if novel.author_aliases %}（{{ novel.author_aliases|join('、') }}）{% endif %}">{{ icon('pencil', 'sm') }}<span class="random-meta-text">{{ novel.author }}{% if novel.author_aliases %} <span class="random-alias">（{{ novel.author_aliases|join('、') }}）</span>{% endif %}</span></span>
             {% if novel.site and novel.site != '未知网站' %}
             <span class="random-meta-item">{{ icon('globe', 'sm') }} {{ novel.site }}</span>
             {% endif %}
