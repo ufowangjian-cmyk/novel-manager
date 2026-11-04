@@ -351,13 +351,23 @@
         }
     }
     // 读取当前主题对应的背景色，同步给 <meta theme-color>
+    // 阅读页用的是自己的纸张色，收敛成一枚固定值：
+    // 首屏那两枚带 media 的标签留着会按系统配色生效，和纸张色打架。
     function syncChromeColor() {
         const box = document.querySelector('.reader-container');
         if (!box) return;
         const bg = getComputedStyle(box).getPropertyValue('--reader-bg-primary').trim();
         if (!bg) return;
-        const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', bg);
+        const metas = document.querySelectorAll('meta[name="theme-color"]');
+        if (!metas.length) return;
+        metas.forEach((m, i) => {
+            if (i === 0) {
+                m.removeAttribute('media');
+                m.setAttribute('content', bg);
+            } else {
+                m.remove();
+            }
+        });
     }
     // ==================== 设置抽屉开关 ====================
     function openSetDrawer() {

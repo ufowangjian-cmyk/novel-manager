@@ -8,7 +8,11 @@
 
     <!-- ===== PWA ===== -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4a7a3a">
+    {# 两枚带 media 的 theme-color：首帧就按系统配色选好，
+       不用等 JS 拉完 /config/get 再改（auto 模式下由浏览器自己挑）。
+       后出现的优先，所以先浅后深。 #}
+    <meta name="theme-color" content="#f0f3ea" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#131a12" media="(prefers-color-scheme: dark)">
 
     <!-- Android -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -106,8 +110,19 @@
     (function () {
         try {
             var cached = localStorage.getItem('theme');
-            var isDark = cached === 'dark' ||
-                (cached !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            var setting = localStorage.getItem('theme_setting');   // auto / light / dark
+            var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var isDark;
+            if (setting === 'light' || setting === 'dark') {
+                isDark = (setting === 'dark');
+            } else if (setting === 'auto') {
+                /* 跟随系统：缓存的那一档可能是应用关闭期间留下的旧值
+                   （比如上次在深色下退出，之后系统切成了浅色），一律以系统为准 */
+                isDark = sysDark;
+            } else {
+                /* 老版本没记过 setting，沿用原逻辑兜底 */
+                isDark = cached === 'dark' || (cached !== 'light' && sysDark);
+            }
             var targets = [document.documentElement, document.body];
             for (var i = 0; i < targets.length; i++) {
                 targets[i].classList.toggle('dark-mode', isDark);

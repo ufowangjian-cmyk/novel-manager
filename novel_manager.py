@@ -328,6 +328,10 @@ def add_static_cache_headers(response):
     if response.mimetype in ('text/html', 'application/json'):
         # 页面与接口始终回源，避免改动不生效
         response.headers['Cache-Control'] = 'no-cache'
+        # 让浏览器在后续请求（尤其是 PWA 启动时取 manifest 那一下）带上系统配色，
+        # 状态栏才能在启动瞬间就选对深浅，而不是等页面 JS 拉完配置再纠正。
+        # 仅在安全上下文（HTTPS）生效，局域网 HTTP 访问会被浏览器忽略，无副作用。
+        response.headers.setdefault('Accept-CH', 'Sec-CH-Prefers-Color-Scheme')
         return response
 
     # static 文件名不带 hash，改版后需要刷新缓存。
@@ -1868,11 +1872,17 @@ def set_reading_record_finished(work_id, finished=True, seed=None):
 def pwa_manifest():
     theme = request.args.get('theme')
     if theme not in ('light', 'dark'):
+        # PWA 启动时浏览器取的是不带参数的 manifest，此刻页面 JS 还没跑，
+        # 只能靠浏览器自己带来的系统配色提示；缺了就只能按下面的兜底走。
+        hint = (request.headers.get('Sec-CH-Prefers-Color-Scheme') or '').strip().lower()
+        if hint in ('light', 'dark'):
+            theme = hint
+    if theme not in ('light', 'dark'):
         theme = CONFIG.get('theme', 'auto')
         if theme == 'auto':
             theme = 'dark'  # 服务端默认
 
-    theme_color = '#ffffff' if theme == 'light' else '#131a12'
+    theme_color = '#f0f3ea' if theme == 'light' else '#131a12'
 
     manifest = {
         "name": "摸鱼读物",

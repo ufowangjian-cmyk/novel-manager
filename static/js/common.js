@@ -35,18 +35,11 @@ async function getEffectiveTheme() {
     }
 }
 
-function applyThemeToPage(theme) {
+function applyThemeToPage(theme, isAuto) {
     const root = document.documentElement;
     const body = document.body;
 
-    // 更新 theme-color
-    let themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (!themeColorMeta) {
-        themeColorMeta = document.createElement('meta');
-        themeColorMeta.name = 'theme-color';
-        document.head.appendChild(themeColorMeta);
-    }
-    themeColorMeta.content = theme === 'light' ? '#ffffff' : '#131a12';
+    syncThemeColorMetas(theme, isAuto === true);
 
     // 动态切换 manifest（关键：让 Android PWA 状态栏跟随）
     const manifestLink = document.querySelector('link[rel="manifest"]');
@@ -69,10 +62,59 @@ function applyThemeToPage(theme) {
     }
 }
 
+/* theme-color 元标签：
+   - 跟随系统（auto）时保留两枚带 media 查询的标签，交给浏览器在首帧自己选，
+     不需要等 JS 拉完 /config/get 再改，避免启动瞬间颜色错一档；
+   - 用户显式选了浅/深色时，收敛成一枚固定值。
+   注意顺序：后出现的 meta 生效，所以先浅后深。 */
+const THEME_COLOR_LIGHT = '#f0f3ea';
+const THEME_COLOR_DARK = '#131a12';
+
+function syncThemeColorMetas(theme, isAuto) {
+    const metas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
+
+    if (isAuto) {
+        const ok = metas.length === 2 && metas[0].media && metas[1].media;
+        if (ok) return;
+    } else if (metas.length === 1 && !metas[0].media) {
+        metas[0].content = theme === 'light' ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
+        return;
+    }
+
+    metas.forEach(m => m.remove());
+
+    if (isAuto) {
+        [['(prefers-color-scheme: light)', THEME_COLOR_LIGHT],
+         ['(prefers-color-scheme: dark)', THEME_COLOR_DARK]].forEach(([media, color]) => {
+            const m = document.createElement('meta');
+            m.name = 'theme-color';
+            m.content = color;
+            m.media = media;
+            document.head.appendChild(m);
+        });
+    } else {
+        const m = document.createElement('meta');
+        m.name = 'theme-color';
+        m.content = theme === 'light' ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
+        document.head.appendChild(m);
+    }
+}
+
 async function applyTheme() {
-    const theme = await getEffectiveTheme();
-    applyThemeToPage(theme);
+    let setting = 'auto';
+    try {
+        const response = await fetch('/config/get');
+        const config = await response.json();
+        setting = config.theme || 'auto';
+    } catch (err) {
+        console.error('获取主题配置失败:', err);
+    }
+    const theme = setting === 'auto' ? getSystemTheme() : setting;
+    applyThemeToPage(theme, setting === 'auto');
     localStorage.setItem('theme', theme);
+    // 记下用户选的是「跟随系统」还是固定某一档：
+    // base.html 的首帧脚本要靠它判断，跟随系统时不能拿可能过期的缓存当依据
+    localStorage.setItem('theme_setting', setting);
 }
 
 function watchSystemTheme() {
@@ -85,7 +127,7 @@ function watchSystemTheme() {
 
             if (config.theme === 'auto') {
                 const newTheme = e.matches ? 'dark' : 'light';
-                applyThemeToPage(newTheme);
+                applyThemeToPage(newTheme, true);
                 localStorage.setItem('theme', newTheme);
             }
         } catch (err) {
