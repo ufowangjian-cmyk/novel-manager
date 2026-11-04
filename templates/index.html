@@ -737,16 +737,9 @@
                     {% if novel.tags != '无' %}
                     {% set tags_list = novel.tags.split(',') %}
                     {% if tags_list|length > max_tags_display %}
-                    <span title="完整标签：{{ novel.tags }}">
-                        {% for tag in tags_list[:max_tags_display] %}
-                        <span class="tag-badge">{{ tag }}</span>
-                        {% endfor %}
-                        <span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span>
-                    </span>
+                    <span title="完整标签：{{ novel.tags }}">{% for tag in tags_list[:max_tags_display] %}<span class="tag-badge">{{ tag }}</span>{% endfor %}<span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span></span>
                     {% else %}
-                    {% for tag in tags_list %}
-                    <span class="tag-badge">{{ tag }}</span>
-                    {% endfor %}
+                    {% for tag in tags_list %}<span class="tag-badge">{{ tag }}</span>{% endfor %}
                     {% endif %}
                     {% endif %}
                 </div>

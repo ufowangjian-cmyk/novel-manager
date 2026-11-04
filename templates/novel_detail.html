@@ -63,14 +63,9 @@
                     <div class="meta-item">{{ icon('pencil', 'sm') }} {{ "{:,}".format(word_count) }}字</div>
 
                     {% if tags and tags != '无' %}
-                    <div class="meta-item meta-tags" style="display: flex; flex-wrap: wrap; gap: 5px;">
-                        <span style="font-weight: 600; margin-right: 5px;">{{ icon('tag', 'sm') }}</span>
-                        {% for tag in tags.split(',') %}
-                        <a href="/?tag={{ tag }}" class="tag-badge"
-                            style="text-decoration: none; padding: 2px 8px; background: #e2e8f0; color: #4a5568; border-radius: 20px; font-size: 0.9em; transition: all 0.2s;">
-                            {{ tag }}
-                        </a>
-                        {% endfor %}
+                    <div class="meta-item meta-tags">
+                        <span class="meta-tags-label">{{ icon('tag', 'sm') }}</span>
+                        {% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">{{ tag }}</a>{% endfor %}
                     </div>
                     {% endif %}
                 </div>

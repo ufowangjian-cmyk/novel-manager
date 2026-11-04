@@ -970,3 +970,88 @@ body.dark-mode .similar-reason {
 body.dark-mode .similar-item:hover {
     background: rgba(151, 196, 89, 0.1);
 }
+/* ============================================
+   2026-11-04 移动端标签：胶囊云 → 逗号分隔文本
+   详情页主视觉压在头图上，逐项做胶囊一屏幕就没了，
+   这里改成一段文字，只保留一个浅色底板保证可读性。
+   ============================================ */
+/* 标签区基础布局（原先写死在模板内联样式里，已收归此处） */
+.meta-item.meta-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+/* 头图上的作者/日期/网站/字数：白字 + 20% 白底，在浅色照片上会整体糊掉。
+   阴影救不了底子太浅，这里把胶囊底压深一档，深浅照片都能托住白字。
+   标签块自己有浅底板，不参与。 */
+.meta-item:not(.meta-tags) {
+    background: rgba(28, 34, 22, 0.38);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* .header 为压在图上的白色标题设了较重的 text-shadow，标签是浅底上的深色文字，
+   继承过来会糊成一团，这里整块摘掉 */
+.meta-item.meta-tags,
+.meta-item.meta-tags .tag-badge,
+.meta-item.meta-tags .meta-tags-label {
+    text-shadow: none;
+}
+
+.meta-item.meta-tags .meta-tags-label {
+    font-weight: 600;
+    margin-right: 5px;
+    /* 标签块是浅底板，图标不能跟着 .meta-item 的白色走 */
+    color: #4F5D45;
+}
+
+@media (max-width: 768px) {
+    /* 移动端不再逐项包胶囊，整段只留一个浅底板保证压在图上可读 */
+    .meta-item.meta-tags {
+        display: block;
+        padding: 9px 12px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.50);
+        border-radius: 10px;
+        line-height: 1.9;
+    }
+
+    .meta-item.meta-tags .tag-badge {
+        display: inline;
+        padding: 0;
+        margin: 0;
+        background: none;
+        border: 0;
+        border-radius: 0;
+        font-size: 0.85rem;
+        color: #4F5D45;
+        box-shadow: none;
+        transform: none;
+        white-space: normal;
+    }
+
+    /* 顿号挂在每个标签末尾：
+       多行折行时不会出现「、」落在行首的破格排版 */
+    .meta-item.meta-tags .tag-badge:not(:last-child)::after {
+        content: "、";
+    }
+
+    .meta-item.meta-tags .tag-badge:hover {
+        background: none;
+        color: #2f3d24;
+        text-decoration: underline;
+        box-shadow: none;
+        transform: none;
+    }
+
+    body.dark-mode .meta-item.meta-tags {
+        background: rgba(0, 0, 0, 0.32);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    body.dark-mode .meta-item.meta-tags .tag-badge {
+        background: none;
+        border: 0;
+        color: var(--color-text-light);
+    }
+}
