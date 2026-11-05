@@ -8164,7 +8164,9 @@ def highlight_crossline_brackets(text):
         ('『', '』', 'highlight-quote-single'),
         ('[', ']', 'highlight-square-bracket-1'),
         ('［', '］', 'highlight-square-bracket-1'),
+        ('〔', '〕', 'highlight-square-bracket-1'),   # 龟甲括号，与［］同档
         ('〖', '〗', 'highlight-hollow-bracket'),
+        ('｛', '｝', 'highlight-bracket'),             # 全角花括号，与（）同档
     ]
 
     for left, right, css_class in bracket_pairs:

@@ -187,6 +187,22 @@
             });
         }
 
+        // 龟甲括号〔〕- 跨行支持，保护 <br> 标签（U+3014 / U+3015）；与［］同档，复用其样式
+        if (result.includes('\u3014') || result.includes('\u3015')) {
+            result = result.replace(/\u3014((?:[^\u3015]|<br>|<[^>]+>)+)\u3015/gi, (match, p1) => {
+                if (p1.includes('http') || p1.includes('<a ')) return match;
+                return '<span class="highlight-square-bracket-1">\u3014' + p1 + '\u3015</span>';
+            });
+        }
+
+        // 全角花括号｛｝- 跨行支持，保护 <br> 标签（U+FF5B / U+FF5D）；与（）同档，复用其样式
+        if (result.includes('\uFF5B') || result.includes('\uFF5D')) {
+            result = result.replace(/\uFF5B((?:[^\uFF5D]|<br>|<[^>]+>)+)\uFF5D/gi, (match, p1) => {
+                if (p1.includes('http') || p1.includes('<a ')) return match;
+                return '<span class="highlight-bracket">\uFF5B' + p1 + '\uFF5D</span>';
+            });
+        }
+
         // 书名号《》- 跨行支持，保护 <br> 标签
         if (result.includes('\u300A') || result.includes('\u300B')) {
             result = result.replace(/\u300A((?:[^\u300B]|<br>|<[^>]+>)+)\u300B/gi, (match, p1) => {
