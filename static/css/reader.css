@@ -213,6 +213,16 @@ body.is-drag-scrolling #contentWrapper {
   user-select: none;
 }
 
+/* 按住阶段（还没进入拖动）就锁选词。
+   Chromium 的文本选区在 mousedown 那一刻就开始铺，等 is-drag-scrolling
+   加上（按住 150ms 或移动 5px 之后）已经来不及 —— 表现是 Edge/Chrome 里
+   拖动翻页会顺带选中一片文字，Firefox 正常。这里按下即锁、松手即解，
+   不影响「圈选文字」模式（那条路径在 JS 里直接跳过，不会加这个类）。 */
+body.is-drag-holding,
+body.is-drag-holding #contentWrapper {
+  user-select: none;
+}
+
 /* 可交互元素上不显示抓手，保持常规指针 */
 #contentWrapper a,
 #contentWrapper button,

@@ -4679,6 +4679,12 @@ def _scan_core(full_scan=False):
             )
             if bf['books']:
                 print(f"🏷️ 已补齐 {bf['books']} 本书的章节媒体标注（失败 {bf['failed']} 本）")
+                # ⚠️ backfill 只写数据库，进程里的 chapter_cache 还是补齐前的旧数据
+                # （all_chapters 里 media 为空）。缓存校验只看 file_hash，文件没动就一直命中，
+                # 于是详情页/阅读页持续拿不到 media，徽章不显示，增量扫描多少次都没用，
+                # 只有重启进程才恢复（2026-11-05 剑哥报的「详情页无配图徽章」就是这个）。
+                # 这里直接清空：重建会先命中 SQLite 章节索引，几十毫秒，扫描本就是低频操作。
+                chapter_cache.clear()
         except Exception as e:
             logger.warning(f"补齐章节媒体标注失败（不影响扫描）: {e}")
 

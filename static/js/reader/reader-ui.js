@@ -468,6 +468,15 @@
             // 允许圈选（textSelectEnabled）时不干预，走浏览器原生行为。
             if (!textSelectEnabled) {
                 e.preventDefault();
+                // Chromium（Edge/Chrome）只靠 preventDefault 不够：按住期间它就开始铺选区，
+                // 而 is-drag-scrolling 的 user-select:none 是拖拽激活（按住 150ms / 移动 5px）
+                // 之后才加的，来不及 —— 表现就是 Edge 里拖动顺带选中一片蓝字。
+                // 这里按下瞬间就锁选词，并清掉残留旧选区（不清会沿旧选区继续扩展）。
+                document.body.classList.add('is-drag-holding');
+                if (window.getSelection) {
+                    const _sel = window.getSelection();
+                    if (_sel && _sel.rangeCount) _sel.removeAllRanges();
+                }
             }
             dragState = {
                 startY: e.clientY,
@@ -532,6 +541,9 @@
         document.body.classList.add('is-drag-scrolling');
     }
     function clearDragState() {
+        // 按住阶段的选词锁要无条件清掉：dragState 可能已被别处清空，
+        // 只靠下面的 if 判断会漏，导致类名残留、正文从此选不中
+        document.body.classList.remove('is-drag-holding');
         if (!dragState) return;
         clearTimeout(dragState.holdTimer);
         dragState = null;

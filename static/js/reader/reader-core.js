@@ -105,7 +105,17 @@
     // ==================== 高亮功能 ====================
     function highlightQuotesAndBrackets(text) {
         if (!text) return text;
-        let result = text;
+
+        // 先把完整 HTML 标签整体抽出来占位，处理完再按序放回。
+        // 不这么做的话，标签**属性值**也会被下面的替换命中：
+        // [img:xx caption=苏琴 cos 凝光自拍（原版）] 生成的 alt="…（原版）" 里，
+        // 全角括号被换成 <span class="highlight-bracket">（原版）</span>，
+        // 双引号提前闭合 → 页面上多出一行 `(原版) " loading="lazy" style="…">`。
+        const _hlTags = [];
+        let result = text.replace(/<[a-zA-Z\/!][^>]*>/g, function (tag) {
+            _hlTags.push(tag);
+            return '\u0001' + (_hlTags.length - 1) + '\u0002';
+        });
 
         // 双引号（中文）- 允许内容包含HTML标签
         if (result.includes('\u201C') || result.includes('\u201D')) {
@@ -208,6 +218,13 @@
             result = result.replace(/\u300A((?:[^\u300B]|<br>|<[^>]+>)+)\u300B/gi, (match, p1) => {
                 if (p1.includes('http') || p1.includes('<a ')) return match;
                 return '<span class="highlight-book">\u300A' + p1 + '\u300B</span>';
+            });
+        }
+
+        // 还原被抽走的 HTML 标签
+        if (_hlTags.length) {
+            result = result.replace(/\u0001(\d+)\u0002/g, function (m, i) {
+                return _hlTags[parseInt(i, 10)];
             });
         }
 
