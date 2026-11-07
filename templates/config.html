@@ -300,6 +300,12 @@ italic_default=False) %}
                                 <option value="auto" {% if config.theme=='auto' %}selected{% endif %}>🔄 跟随系统</option>
                             </select>
                         </div>
+
+                        <div class="form-group">
+                            <label title="连续 N 张及以上配图自动排成缩略图网格；0 = 关闭（全部竖向大图）。这是全局默认值，用户可在「我的阅读偏好」里单独覆盖">{{ icon('image', 'sm') }} 默认配图画廊起始张数</label>
+                            <input type="number" id="gallery_min_images" name="gallery_min_images"
+                                value="{{ config.get('gallery_min_images', 3) }}" min="0" max="99" step="1">
+                        </div>
                     </div>
                     <h3>
                         {{ icon('bar-chart-3', 'sm') }} 杂项设置
@@ -596,6 +602,12 @@ italic_default=False) %}
                             <option value="light">☀️ 亮色主题</option>
                             <option value="auto">🔄 跟随系统</option>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label title="连续 N 张及以上配图自动排成缩略图网格；填 0 = 关闭（全部竖向大图）；留空跟随管理员在「阅读默认值」里设定的全局默认">{{ icon('image', 'sm') }} 配图画廊起始张数</label>
+                        <input type="number" id="pref_gallery_min_images" name="pref_gallery_min_images"
+                            min="0" max="99" step="1" placeholder="跟随默认">
                     </div>
                 </div>
                 <h3>

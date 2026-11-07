@@ -444,7 +444,7 @@
         return !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
     }
     // 与沉浸模式共用同一份可交互元素白名单：图片/链接/按钮上不启动拖拽
-    const DRAG_EXCLUDE_SELECTOR = 'a, img, video, audio, button, input, select, textarea, label, .emoji, [data-img-id], .image-wrapper, .local-video-figure';
+    const DRAG_EXCLUDE_SELECTOR = 'a, img, video, audio, button, input, select, textarea, label, .emoji, [data-img-id], .image-wrapper, .local-video-figure, .image-gallery';
     function isDragScrollOn() {
         return dragScrollEnabled;
     }

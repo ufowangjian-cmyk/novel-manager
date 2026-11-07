@@ -1204,6 +1204,198 @@ body.dark-mode .local-image:not(.loaded) {
   display: block;
 }
 
+/* 7.2.1 连续配图画廊（reader-core.js 的 groupConsecutiveImages 生成）
+   ------------------------------------------------------------
+   只在这一节定义，别在文件末尾追加「覆盖段」（见文末维护约定）。
+   尺寸用 clamp() 随视口伸缩，一套规则同时覆盖手机与桌面；
+   颜色走 --reader-* / tokens 变量，跟随 6 套阅读背景主题与深色模式。
+   分组时已移除 figure / img 的内联 style，这里不用 !important；
+   点「竖向展开」放回内联样式即可还原 w= / align= 参数。 */
+.image-gallery {
+  margin: 0 0 var(--reader-paragraph-spacing, 0.8rem);
+  padding: 8px 10px 10px;
+  background: var(--color-bg-secondary, rgba(128, 128, 128, 0.12));
+  border: 1px solid var(--reader-border-primary, #ccd8bc);
+  border-radius: 12px;
+  text-indent: 0;
+}
+
+.image-gallery-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  text-indent: 0;
+}
+
+.image-gallery-label {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary, #8a94a6);
+}
+
+.image-gallery-label .ic {
+  width: 14px;
+  height: 14px;
+  vertical-align: -0.15em;
+}
+
+.image-gallery-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--reader-border-primary, #ccd8bc);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-tertiary, #8a94a6);
+  opacity: 0.75;
+  cursor: pointer;
+  text-indent: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* 视觉只有 30px，透明伪元素把点击热区扩到 44px：
+   手机上好按，又不占版面、不显得场面。 */
+.image-gallery-toggle::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.image-gallery-toggle .ic {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.image-gallery-toggle:hover {
+  opacity: 1;
+  color: var(--color-btn-active, #4a7a3a);
+  border-color: var(--color-btn-hover, #6b9c4a);
+}
+
+.image-gallery-toggle:active {
+  opacity: 1;
+  color: var(--color-btn-text-active, #fff);
+  background: var(--color-btn-active, #4a7a3a);
+  border-color: var(--color-btn-active, #4a7a3a);
+}
+
+.image-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(88px, 22vw, 150px), 1fr));
+  gap: clamp(2px, 0.6vw, 4px);
+}
+
+.image-gallery .local-image-figure {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;                  /* grid 子项防溢出（移动端老问题） */
+  margin: 0;
+  text-indent: 0;
+}
+
+.image-gallery .local-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;           /* 方形方格：紧凑网格，不留黑边 */
+  max-width: 100%;
+  object-fit: cover;             /* 等比裁切铺满方格 */
+  object-position: center;
+  background: var(--reader-bg-primary, #fff);
+  border-radius: 3px;
+  box-shadow: none;
+  cursor: zoom-in;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.image-gallery .local-image:hover {
+  box-shadow: 0 4px 12px var(--color-speech-highlight, rgba(90, 138, 58, 0.15));
+}
+
+.image-gallery .local-image-caption {
+  display: none;                 /* 网格里放不下图注，灯箱标题仍取 img.alt */
+}
+
+.image-gallery .local-image-error {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  font-size: 0.75rem;
+  text-indent: 0;
+}
+
+/* 「竖向展开」：恢复原来的大图排版，图注也回来 */
+.image-gallery.is-stacked .image-gallery-grid {
+  display: block;
+}
+
+.image-gallery.is-stacked .local-image-figure {
+  width: fit-content;
+  width: -moz-fit-content;
+  width: -webkit-fit-content;
+  margin: 0 auto 0.8rem;
+}
+
+.image-gallery.is-stacked .local-image {
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;            /* 竖向大图不能被方形裁切 */
+  object-fit: contain;
+  background: transparent;
+  box-shadow: 0 4px 12px var(--color-speech-highlight, rgba(90, 138, 58, 0.15));
+}
+
+.image-gallery.is-stacked .local-image-caption {
+  display: block;
+}
+
+.image-gallery.is-stacked .local-image-error {
+  height: auto;
+  aspect-ratio: auto;
+}
+
+/* 触屏：去掉 hover 依赖，避免手指点完还留着悬停态；
+   按项目约定用 (hover: none)/(pointer: coarse) 判定，不用 innerWidth。 */
+@media (hover: none), (pointer: coarse) {
+  .image-gallery .local-image:hover {
+    box-shadow: none;
+  }
+  .image-gallery-toggle {
+    width: 28px;
+    height: 28px;
+    border-color: transparent;   /* 手机上更轻，只剩一个淡淡的图标 */
+    opacity: 0.6;
+  }
+  .image-gallery-toggle::before {
+    inset: -8px;                 /* 28 + 16 = 44px 点击热区 */
+  }
+  .image-gallery-toggle:hover {
+    opacity: 0.6;
+    color: var(--color-text-tertiary, #8a94a6);
+    border-color: transparent;
+  }
+  .image-gallery-toggle:active {
+    opacity: 1;
+    color: var(--color-btn-active, #4a7a3a);
+    background: transparent;
+    border-color: transparent;
+  }
+}
+
 .local-image-missing {
   display: inline-block;
   padding: 2px 8px;

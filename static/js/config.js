@@ -741,7 +741,7 @@ function toggleCard(header) {
 // 走 /api/preferences 系列接口，与全局配置完全分离
 const PREF_FIELDS = {
     number: ['font_size', 'line_height', 'paragraph_spacing',
-             'per_page', 'words_per_page', 'max_tags_display'],
+             'per_page', 'words_per_page', 'max_tags_display', 'gallery_min_images'],
     text: ['font_family', 'theme', 'title_font_family', 'double_quote_font_family', 'single_quote_font_family', 'bracket_font_family', 'square_bracket_font_family', 'square_bracket_1_font_family', 'hollow_bracket_font_family', 'book_font_family',
            'default_sort_by', 'default_sort_order', 'date_format'],
     bool: ['auto_save_progress', 'show_word_count', 'indent_paragraph',
@@ -1131,6 +1131,8 @@ async function saveAllConfig() {
         // 段落排版默认值（字符串 "true"/"false"需转成布尔）
         indent_paragraph: document.getElementById('indent_paragraph')?.value !== 'false',
         paragraph_spacing: safeFloat('paragraph_spacing', 0.8, 0, 3),
+        // 配图画廊全局默认阈值（0 = 关闭，safeNumber 允许 0）
+        gallery_min_images: safeNumber('gallery_min_images', 3, 0, 99),
         // 阅读默认值：字体设置（正文字体 + 8 类元素字体，空 = 跟随正文）
         font_family: document.getElementById('font_family')?.value ?? 'system-ui',
         title_font_family: document.getElementById('title_font_family')?.value ?? '',
@@ -1214,6 +1216,7 @@ function exportConfig() {
         // 段落排版默认值
         indent_paragraph: document.getElementById('indent_paragraph')?.value !== 'false',
         paragraph_spacing: parseFloat(document.getElementById('paragraph_spacing')?.value ?? 0.8),
+        gallery_min_images: parseInt(document.getElementById('gallery_min_images')?.value ?? 3),
         // 阅读默认值：字体设置
         font_family: document.getElementById('font_family')?.value ?? 'system-ui',
         title_font_family: document.getElementById('title_font_family')?.value ?? '',
@@ -1279,6 +1282,7 @@ function importConfig() {
                 if (document.getElementById('default_sort_order')) document.getElementById('default_sort_order').value = config.default_sort_order ?? 'asc';
                 if (document.getElementById('indent_paragraph')) document.getElementById('indent_paragraph').value = (config.indent_paragraph === false) ? 'false' : 'true';
                 if (document.getElementById('paragraph_spacing')) document.getElementById('paragraph_spacing').value = config.paragraph_spacing ?? 0.8;
+                if (document.getElementById('gallery_min_images')) document.getElementById('gallery_min_images').value = config.gallery_min_images ?? 3;
                 // 阅读默认值：字体设置
                 const adminFontKeys = ['font_family', 'title_font_family', 'double_quote_font_family', 'single_quote_font_family', 'bracket_font_family', 'square_bracket_font_family', 'square_bracket_1_font_family', 'hollow_bracket_font_family', 'book_font_family'];
                 adminFontKeys.forEach(k => {

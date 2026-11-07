@@ -996,6 +996,148 @@
         }, 50);
     }
 
+    // ==================== 连续配图 → 画廊 ====================
+    // 阅读页把正文逐行渲染成 .content-line（空行是 .empty-line），
+    // [img:xxx] 转换后每行是 <figure class="local-image-figure">…</figure>。
+    // 连续 N 张这样的大图要占掉十几屏滚动，合并成缩略图网格省距离
+    //（N 由「我的阅读偏好」gallery_min_images 控制，默认 3，0 = 关闭）。
+    //
+    // 约束（重要）：
+    //  1. 只搬动已有 DOM 节点，不重建 <img> —— Viewer.js 收集到的图片顺序、
+    //     loading="lazy"、onerror 兜底、alt（灯箱标题）全部原样保留；
+    //  2. 必须在 initViewerJS() 之前调用，Viewer 按 DOM 顺序串灯箱；
+    //  3. 只认「整行只有一张本地配图」的行，图文混排 / 外链图不参与；
+    //  4. 分页边界：只处理当前页内的连续段，不跨页合并。
+    const GALLERY_MIN_IMAGES = 3;
+
+    function isGalleryImageLine(node) {
+        if (!node || !node.classList || !node.classList.contains('content-line')) return false;
+
+        let figure = null;
+        for (const child of node.children) {
+            if (child.classList && child.classList.contains('local-image-figure')) {
+                if (figure) return false;          // 一行两张图，不动
+                figure = child;
+            }
+        }
+        if (!figure || !figure.querySelector('img.local-image')) return false;
+
+        // 行内除了图注不该有别的文字，避免把「正文 + 配图」吞进画廊
+        const caption = figure.querySelector('.local-image-caption');
+        const rest = (node.textContent || '').replace(caption ? caption.textContent : '', '').trim();
+        return rest === '';
+    }
+
+    function groupConsecutiveImages(container, minImages) {
+        // minImages 来自 app-data 的 data-gallery-min（服务端按阅读偏好注入）。
+        // 0 / 1 = 关闭画廊；没传或非法时回退到内置默认 3。
+        const parsed = parseInt(minImages, 10);
+        const threshold = Number.isFinite(parsed) ? parsed : GALLERY_MIN_IMAGES;
+        if (!container || threshold < 2) return 0;
+
+        const groups = [];
+        let images = [];
+        let tailGaps = [];   // 尚未确认的空行：夹在图片之间才算段内空行
+        let innerGaps = [];  // 已确认夹在两张图之间的空行
+
+        function flush() {
+            if (images.length >= threshold) {
+                groups.push({ images: images.slice(), gaps: innerGaps.slice() });
+            }
+            images = [];
+            tailGaps = [];
+            innerGaps = [];
+        }
+
+        Array.from(container.children).forEach(node => {
+            if (isGalleryImageLine(node)) {
+                innerGaps.push(...tailGaps);       // 这些空行确认在段内
+                tailGaps = [];
+                images.push(node);
+            } else if (images.length) {
+                if (node.classList && node.classList.contains('empty-line')) {
+                    tailGaps.push(node);           // 段尾空行先挂着，不删
+                } else {
+                    flush();                       // 遇到正文/标题，本组结束
+                }
+            }
+        });
+        flush();
+
+        groups.forEach(group => {
+            const total = group.images.length;
+            const gallery = document.createElement('div');
+            gallery.className = 'image-gallery';
+            gallery.setAttribute('data-count', String(total));
+
+            // 顶部：数量 + 「竖向展开」开关（只影响这一组，不落设置、不持久化）
+            const bar = document.createElement('div');
+            bar.className = 'image-gallery-bar';
+            const label = document.createElement('span');
+            label.className = 'image-gallery-label';
+            label.innerHTML = ((typeof icon === 'function') ? icon('image', 'sm') : '') + ` 共 ${total} 张配图`;
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'image-gallery-toggle';
+            toggle.setAttribute('aria-pressed', 'false');
+            toggle.setAttribute('aria-label', '竖向展开');
+            toggle.title = '竖向展开（改为竖向大图）';
+            toggle.innerHTML = (typeof icon === 'function') ? icon('list', 'sm') : '☰';
+            bar.appendChild(label);
+            bar.appendChild(toggle);
+            gallery.appendChild(bar);
+
+            const grid = document.createElement('div');
+            grid.className = 'image-gallery-grid';
+
+            // 记住 w= / align= 生成的内联样式，切回竖向时还原
+            group.images.forEach(line => {
+                const figure = line.querySelector('.local-image-figure');
+                const img = figure.querySelector('img.local-image');
+                [figure, img].forEach(el => {
+                    if (!el) return;
+                    const inline = el.getAttribute('style');
+                    if (inline) {
+                        el.dataset.galleryInlineStyle = inline;
+                        el.removeAttribute('style');
+                    }
+                });
+                grid.appendChild(figure);          // 搬节点，不是重建
+            });
+            gallery.appendChild(grid);
+
+            toggle.addEventListener('click', function () {
+                const stacked = gallery.classList.toggle('is-stacked');
+                toggle.innerHTML = (typeof icon === 'function')
+                    ? icon(stacked ? 'layout-grid' : 'list', 'sm')
+                    : (stacked ? '▦' : '☰');
+                toggle.setAttribute('aria-label', stacked ? '收起为画廊' : '竖向展开');
+                toggle.title = stacked ? '收起为画廊（缩略图网格）' : '竖向展开（改为竖向大图）';
+                toggle.setAttribute('aria-pressed', stacked ? 'true' : 'false');
+                grid.querySelectorAll('.local-image-figure').forEach(figure => {
+                    const img = figure.querySelector('img.local-image');
+                    [figure, img].forEach(el => {
+                        if (!el) return;
+                        if (stacked && el.dataset.galleryInlineStyle) {
+                            el.setAttribute('style', el.dataset.galleryInlineStyle);
+                        } else {
+                            el.removeAttribute('style');
+                        }
+                    });
+                });
+            });
+
+            group.images[0].replaceWith(gallery);
+            group.images.slice(1).forEach(node => node.remove());
+            group.gaps.forEach(node => node.remove());
+        });
+
+        if (groups.length) {
+            console.log(`🖼️ 合并 ${groups.length} 组连续配图为画廊`);
+        }
+        return groups.length;
+    }
+
     // ==================== 暴露 API ====================
     window.loadEmojiMapping = loadEmojiMapping;
     window.convertTextEmoji = convertTextEmoji;
@@ -1007,6 +1149,7 @@
     window.formatUrlForDisplay = formatUrlForDisplay;
     window.initLocalImagesAsync = initLocalImagesAsync;
     window.convertLocalImages = convertLocalImages;
+    window.groupConsecutiveImages = groupConsecutiveImages;
     window.convertLocalVideos = convertLocalVideos;
     window.convertLocalAudios = convertLocalAudios;
     window.findSimilarImage = findSimilarImage;

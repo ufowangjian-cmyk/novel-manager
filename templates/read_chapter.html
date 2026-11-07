@@ -43,7 +43,8 @@
         data-hollow-bracket-italic="{{ user_prefs.hollow_bracket_italic | e }}"
         data-book-bold="{{ user_prefs.book_bold | e }}"
         data-book-italic="{{ user_prefs.book_italic | e }}"
-        data-book-font-family="{{ user_prefs.book_font_family | e }}">
+        data-book-font-family="{{ user_prefs.book_font_family | e }}"
+        data-gallery-min="{{ user_prefs.get('gallery_min_images', 3) }}">
 <script>
         // <head> 里先注入 <style> 防止闪烁
         (function () {
@@ -616,6 +617,14 @@
                     }
                 });
                 console.log(`✅ 转换完成，${convertedCount} 行有变化`);
+
+                // ===== 5.5 连续配图合并为画廊（reader-core.js）=====
+                // 必须在第 7 步 initViewerJS() 之前：Viewer 按 DOM 顺序收集图片，
+                // 分组只搬节点、不改顺序，灯箱里的上一张/下一张仍然正确。
+                const galleryMin = parseInt(document.getElementById('app-data')?.dataset.galleryMin, 10);
+                if (typeof groupConsecutiveImages === 'function') {
+                    groupConsecutiveImages(readingContent, galleryMin);
+                }
             }
             // ===== 6. 章节标题美化（放在转换之后）=====
             if (typeof styleChapterTitles === 'function') {

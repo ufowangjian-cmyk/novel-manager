@@ -213,6 +213,8 @@ def load_config():
         # 这里补上默认值并在阅读页真正生效）
         "indent_paragraph": True,
         "paragraph_spacing": 0.8,
+        # 连续配图画廊全局默认阈值（0 = 关闭）；用户可在「我的阅读偏好」里覆盖
+        "gallery_min_images": 3,
         "app_host": "0.0.0.0",
         "app_port": 5000,
         "default_sort_by": "title",
@@ -262,6 +264,8 @@ CONFIG_SAVE_WHITELIST = {
     'auto_tag_enabled', 'enable_derived_tags', 'custom_tags',
     'default_sort_by', 'default_sort_order',
     'indent_paragraph', 'paragraph_spacing',
+    # 连续配图画廊阈值（管理员设的全局默认；用户可在「我的阅读偏好」覆盖）
+    'gallery_min_images',
     # 主页书名淡色高亮词（列表与显示）
     'title_highlight_words',
     # 阅读默认值：字体设置（管理员设定的「新用户初始字体/排版」，经 resolve_reader_prefs 作为第一层默认值）
@@ -701,6 +705,8 @@ READER_PREF_DEFAULTS = {
     'date_format': 'YYYY-MM-DD',
     # 阅读页背景主题（仅作用于阅读页，与全站明暗 theme 相互独立）
     'reader_theme': 'default',
+    # 连续配图画廊阈值（0 = 关闭，全部保持竖向大图）
+    'gallery_min_images': 3,
     # 按住拖动翻页（抓手手势）：默认开启，可在阅读设置里关闭
     'drag_scroll': True,
     # 圈选文字（与按住拖动翻页互斥）：默认关闭，开启后允许自由选词/复制
@@ -7388,6 +7394,15 @@ def save_config_api():
                 if value <= 0:
                     return jsonify({'success': False, 'message': f'配置 {key} 必须大于 0'})
 
+            # 配图画廊阈值单独校验：0 是合法的「关闭」，不能套上面 value <= 0 的通用规则
+            if key == 'gallery_min_images':
+                try:
+                    value = int(value)
+                except (TypeError, ValueError):
+                    return jsonify({'success': False, 'message': '配图画廊起始张数必须是整数'})
+                if not (0 <= value <= 99):
+                    return jsonify({'success': False, 'message': '配图画廊起始张数必须在 0-99 之间（0 = 关闭）'})
+
             if key == 'scan_interval_hours':
                 try:
                     value = float(value)
@@ -8444,6 +8459,7 @@ def api_save_preferences():
         'indent_paragraph', 'paragraph_spacing',
         'reader_theme',
         'drag_scroll', 'text_select',
+        'gallery_min_images',
         # 列表与显示（列表排序 / 分页 / 日期格式等，2026-10-19 开放给普通用户）
         'default_sort_by', 'default_sort_order',
         'per_page', 'words_per_page', 'max_tags_display', 'date_format',
