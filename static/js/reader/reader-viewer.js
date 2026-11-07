@@ -52,6 +52,8 @@
         initialCoverage: 1,    // 1 = 贴边铺满；竖图左右仍会保留等比黑边（非固定留白）
         // 背景遮罩
         backdrop: true,
+        // 灯箱只收预处理时打过 data-viewer 标记的真配图（排除表情与装饰图）
+        filter: function(img) { return img.hasAttribute('data-viewer'); },
         // 加载动画
         loading: true,
         // 循环浏览

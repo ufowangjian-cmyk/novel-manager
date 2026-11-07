@@ -223,10 +223,10 @@ body.is-drag-holding #contentWrapper {
   user-select: none;
 }
 
-/* 可交互元素上不显示抓手，保持常规指针 */
+/* 可交互元素上不显示抓手，保持常规指针（表情图不可点，排除避免手型光标） */
 #contentWrapper a,
 #contentWrapper button,
-#contentWrapper img,
+#contentWrapper img:not(.custom-emoji),
 #contentWrapper video,
 #contentWrapper audio,
 #contentWrapper input,
