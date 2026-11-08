@@ -460,6 +460,57 @@ def versioned_url_for(endpoint, **values):
 
 app.jinja_env.globals['url_for'] = versioned_url_for
 
+
+# ==================== 「返回列表」的统一出口 ====================
+# 以前模板里手拼 "/?page=xx&search=yy"，漏了 sort/order、也没做 URL 编码：
+# 按「字数倒序」翻到第 3 页再进书，返回时会用默认排序重排，第 3 页内容全变，
+# 看起来就像"回不到之前那一页"。这里统一重建，模板只调 list_back_url()。
+_LIST_STATE_KEYS = ('search', 'author', 'tag', 'site', 'sort', 'order')
+
+
+def current_list_state():
+    """当前页面上「书库列表的状态」：页码 + 筛选 + 排序。
+
+    详情页把页码放 page=，阅读页放 list_page=，两处都认。
+    """
+    args = request.args
+    state = {}
+    page = args.get('list_page') or args.get('page')
+    if page:
+        state['page'] = page
+    for key in _LIST_STATE_KEYS:
+        value = (args.get(key) or '').strip()
+        if value:
+            state[key] = value
+    return state
+
+
+def list_back_url():
+    """「返回列表」按钮统一用这个，别再在模板里手拼 query 串。
+
+    页码、筛选、排序一并带上，中文和 & 交给 url_for 编码；以后加筛选条件只改这里。
+
+    当前 URL 里没有页码时（从随机推荐、相似书籍、收藏夹进来的情况），
+    退一步看 referrer：来路是本站首页就把它的 query 借过来，
+    这样仍能回到刚才那一页，而不是永远回第 1 页。
+    """
+    state = current_list_state()
+    if 'page' not in state:
+        referrer = request.referrer or ''
+        if referrer:
+            parsed = urllib.parse.urlparse(referrer)
+            if parsed.netloc == request.host and parsed.path in ('', '/'):
+                for key, values in urllib.parse.parse_qs(parsed.query).items():
+                    if key == 'page' or key in _LIST_STATE_KEYS:
+                        value = (values[0] if values else '').strip()
+                        if value:
+                            state[key] = value
+    state.setdefault('page', 1)
+    return url_for('index', **state)
+
+
+app.jinja_env.globals['list_back_url'] = list_back_url
+
 NOVEL_DIR = CONFIG.get('novel_dir', '/novels')
 PER_PAGE = CONFIG.get('per_page', 100)
 WORDS_PER_PAGE = CONFIG.get('words_per_page', 8000)
@@ -6305,6 +6356,9 @@ def novel_detail(file_path):
     search_author = request.args.get('author', '')
     search_tag = request.args.get('tag', '')
     search_site = request.args.get('site', '')
+    # 排序也跟着走：否则从「字数倒序第 3 页」进来，返回列表会被默认排序重排
+    sort_by = request.args.get('sort', '')
+    sort_order = request.args.get('order', '')
 
     # 查询当前用户在这本书上的阅读记录（用于「继续阅读」/「已读」按钮）
     continue_line = None
@@ -6344,7 +6398,7 @@ def novel_detail(file_path):
             exclude_work_id=detail_work_id, exclude_path=file_path
         ),
         page=back_page, search=search_text, author=search_author,
-        tag=search_tag, site=search_site
+        tag=search_tag, site=search_site, sort=sort_by, order=sort_order
     )
 
     return render_template('novel_detail.html',
@@ -6371,6 +6425,8 @@ def novel_detail(file_path):
         search_author=search_author,
         search_tag=search_tag,
         search_site=search_site,
+        sort_by=sort_by,
+        sort_order=sort_order,
         continue_line=continue_line,
         continue_chapter=continue_chapter,
         is_finished=is_finished,
@@ -6420,6 +6476,8 @@ def api_novel_chapters(file_path):
         search_author=request.args.get('author', ''),
         search_tag=request.args.get('tag', ''),
         search_site=request.args.get('site', ''),
+        sort_by=request.args.get('sort', ''),
+        sort_order=request.args.get('order', ''),
     )
     next_offset = offset + len(chunk)
     return jsonify({
@@ -6566,6 +6624,9 @@ def read_chapter(file_path, line_number):
     search_author = request.args.get('author', '')
     search_tag = request.args.get('tag', '')
     search_site = request.args.get('site', '')
+    # 排序跟着走，翻章时不能丢，否则最后点「返回列表」会被默认排序重排
+    sort_by = request.args.get('sort', '')
+    sort_order = request.args.get('order', '')
 
     # ===== 🔥 文件有效性校验 =====
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
@@ -6895,7 +6956,7 @@ def read_chapter(file_path, line_number):
                 exclude_path=file_path
             ),
             page=back_page, search=search_text, author=search_author,
-            tag=search_tag, site=search_site
+            tag=search_tag, site=search_site, sort=sort_by, order=sort_order
         )
 
     return render_template('read_chapter.html',
@@ -6925,6 +6986,8 @@ def read_chapter(file_path, line_number):
         search_author=search_author,
         search_tag=search_tag,
         search_site=search_site,
+        sort_by=sort_by,
+        sort_order=sort_order,
         is_virtual_chapter=is_virtual_chapter,
         similar_novels=similar_novels
     )

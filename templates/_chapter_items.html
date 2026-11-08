@@ -5,7 +5,8 @@
   依赖变量：
     chapters      要渲染的章节列表（每项含 text / line_number / level / is_empty）
     file_path     已 quote 的书籍路径（拼阅读页链接）
-    back_page / search_text / search_author / search_tag / search_site  列表页的状态
+    back_page / search_text / search_author / search_tag / search_site / sort_by / sort_order
+        列表页的状态（要一路带到阅读页，返回列表才能回到原样）
 #}
 {% from "_icons.html" import icon %}
 {% set level_icons = {1: 'table-of-contents', 2: 'chevron-right', 3: 'list-ordered'} %}
@@ -22,7 +23,7 @@
     <span class="chapter-line">空</span>
 </span>
 {% else %}
-<a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site) }}"
+<a href="{{ url_for('read_chapter', file_path=file_path, line_number=chapter.line_number, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
     class="chapter-item chapter-level{{ lv }}">
     {{ icon(lv_icon, 'sm', cls='chapter-lv-icon') }}
 
