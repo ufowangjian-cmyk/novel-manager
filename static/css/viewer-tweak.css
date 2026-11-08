@@ -1,0 +1,14 @@
+/* Viewer.js 翻页动效调轻（2026-11-08）
+ *
+ * 原版 viewer.min.css 里是 .viewer-transition{transition:all .3s}：
+ * 切换图片时整块图片的缩放/位移要跑满 300ms，连着翻几张就发飘。
+ * 这里只把时长压到 120ms，曲线换成 ease-out（起步快、收尾稳）。
+ *
+ * 注意别改成 none / 0s：viewer.min.js 的翻页流程会等 transitionend
+ * （另有 setTimeout(...,300) 摘类），时长为 0 时 transitionend 不触发，
+ * 可能让切图流程卡住或状态不同步。
+ */
+.viewer-transition {
+    transition-duration: .12s;
+    transition-timing-function: ease-out;
+}
