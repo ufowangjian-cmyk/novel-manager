@@ -352,6 +352,18 @@ docker restart novel-manager
 桌面版这段代码**不是逐字相同**：本版按钮用 `icon()` sprite（`film` / `list` / `layout-grid`），
 桌面版是纯文字，同步时别直接互相覆盖。
 
+### 列表状态与「返回列表」
+
+页码 / 筛选（`search` `author` `tag` `site`）/ 排序（`sort` `order`）必须**一路透传**：
+首页卡片 → 详情页 → 阅读页（含目录抽屉、翻章）每一跳都要带上，少一环就回不到原样。
+排序最容易被漏掉——漏了会按默认排序重排同一页，看着像「回不去」，其实内容全换了。
+
+返回按钮统一调模板全局函数 `list_back_url()`：从 `request.args` 重建
+（`list_page` 和 `page` 都认），由 `url_for` 负责编码；当前 URL 没有页码时借 `Referer`
+兜底，所以从随机推荐、收藏夹进来也能回到刚才那页。
+
+**别再手拼 `/?page=xx&search=yy`**：漏参数，而且中文和 `&` 不做编码会被截断。
+
 ### 零碎
 
 - `.content-line` 有 `text-indent: 2em`（特异性 0,5,0）→ 往里塞块级组件要显式 `text-indent: 0`
