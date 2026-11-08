@@ -251,6 +251,32 @@ docker restart novel-manager
 
 ---
 
+## 缓存与失效
+
+| 缓存 | 位置 | 容量 | 失效方式 |
+|---|---|---|---|
+| `line_cache` | 进程内存 | 64MB LRU | 重启 |
+| `chapter_cache` | 进程内存 | 200 条 | `chapter_cache.clear()` |
+| `novel_cache.db` | `data/` | 全库 | 重新扫描 |
+
+**改了数据库就必须失效 `chapter_cache`。** `parse_novel_details()` 判断缓存能否复用
+只看 `file_hash`：书文件没动就一直命中，那份 `all_chapters` 仍是旧数据。
+`backfill_chapter_media()` 曾经只写库、不清缓存，结果是详情页配图徽章不出现、
+增量扫描多少次都没用、只有重启容器才好（2026-11-05 踩过）。现在的做法是 backfill
+真补了书就 `chapter_cache.clear()`——重建时先命中 SQLite 章节索引，几十毫秒，
+而扫描本身是低频操作，直接清最省事。
+
+另外两条：
+
+- 加列先 `PRAGMA table_info` 查，再 `ALTER`（SQLite 没有 `ADD COLUMN IF NOT EXISTS`）
+- 详情页目录是懒渲染：首屏 `DETAIL_CHAPTERS_FIRST=200`，超出走 `/api/novel_chapters`；
+  给 `url_for` 传路径要用**未编码**的原始路径
+
+头部那个内存占用胶囊的目录是硬设的 `/novels`（容器内的挂载点），桌面版没有这个概念，
+不要跟着改。
+
+---
+
 ## 常见的二次开发点
 
 | 想改什么 | 位置 |
@@ -261,7 +287,75 @@ docker restart novel-manager
 | 登录态 | Flask session，签名用 `SECRET_KEY` 或 `data/secret_key` |
 | 章节切分正则 | 主程序中章节解析相关的正则常量 |
 | 阅读页排版 | `templates/read_chapter.html` + `static/css/reader.css` |
+| 静态资源版本号 | `versioned_url_for()` 已全局注入 `?v=<mtime>`，模板里**绝不手写** `?v=`（会变成双问号） |
 | 每用户阅读偏好 | `users[<key>].preferences` |
+
+---
+
+## 阅读页渲染（改之前必须知道）
+
+### 处理顺序
+
+整章文本先做引号 / 括号配对高亮，**再**按屏切页——否则跨行括号会被切页截断。
+例外是 `is_virtual_chapter`（虚拟章节）：它不整章处理，而是前后各扩 500 行。
+
+### 高亮分两层，缺一不可
+
+| 层 | 位置 | 管什么 |
+|---|---|---|
+| 单行 | 前端 `highlightQuotesAndBrackets()` | 同一行内的引号、括号 |
+| 跨行 | 后端 `highlight_crossline_brackets()` 的 `bracket_pairs` | `<br>` / 换行两侧的配对 |
+
+符号与样式类（两版必须一致）：
+
+| 符号 | 样式类 |
+|---|---|
+| `“ ”` `「 」` | `highlight-quote-double` |
+| `‘ ’` `『 』` | `highlight-quote-single` |
+| `（ ）` `( )` `｛ ｝` | `highlight-bracket` |
+| `【 】` | `highlight-square-bracket` |
+| `[ ]` `［ ］` `〔 〕` | `highlight-square-bracket-1` |
+| `〖 〗` | `highlight-hollow-bracket` |
+| `《 》` | `highlight-book` |
+
+新增一组括号要改三处：前端一条规则、后端 `bracket_pairs` 加一项、**桌面版同步加**。
+桌面版阅读页是 Docker 的对照面（同一份内容、同一套规则渲染），规则一分岔就失去校验能力。
+
+### 高亮不会撕开标签
+
+`highlightQuotesAndBrackets()` 开头把完整标签整体抽出占位（`\u0001序号\u0002`），
+所有规则跑完再按序还原。所以 `alt="…（原版）"` 这类属性里的括号是安全的；
+但**往文本节点里插的 HTML 仍会被高亮**——插块级组件时别在文本里留成对括号。
+
+### 拖动翻页必须按下即锁选词
+
+`is-drag-scrolling` 的 `user-select: none` 要等拖拽真正激活（按住 150ms 或移动超 5px）
+才生效，太晚：Chromium 的选区在 `mousedown` 那一刻就开始铺，之后再加 `user-select: none`
+**不会取消已有选区**（Firefox 遵守 `preventDefault()`，所以只有 Edge / Chrome 出问题）。
+
+正确做法：`mousedown` 立刻给 `body` 加 `is-drag-holding`（只锁选词、不动光标）并
+`removeAllRanges()` 清残留，`clearDragState()` 里无条件移除。
+「允许圈选」模式下这条路径直接 return，不能加类。
+
+### 配图画廊
+
+连续 ≥ 阈值的媒体行折叠成网格：
+
+- `galleryMediaKind()` 返回 `image` / `video` / `null`，**音频不参与**（音频会把组断开）
+- 阈值：本版用 `user_prefs.gallery_min_images`（每用户，0 = 关），**按媒体总数算**而非图片数
+- 视频进网格要做三件事：摘 `controls`、`preload` 改 `none`、把内联 `style` 一并暂存
+  （它自带 12px 圆角和投影，会和网格的 3px 圆角打架）
+- 展开/收起抽成 `applyStacked()`，toggle 与「点视频格」共用：点视频先展开本级，
+  再 `scrollIntoView` + `play()`
+- 分组只搬 `figure` 节点（不重建），原 `.content-line` 外壳整行删掉，不留空壳
+
+桌面版这段代码**不是逐字相同**：本版按钮用 `icon()` sprite（`film` / `list` / `layout-grid`），
+桌面版是纯文字，同步时别直接互相覆盖。
+
+### 零碎
+
+- `.content-line` 有 `text-indent: 2em`（特异性 0,5,0）→ 往里塞块级组件要显式 `text-indent: 0`
+- 骨架屏是纯 CSS 实现的；早期那版转圈图已回退，**不要再加回来**
 
 ---
 
@@ -276,6 +370,55 @@ docker restart novel-manager
 `data/novel_cache.db` 可以不带（15MB，启动后扫一遍就有）：不带时新机器首次启动
 会走「库不存在 + 无旧 JSON」的分支，直接进入全量扫描。要带的话请先 `docker stop`，
 运行中的 SQLite 库直接拷可能拿到未提交的事务。
+
+---
+
+## 书名与章节数据
+
+**书名以正文内的「书名：」行为准，不是文件名。** 全库有 1033 本书的内名与文件名不同，
+内文那份更规范（文件名常被加进度后缀、站点前缀）。所以**不能改成文件名优先**。
+
+改名时用 `title_from_filename()` 判断：只有「旧 title 正好等于旧文件名派生出来的值」
+才跟着改，否则视为用户/内文指定的名字，保持不动。
+
+**`chapters.media` 是三态字段**，别只看真假：
+
+| 值 | 含义 |
+|---|---|
+| `NULL` | 没算过 |
+| `'i'` / `'v'` / `'a'` 等组合 | 有对应媒体（图 / 视频 / 音频） |
+| `''` | **算过了，确实没有媒体** |
+
+写库时空值必须写 `''` 不能写 `NULL`，否则下次又会被当成「没算过」重算一遍。
+两条取数路径都要带这个字段：索引路径 `load_details_from_index()` 和全文路径
+`annotate_chapter_media()`——漏一条就会出现「详情页有徽章、阅读页没有」这类不一致。
+
+**`work_id`** 取正文前 32 行的指纹：改名、追加章节、改几个错字都不变，
+所以阅读进度按它存，不会因为 `【1-51】` 这类后缀变动而丢。
+
+**已知问题（决定不修）**：带进度后缀的文件改名，扫描会当成「删一本 + 加一本」，
+`renamed_count` 恒为 0。进度不受影响（按 `work_id` 存），只是提示里显示成新增。
+提示文案用 `novel_title_stem()` 去掉后缀，避免看到两个几乎同名的书名。
+
+---
+
+## 自测方法
+
+改完别只看代码，这几条能直接跑：
+
+| 想验证 | 怎么做 |
+|---|---|
+| 视图渲染出的 HTML | `spec_from_file_location` 载入主程序 + `app.test_request_context()` 调视图函数；`/config` 需要先 `session['user_role'] = 'admin'` |
+| 前端函数行为 | 无头 Edge：`--headless=new --allow-file-access-from-files --dump-dom`，从 DOM 里读结果。**必须 `--dump-dom`**，截图看不出结构 |
+| 真实 HTTP 响应 | `curl` 带会话 cookie；静态文件直接比字节数和 `Last-Modified` |
+| 容器内的数据 | `docker exec novel-manager python3 -c ...`；探针脚本用 base64 传进去，避免引号和中文被 shell 吃掉 |
+
+注意：
+
+- 容器内 `/novels` 是只读挂载，造测试书用 `NOVEL_DIR=/tmp`
+- `docker exec` 单次执行约 3 分钟超时；镜像里没有 `ps`
+- **交互类问题交给用户手动点**：合成事件会绕过 `mousedown` 监听器（浏览器级 drag 不触发它），
+  无头测出来的结论可能是假的
 
 ---
 

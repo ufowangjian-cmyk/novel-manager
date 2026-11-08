@@ -4,7 +4,7 @@
 {% block title %}{{ title }} - 小说详情{% endblock %}
 {% block body_class %}page-detail{% endblock %}
 {% block page_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}?v={{ css_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.min.css') }}">
 {% endblock %}
 
@@ -184,10 +184,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/viewer.min.js') }}?v={{ css_version }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
     <script>
 
         document.addEventListener('DOMContentLoaded', async function () {

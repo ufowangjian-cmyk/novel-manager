@@ -4,7 +4,7 @@
 {% block viewport %}width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes{% endblock %}
 {% block body_class %}page-reader{% endblock %}
 {% block page_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css') }}?v={{ css_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.min.css') }}">
 {% endblock %}
 {% block head_extra %}
@@ -526,15 +526,15 @@
     <!-- 替换原有的 reader.js 引用 -->
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-ui.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-init.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-search.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/reader-toc.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/reader/haptic.js') }}?v={{ css_version }}"></script>
-    <script src="{{ url_for('static', filename='js/viewer.min.js') }}?v={{ css_version }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-init.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-search.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/reader-toc.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reader/haptic.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
     <script>
         // ===== 传递全局变量 =====
         const TOTAL_LINES = parseInt(document.getElementById('app-data').dataset.totalLines) || 0;
