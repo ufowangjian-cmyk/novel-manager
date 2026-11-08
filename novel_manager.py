@@ -2713,6 +2713,22 @@ def resolve_media_path(folder, name, extensions):
         candidate = os.path.join(folder_real, name)
         if os.path.isfile(candidate):
             return candidate, ext
+    # 大小写兜底：配图多半在 Windows 上做好再传上来，常见 02.JPG；
+    # Linux 区分大小写，上面按小写扩展名拼出来的路径会直接 404。
+    # 这里按「文件名整体小写」再匹配一次，返回真实文件名。
+    target = name.lower()
+    has_ext = bool(os.path.splitext(name)[1])
+    try:
+        for fname in sorted(os.listdir(folder_real)):
+            stem, fext = os.path.splitext(fname)
+            if fext.lower() not in extensions:
+                continue
+            if fname.lower() == target or (not has_ext and stem.lower() == target):
+                full = os.path.join(folder_real, fname)
+                if os.path.isfile(full):
+                    return full, fext.lower()
+    except OSError:
+        pass
     return None
 
 #==================== 获取小说配图信息 =====================
