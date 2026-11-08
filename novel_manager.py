@@ -1,5 +1,6 @@
 import sys
 import os
+import math
 import json
 import html
 import secrets
@@ -3124,6 +3125,34 @@ def derive_tags(original_tags_list):
                         changed = True
     return list(result)
 
+# ==================== 否定上下文 =====================
+# 「不是NTR」「没有出轨」这类句子会让关键词命中，但语义是反的，打标签就是错的
+# （tag_rules.json 里的 negation_patterns 字段一直是空的、也没被读取，这里补上）。
+# 判定只看紧挨着关键词的前面几个字：同一个关键词只要有一处没被否定就算命中。
+_TAG_NEG_PHRASES = ('不是', '没有', '并非', '不算', '不含', '不涉', '绝不是',
+                    '杜绝', '拒绝', '无任何', '没有任何')
+_TAG_NEG_CHARS = '没非未无别'
+
+
+def _tag_negated_only(text, keyword):
+    """关键词的每一处出现都紧跟在否定词后面 → True（不该打这个标签）。
+
+    只认"紧挨着"的否定：前置串去掉空白后，结尾是「不是/没有/并非…」或单字
+    没/非/未/无/别。单字「不」刻意不收——「不同性格」里的「同性」会被误杀
+    （实测 120 本书里踩到 2 次），「不是/不算」这些短语仍在列表里兜底。
+    """
+    start = 0
+    while True:
+        pos = text.find(keyword, start)
+        if pos < 0:
+            return True
+        prefix = text[max(0, pos - 8):pos].rstrip(' \t\u3000\r\n')
+        if prefix.endswith(_TAG_NEG_PHRASES) or (prefix and prefix[-1] in _TAG_NEG_CHARS):
+            start = pos + len(keyword)
+            continue
+        return False
+
+
 # ==================== 标签权重排序 =====================
 # 标签都是「命中即打」的二元信号，一本书动辄 20~40 个标签，
 # 前端只展示前 3 个，如果不排序就等于随机展示。
@@ -3361,12 +3390,15 @@ def parse_file_content_fast(file_path):
                 break
     
     titles_text = ' '.join(chapter_titles)
-    intro_text = header[:30000].lower()
-    combined_text_lower = titles_text + ' ' + intro_text
+    body_text_lower = header[:30000].lower()
+    combined_text_lower = titles_text + ' ' + body_text_lower
 
     # 标签权重用的信号源（都是小写文本，命中次数越多越相关）
+    # 「简介」以前和 body 用的是同一段 header[:30000]：等于给正文命中又加 2 分，
+    # 四层权重名存实亡。现在单独取真正的简介区，取不到就留空（不参与打分）。
+    _intro_raw = extract_intro_clean(lines)
+    intro_text = '' if _intro_raw in ('无简介', '') else _intro_raw.lower()
     filename_text_lower = (os.path.basename(file_path) + ' ' + title).lower()
-    body_text_lower = header[:30000].lower()
 
     tags_set = set()
     # 记录每个标签的来源，供 score_tags 计算权重
@@ -3397,7 +3429,8 @@ def parse_file_content_fast(file_path):
             # 真正的媒体标签在下方 scan_media_types 里按目录内容生成。
             if keyword_lower in MEDIA_TAG_NAMES:
                 continue
-            if keyword_lower in combined_text_lower:
+            if keyword_lower in combined_text_lower and not _tag_negated_only(
+                    combined_text_lower, keyword_lower):
                 tags_set.add(normalize_name(TAG_KEYWORDS[idx], 'tag'))
 
     # ===== 在 parse_file_content_fast 中 =====
