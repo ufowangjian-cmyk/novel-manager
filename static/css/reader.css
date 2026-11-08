@@ -1338,6 +1338,92 @@ body.dark-mode .local-image:not(.loaded) {
   text-indent: 0;
 }
 
+/* ===== 画廊里的视频格 =====
+   与图片同尺寸的方块：藏控件、方形裁切，中间盖一个播放角标。
+   点它会展开整组并播放（JS 处理），这里只负责「看起来像个可点的视频」。 */
+.image-gallery .local-video-figure {
+  display: block;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  text-indent: 0;
+}
+
+.image-gallery .local-video-figure video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 3px;
+  box-shadow: none;
+  background: #000;
+  cursor: pointer;
+}
+
+/* 圆形半透明底：亮画面上也看得清 */
+.image-gallery .local-video-figure::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+/* 播放三角，视觉居中略微右移 */
+.image-gallery .local-video-figure::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(-42%, -50%);
+  border-left: 15px solid rgba(255, 255, 255, 0.95);
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
+}
+
+.image-gallery .local-video-caption {
+  display: none;
+}
+
+/* 展开态：视频回到正常尺寸，角标撤掉（控件由 JS 加回来） */
+.image-gallery.is-stacked .local-video-figure {
+  width: fit-content;
+  width: -moz-fit-content;
+  width: -webkit-fit-content;
+  margin: 0 auto 0.8rem;
+}
+
+.image-gallery.is-stacked .local-video-figure video {
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  box-shadow: 0 4px 12px var(--color-speech-highlight, rgba(90, 138, 58, 0.15));
+}
+
+.image-gallery.is-stacked .local-video-figure::before,
+.image-gallery.is-stacked .local-video-figure::after {
+  display: none;
+}
+
+.image-gallery.is-stacked .local-video-caption {
+  display: block;
+}
+
 /* 「竖向展开」：恢复原来的大图排版，图注也回来 */
 .image-gallery.is-stacked .image-gallery-grid {
   display: block;
