@@ -3505,7 +3505,7 @@ def parse_file_content_fast(file_path):
     return result
 
 # ==================== 预览提取函数 ====================
-def extract_preview_clean(lines, max_lines=12, max_chars=600):
+def extract_preview_clean(lines, max_lines=6, max_chars=300):
     def _clean(s):
         return s.strip(' \t\r\n\u3000\u200b\ufeff')
 
