@@ -2320,7 +2320,10 @@ AUDIO_EXTENSIONS_ALL = frozenset({
 # ==================== 「每日推荐」卡片封面 ====================
 # 来源优先级：配图目录里的本地图片 > 正文里出现的封面外链。
 # 都没有时返回空串，模板退化成「书名首字」占位封（保证左右两栏布局稳定）。
-_COVER_NAME_HINTS = ('cover', '封面', 'front', 'poster', 'folder', '001', '01')
+# 真封面名绝对优先；'01'/'001' 这类首图编号只作次优先，
+# 否则 010.gif 会因字典序压过真正的 cover.jpg（实测会漏掉约 1/4）
+_COVER_NAME_HINTS = ('cover', '封面', 'front', 'poster', 'folder')
+_COVER_INDEX_HINTS = ('001', '01')
 _IMG_URL_RE = re.compile(
     r'''https?://[^\s"'<>]+?\.(?:jpe?g|png|webp|gif|bmp|avif)(?:\?[^\s"'<>]*)?''',
     re.I,
@@ -2331,7 +2334,7 @@ def _pick_cover_image(folder, max_depth=2, limit=60):
     """在配图目录里挑一张当封面，返回 (所在子目录, 文件名)；没有返回 None。
 
     配图常按章节分子目录（第1章/01.jpg），所以要在浅层递归里找。
-    优先文件名带 cover/封面 的，其次按路径排序取第一张 —— 稳定、可预测，
+    真封面名(cover/封面) > 首图编号(01/001) > 其它，同级按路径/文件名稳定排序，
     不会出现「每次刷新推荐封面都不一样」的随机感。
     """
     candidates = []
@@ -2357,7 +2360,12 @@ def _pick_cover_image(folder, max_depth=2, limit=60):
     def rank(item):
         root, name = item
         low = name.lower()
-        hinted = 0 if any(h in low for h in _COVER_NAME_HINTS) else 1
+        if any(h in low for h in _COVER_NAME_HINTS):
+            hinted = 0          # 真封面名
+        elif any(h in low for h in _COVER_INDEX_HINTS):
+            hinted = 1          # 01 / 001 这类首图编号
+        else:
+            hinted = 2
         return (hinted, len(root), low)
 
     return min(candidates, key=rank)
