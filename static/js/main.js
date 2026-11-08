@@ -865,6 +865,13 @@ const RandomNovel = (function () {
 
         const params = new URLSearchParams();
         if (currentWorkId) params.set('exclude', currentWorkId);
+        // 把首页当前的列表状态一起发过去：接口据此生成带 page/sort 的链接，
+        // 这样从「换一本」得到的卡片点进去，返回列表仍能回到当前这一页
+        const pageState = new URLSearchParams(window.location.search);
+        ['page', 'search', 'author', 'tag', 'site', 'sort', 'order'].forEach(function (key) {
+            const value = pageState.get(key);
+            if (value) params.set(key, value);
+        });
 
         fetch('/api/random_novel?' + params.toString(), {
             headers: { 'Accept': 'application/json' }

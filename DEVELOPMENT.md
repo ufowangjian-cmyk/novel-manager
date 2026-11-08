@@ -364,6 +364,11 @@ docker restart novel-manager
 
 **别再手拼 `/?page=xx&search=yy`**：漏参数，而且中文和 `&` 不做编码会被截断。
 
+随机推荐卡片这类「入口本身不带列表状态」的地方，用 `detail_url_with_state()` /
+`read_url_with_state()` 生成链接（服务端模板和 `/api/random_novel` 共用同一对函数，
+后者把页码转成 `list_page`）；前端「换一本」会把当前 `location.search` 一起发给接口，
+所以换出来的卡片同样带着状态。
+
 ### 零碎
 
 - `.content-line` 有 `text-indent: 2em`（特异性 0,5,0）→ 往里塞块级组件要显式 `text-indent: 0`
