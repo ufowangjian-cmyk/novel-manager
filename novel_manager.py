@@ -3879,20 +3879,18 @@ def parse_novel_details_from_content(content, lines):
             chapters_level3.append(chapter_info)
             all_chapters.append(chapter_info)
 
-    intro_lines = []
-    for line in lines[:100]:
-        clean = line.strip()
-        if clean and len(clean) > 10 and not any(p.match(clean) for p in [LEVEL1_PATTERN, LEVEL2_PATTERN, LEVEL3_PATTERN]):
-            intro_lines.append(clean)
-        if len(intro_lines) >= 10:
-            break
+    # 简介统一交给 extract_intro_clean：以前这里是「前 100 行里凑 10 行长句」，
+    # 既不是简介区，也会把首个章节（楔子/前言/引子）的正文一并吃进去；
+    # 而且只要那段里没出现「书名：/作者：」，详情页的校验就会放行，
+    # 顶掉缓存里正确的简介（抽样 200 本命中 40 本，2026-11-10 修）。
+    intro_text = extract_intro_clean(lines)
 
     all_chapters = sorted(all_chapters, key=lambda x: x['line_number'])
     mark_empty_chapters(all_chapters, lines)
     annotate_chapter_media(all_chapters, lines)
 
     return {
-        'intro': '\n'.join(intro_lines) if intro_lines else '无简介',
+        'intro': intro_text or '无简介',
         'chapters_level1': chapters_level1,
         'chapters_level2': chapters_level2,
         'chapters_level3': chapters_level3,
