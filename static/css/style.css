@@ -737,11 +737,12 @@ th:nth-child(1) {
 }
 
 th:nth-child(2) {
-    width: 10%;
+    /* 10% 放不下「主名 + 两三个马甲」，窄列会挤成三行；挪 2% 给作者 */
+    width: 12%;
 }
 
 th:nth-child(3) {
-    width: 22%;
+    width: 20%;
 }
 
 th:nth-child(4) {
@@ -1846,10 +1847,18 @@ body.dark-mode .reading-status-btn.is-none:hover {
     opacity: 1;
 }
 
-.author-sep {
-    margin: 0 4px;
-    color: var(--color-text-slate-pale);
-    opacity: 0.7;
+/* 主名 + 马甲：用间距分词，不再插「·」——
+   列为 10% 宽时，分隔符会掉到下一行行首，看着像屏幕上的脏点。 */
+.author-links {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+}
+
+/* 详情页作者区是行内排版（前面还有图标），用相邻兄弟间距代替分隔符 */
+.meta-author-link + .meta-author-link {
+    margin-left: 8px;
 }
 
 /* ============================================

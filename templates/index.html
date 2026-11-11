@@ -616,13 +616,16 @@
                         {% include "_reading_status.html" %}
                     </td>
                     <td>
-                        {# 主名与马甲都是可点的作者；点任意一个都列出这个人的全部书 #}
+                        {# 主名与马甲都是可点的作者；点任意一个都列出这个人的全部书。
+                           用 flex + gap 分词，不再插「·」——列窄时那个点会掉到下一行行首，
+                           看着像屏幕上的脏点。 #}
+                        <div class="author-links">
                         {% for link in novel.author_links %}
                         <a href="?author={{ link.name|urlencode }}{% if search_text %}&search={{ search_text|urlencode }}{% endif %}{% if search_tag %}&tag={{ search_tag|urlencode }}{% endif %}{% if search_site %}&site={{ search_site|urlencode }}{% endif %}"
                             class="author-link{% if link.is_alias %} author-alias-link{% endif %}" {% if link.is_alias
-                            %}title="马甲（与 {{ novel.author_main }} 是同一人）" {% endif %}>{{ link.name }}</a>{% if not
-                        loop.last %}<span class="author-sep">·</span>{% endif %}
+                            %}title="马甲（与 {{ novel.author_main }} 是同一人）" {% endif %}>{{ link.name }}</a>
                         {% endfor %}
+                        </div>
                     </td>
                     <td>
                         {% if novel.tags != '无' %}
@@ -726,10 +729,10 @@
                     {% include "_reading_status.html" %}
                 </div>
                 <div class="novel-card-meta">
-                    <span class="novel-card-author">{% for link in novel.author_links %}<a
+                    <span class="novel-card-author author-links">{% for link in novel.author_links %}<a
                             href="?author={{ link.name|urlencode }}"
                             class="author-link{% if link.is_alias %} author-alias-link{% endif %}">{{ link.name }}</a>{%
-                        if not loop.last %}<span class="author-sep">·</span>{% endif %}{% endfor %}</span>
+                        endfor %}</span>
                     <span class="novel-card-date">{{ icon('calendar', 'sm') }} {{ novel.publish_date or '未知'
                         }}</span></span>
                 </div>

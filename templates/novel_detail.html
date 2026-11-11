@@ -43,7 +43,7 @@
                         {%- for link in author_links -%}
                         <a href="/?author={{ link.name|urlencode }}{% if search_text %}&search={{ search_text|urlencode }}{% endif %}{% if search_tag %}&tag={{ search_tag|urlencode }}{% endif %}{% if search_site %}&site={{ search_site|urlencode }}{% endif %}"
                             class="meta-author-link{% if link.is_alias %} author-alias-link{% endif %}"
-                            {% if link.is_alias %}title="马甲（与 {{ author_main }} 是同一人）"{% endif %}>{{ link.name }}</a>{% if not loop.last %}<span class="author-sep">·</span>{% endif %}
+                            {% if link.is_alias %}title="马甲（与 {{ author_main }} 是同一人）"{% endif %}>{{ link.name }}</a>
                         {%- endfor -%}
                         {%- else -%}{{ author }}
                         {%- endif -%}

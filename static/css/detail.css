@@ -103,10 +103,8 @@
 .meta-author-link.author-alias-link:hover {
     opacity: 1;
 }
-.meta-author-link + .author-sep {
-    opacity: 0.5;
-    margin: 0 1px;
-}
+/* 作者之间的间距改由 .meta-author-link + .meta-author-link 提供（见 style.css），
+   原来的「·」分隔符已移除，这条规则随之删除。 */
 .tag-badge {
     display: inline-block;
     padding: 4px 12px;
