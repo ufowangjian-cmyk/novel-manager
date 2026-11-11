@@ -1065,6 +1065,8 @@ const HLW = (function () {
         const inp = field();
 
         inp.addEventListener('keydown', function (e) {
+            // 输入法选词时回车是「确认候选」，不是提交；Firefox 同样是 keydown + isComposing。
+            if (e.isComposing || e.keyCode === 229) return;
             if (e.key === 'Enter' || e.key === ',' || e.key === '，') {
                 e.preventDefault();
                 add(inp.value);

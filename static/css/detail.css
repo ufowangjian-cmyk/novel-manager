@@ -564,17 +564,9 @@ body.dark-mode .chapter-level3 .chapter-lv-icon {
     /* 悬停时略微提亮，但仍保持深色基调 */
     transform: translateY(-2px);
     box-shadow: 0 8px 15px -5px var(--color-green-deeper);
-}/* 深色主题下的滚动条样式 */body.dark-mode .intro-content::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}body.dark-mode .intro-content::-webkit-scrollbar-track {
-    background: var(--color-green-darkest-bg-2);
-    border-radius: 4px;
-}body.dark-mode .intro-content::-webkit-scrollbar-thumb {
-    background: var(--color-green-dark-bg);
-    border-radius: 4px;
-}body.dark-mode .intro-content::-webkit-scrollbar-thumb:hover {
-    background: var(--color-green-deeper);
+}/* 深色主题下的滚动条（标准属性：Chrome 121+ / Firefox 64+ 都认；以前只用 ::-webkit-scrollbar，Firefox 上等于没写） */body.dark-mode .intro-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-green-dark-bg) var(--color-green-darkest-bg-2);
 }/* 完整版深色主题统计信息样式 */body.dark-mode .stats {
     background: var(--color-green-darkest-bg-2);
     border: 1px solid var(--color-green-dark-bg);

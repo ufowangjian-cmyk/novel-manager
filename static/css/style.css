@@ -2077,15 +2077,9 @@ body.dark-mode .random-refresh-btn:disabled {
     white-space: pre-wrap;
     word-break: break-word;
     padding-right: 6px;
-}
-
-.random-intro::-webkit-scrollbar {
-    width: 6px;
-}
-
-.random-intro::-webkit-scrollbar-thumb {
-    background: var(--color-border-primary);
-    border-radius: 3px;
+    /* 细滚动条：颜色交给原生（配合 body.dark-mode 的 color-scheme，暗色下自动变暗），
+       以前只有 ::-webkit-scrollbar，Firefox 完全不生效 */
+    scrollbar-width: thin;
 }
 
 .random-intro-empty {
@@ -2768,7 +2762,10 @@ body.dark-mode .scan-btn.scan-inc:hover {
 /* ============================================
    13. 深色模式
    ============================================ */
+/* 原生控件（滚动条、下拉框、对话框背景）跟随站点主题。
+   只在暗色时声明；亮色是默认值，不需要覆盖。 */
 body.dark-mode {
+    color-scheme: dark;
     background: var(--dark-bg-primary);
     color: var(--dark-text-primary);
 }
