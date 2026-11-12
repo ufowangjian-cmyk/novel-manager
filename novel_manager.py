@@ -786,7 +786,7 @@ READER_PREF_DEFAULTS = {
     # 圈选文字（与按住拖动翻页互斥）：默认关闭，开启后允许自由选词/复制
     'text_select': False,
     # —— 分元素字体：标题 + reader-core 全部高亮类型各自可配，正文复用 font_family ——
-    'title_font_family': "'Segoe UI', '微软雅黑', sans-serif",
+    'title_font_family': '',            # 空 = 跟随正文（与前端下拉语义一致）
     'double_quote_font_family': '',     # 空 = 跟随正文（双引号 "「」）
     'single_quote_font_family': '',     # 空 = 跟随正文（单引号 '『』）
     'bracket_font_family': '',          # 空 = 跟随正文（圆括号 （）()）

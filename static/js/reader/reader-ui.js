@@ -186,7 +186,10 @@
     }
     // ==================== 分元素字体 / 颜色（标题/正文/引号/括号） ====================
     // 标题默认字体（与 reader.css 中 .chapter-title 的硬设保持一致，便于「恢复默认」时还原）
-    const TITLE_DEFAULT_FONT = "'Segoe UI', '微软雅黑', sans-serif";
+    // 标题未单独设置时跟随正文：给空串，让 applyScopeFont 清掉内联字体、自然继承。
+    // 以前这里兜底成「Segoe UI」，于是下拉选「跟随正文」实际仍在用微软雅黑，
+    // 和配置页/阅读页下拉显示的语义不符（2026-11-12 修）。
+    const TITLE_DEFAULT_FONT = '';
     // 每个可单独设字体的作用域：标题 + reader-core 里的全部高亮类型
     const SCOPE_SELECTORS = {
         title:            '#readingContent .chapter-title-level1, #readingContent .chapter-title-level2, #readingContent .chapter-title-level3, #readingContent .chapter-title-level1 .chapter-number, #readingContent .chapter-title-level2 .chapter-number, #readingContent .chapter-title-level3 .chapter-number',

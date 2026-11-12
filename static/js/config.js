@@ -749,6 +749,13 @@ const PREF_FIELDS = {
            'book_bold', 'book_italic']
 };
 
+// 9 个字体键：空值代表「跟随正文 / 跟随默认」，必须原样下发才能删掉个人覆盖
+const FONT_PREF_KEYS = new Set([
+    'font_family', 'title_font_family', 'double_quote_font_family', 'single_quote_font_family',
+    'bracket_font_family', 'square_bracket_font_family', 'square_bracket_1_font_family',
+    'hollow_bracket_font_family', 'book_font_family'
+]);
+
 // 字体设置里的「加粗 / 斜体」切换按钮（阅读偏好页使用，与阅读页交互一致）
 function toggleConfigBi(btn) {
     const on = btn.getAttribute('aria-pressed') === 'true';
@@ -860,7 +867,10 @@ function collectMyPreferences() {
         // 否则空值会被误当成「设为黑色」下发
         if (el.type === 'color' && !el.dataset.dirty) return;
         const raw = el.value;
-        if (raw !== '') payload[key] = raw;   // 空 = 跟随默认
+        // 字体下拉的「跟随正文 / 跟随默认」是空字符串。以前这里跳过空值，
+        // 导致个人覆盖永远删不掉：选了「跟随正文」保存，阅读页照旧用旧字体。
+        // 后端约定「传空串 = 删除该键的个人覆盖」，所以字体键要照发。
+        if (raw !== '' || FONT_PREF_KEYS.has(key)) payload[key] = raw;
     });
 
     PREF_FIELDS.bool.forEach(key => {
