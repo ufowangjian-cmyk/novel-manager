@@ -469,6 +469,31 @@ docker restart novel-manager
 | `寒蝉圆体内置` | ChillRoundGothic ExtraLight（思源黑体圆角化） | `static/fonts/chillround/` | 可选：更细的圆体 |
 | `得意黑内置` | Smiley Sans Oblique（倾斜黑，标题用） | `static/fonts/smiley/` | 可选：标题 |
 
+### 字体配置要穿过 7 层，键名必须逐层对齐
+
+9 个作用域（正文、标题、双/单引号、圆/方头/方/空心括号、书名号）在仓库里各有一份键名，
+任何一层写错都表现为「配置页改了、阅读页没反应」：
+
+| 层 | 位置 |
+|---|---|
+| 后端键 | `<scope>_font_family`（正文是 `font_family`），默认值在 `DEFAULT_CONFIG` |
+| 允许保存 | `api_save_preferences` 的 `ALLOWED_KEYS` |
+| 阅读页下发 | `read_chapter.html` 的 `data-xxx-font-family` |
+| 阅读页抽屉 | `<scope>FontSelect` + `SCOPE_SELECT_IDS`（驼峰，不能靠「去下划线」推） |
+| 配置页「管理员默认」 | `admin_font_field(标签, 键, …)`，加粗/斜体 id 必须同前缀 |
+| 配置页「我的偏好」 | `pref_<键>` + `PREF_FIELDS.text` |
+| 前端应用 | `SCOPE_APPKEY`、`FONT_PREF_KEYS` |
+
+2026-11-12 踩的坑：配置页「标题字体」传的是 `book_font_family`（书名号的键），于是
+① 配置页压根没有 `title_font_family` 下拉；② 保存时 `getElementById('title_font_family')`
+取不到元素，`?? ''` 反而把已有的标题字体写成空串；③ 标题与书名号两个下拉共用同一个 id，
+`getElementById` 只认第一个，书名号的改动被静默丢弃。加粗/斜体 id 同样串到 `book_bold`。
+
+**空字符串的语义**：字体下拉的「跟随正文 / 跟随默认」就是空串，后端约定
+「传空串 = 删除该键的个人覆盖」。前端收集偏好时不能因为「空值不发」而跳过字体键，
+否则用户选回「跟随正文」永远清不掉旧设置（`FONT_PREF_KEYS` 就是为此单列的）。
+
+
 每个目录 = `index.css`（带 unicode-range 的 @font-face）+ 97~106 个 woff2 分片（每片 50-100KB）。
 未来圆 / 寒蝉圆体 / 得意黑是自己切的（cn-font-split 在 Windows 跑不起来）：`fontTools.subset` 按码位
 每 350 字切一片，106 片共 9.5MB。
