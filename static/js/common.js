@@ -624,7 +624,9 @@ window.BUILTIN_FONTS = {
     '霞鹜文楷比例内置': { chunked: true, label: '霞鹜文楷比例' },
     '思源黑体内置': { chunked: true, label: '思源黑体' },
     '思源宋体内置': { chunked: true, label: '思源宋体' },
-    '未来圆内置': { chunked: true, label: '未来圆' }
+    '未来圆内置': { chunked: true, label: '未来圆' },
+    '寒蝉圆体内置': { chunked: true, label: '寒蝉圆体' },
+    '得意黑内置': { chunked: true, label: '得意黑' }
 };
 
 /**
