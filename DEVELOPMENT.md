@@ -457,7 +457,7 @@ docker restart novel-manager
 ## 内置字体（全开源 + unicode-range 分包，2026-11-12）
 
 原来 9 个内置字体里有 6 个是商业字体（方正大标宋/仿宋/楷体、汉仪文黑、兰亭羲之黑、仓耳今楷），
-分享部署目录有授权风险。2026-11-12 全部换成 **SIL OFL 开源字体**（现 7 套可选），并按 unicode-range 分包：
+分享部署目录有授权风险。2026-11-12 全部换成 **SIL OFL 开源字体**（现 8 套可选），并按 unicode-range 分包：
 
 | 家族（CSS 里的名字） | 上游 | 目录 | 用在 |
 |---|---|---|---|
@@ -468,6 +468,7 @@ docker restart novel-manager
 | `未来圆内置` | WeiLaiYuan SC Medium（用户本地 TTF 自切） | `static/fonts/weilaiyuan/` | 空心括号 |
 | `寒蝉圆体内置` | ChillRoundGothic ExtraLight（思源黑体圆角化） | `static/fonts/chillround/` | 可选：更细的圆体 |
 | `得意黑内置` | Smiley Sans Oblique（倾斜黑，标题用） | `static/fonts/smiley/` | 可选：标题 |
+| `朱雀仿宋内置` | Zhuque Fangsong v0.212（技术预览版，OFL） | `static/fonts/zhuque/` | 可选：引号/括号等装饰 |
 
 ### 字体配置要穿过 7 层，键名必须逐层对齐
 
@@ -495,7 +496,7 @@ docker restart novel-manager
 
 
 每个目录 = `index.css`（带 unicode-range 的 @font-face）+ 97~106 个 woff2 分片（每片 50-100KB）。
-未来圆 / 寒蝉圆体 / 得意黑是自己切的（cn-font-split 在 Windows 跑不起来）：`fontTools.subset` 按码位
+未来圆 / 寒蝉圆体 / 得意黑 / 朱雀仿宋是自己切的（cn-font-split 在 Windows 跑不起来）：`fontTools.subset` 按码位
 每 350 字切一片，106 片共 9.5MB。
 浏览器只下页面实际用到的字所在分片，一页通常几百 KB，而不是原来的整包 8MB。
 

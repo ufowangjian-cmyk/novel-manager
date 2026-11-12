@@ -48,6 +48,7 @@ const FONT_NAME_MAP = {
     "'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif": '📱 未来圆（开源·分包）',
     "'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif": '📱 寒蝉圆体（开源·分包）',
     "'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif": '📱 得意黑（开源·分包）',
+    "'朱雀仿宋内置', 'Zhuque Fangsong', serif": '📱 朱雀仿宋（开源·分包）',
     "'汉仪润圆-55简', '汉仪润圆-55', sans-serif": '汉仪润圆',
     "'Microsoft YaHei', sans-serif": '微软雅黑',
     "'Songti SC', 'SimSun', serif": '宋体',
