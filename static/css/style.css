@@ -958,6 +958,24 @@ td:nth-child(6) a {
     color: var(--color-text-white);
 }
 
+/* 桌面列表的标签：沿用移动端卡片那套「透明底 + 浅色细边 + 中性绿字」。
+   原来是绿色实底白字，一列点下来比书名还抢眼，标题反而被压住。
+   选择器限定 .tags-wrapper（只有列表表格用这个类），
+   随机推荐卡、详情页的标签不受影响。 */
+.tags-wrapper .tag-badge {
+    background: transparent;
+    color: var(--color-primary-dark);
+    border: 1px solid var(--color-border-primary);
+    opacity: 0.72;
+}
+
+body.dark-mode .tags-wrapper .tag-badge {
+    background: transparent;
+    color: #9aa88f;
+    border-color: rgba(255, 255, 255, 0.16);
+    opacity: 1;
+}
+
 .progress-badge {
     background: var(--color-badge-progress);
     color: var(--color-text-dark);
