@@ -457,7 +457,7 @@ docker restart novel-manager
 ## 内置字体（全开源 + unicode-range 分包，2026-11-12）
 
 原来 9 个内置字体里有 6 个是商业字体（方正大标宋/仿宋/楷体、汉仪文黑、兰亭羲之黑、仓耳今楷），
-分享部署目录有授权风险。2026-11-12 全部换成 **4 套 SIL OFL 开源字体**，并按 unicode-range 分包：
+分享部署目录有授权风险。2026-11-12 全部换成 **5 套 SIL OFL 开源字体**，并按 unicode-range 分包：
 
 | 家族（CSS 里的名字） | 上游 | 目录 | 用在 |
 |---|---|---|---|
@@ -465,8 +465,11 @@ docker restart novel-manager
 | `思源宋体内置` | Noto Serif SC（可变 100-900） | `static/fonts/noto-serif/` | 括号、标题 |
 | `霞鹜文楷等宽内置` | LXGW WenKai Mono 400 | `static/fonts/wenkai-mono/` | 正文 |
 | `霞鹜文楷比例内置` | LXGW WenKai 400 | `static/fonts/wenkai/` | 单引号、书名号 |
+| `未来圆内置` | WeiLaiYuan SC Medium（用户本地 TTF 自切） | `static/fonts/weilaiyuan/` | 空心括号 |
 
-每个目录 = `index.css`（带 unicode-range 的 @font-face）+ 97~101 个 woff2 分片（每片 50-70KB）。
+每个目录 = `index.css`（带 unicode-range 的 @font-face）+ 97~106 个 woff2 分片（每片 50-100KB）。
+未来圆是唯一自己切的（cn-font-split 在 Windows 跑不起来）：`fontTools.subset` 按码位
+每 350 字切一片，106 片共 9.5MB。
 浏览器只下页面实际用到的字所在分片，一页通常几百 KB，而不是原来的整包 8MB。
 
 **`static/css/font.css` 是生成物**：把四份 `index.css` 拼起来，并把「同一批 URL 的三个字重块」
