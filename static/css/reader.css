@@ -206,22 +206,36 @@ body.dark-mode .reader-container {
   cursor: grab;
 }
 
-/* 拖拽激活：整页 grabbing + 禁止选中，避免拖动时选出大片蓝字 */
+/* 拖拽激活：整页 grabbing */
 body.is-drag-scrolling,
 body.is-drag-scrolling #contentWrapper {
   cursor: grabbing;
-  user-select: none;
+}
+
+/* ===== 选词锁 =====
+   必须同时满足三点，缺一个就拦不住：
+   1. `!important` —— 有一类「解除网页复制限制」扩展会注入
+      `html, * { user-select: text !important }`，普通声明的 none 直接失效
+      （2026-11-12 在 Firefox 和 Edge 上都实测到这个情况）；
+   2. 命中后代（`*`）—— 扩展那条是通配，会逐个元素生效，
+      只锁 body/#contentWrapper 的话继承会被子元素上的 text 覆盖；
+   3. -moz- / -webkit- 前缀照写 —— 扩展那条也是多前缀，别只在无前缀上比。
+   作用范围只限按住期间（is-drag-holding）与拖拽中（is-drag-scrolling），
+   松手即撤销，不影响正常选词复制。 */
+body.is-drag-holding,
+body.is-drag-holding *,
+body.is-drag-scrolling,
+body.is-drag-scrolling * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  user-select: none !important;
 }
 
 /* 按住阶段（还没进入拖动）就锁选词。
    Chromium 的文本选区在 mousedown 那一刻就开始铺，等 is-drag-scrolling
-   加上（按住 150ms 或移动 5px 之后）已经来不及 —— 表现是 Edge/Chrome 里
-   拖动翻页会顺带选中一片文字，Firefox 正常。这里按下即锁、松手即解，
-   不影响「圈选文字」模式（那条路径在 JS 里直接跳过，不会加这个类）。 */
-body.is-drag-holding,
-body.is-drag-holding #contentWrapper {
-  user-select: none;
-}
+   加上（按住 150ms 或移动 5px 之后）已经来不及。这里按下即锁、松手即解，
+   不影响「圈选文字」模式（那条路径在 JS 里直接跳过，不会加这个类）。
+   具体的 user-select 规则见上一条「选词锁」。 */
 
 /* 可交互元素上不显示抓手，保持常规指针（表情图不可点，排除避免手型光标） */
 #contentWrapper a,

@@ -474,7 +474,6 @@
             if (!dragScrollEnabled) return;
             // 只响应主键；中键/右键交给浏览器自己处理
             if (e.button !== 0) return;
-            if (e.target.closest(DRAG_EXCLUDE_SELECTOR)) return;
             // 关键：必须在 mousedown 阶段就掐掉原生选词。
             // 浏览器的选词在「按下瞬间」就开始了，等到 mousemove 里再
             // preventDefault 已经太晚 —— 表现就是拖拽时仍会圈出一段文字。
@@ -492,6 +491,10 @@
                     if (_sel && _sel.rangeCount) _sel.removeAllRanges();
                 }
             }
+            // 图片/链接/按钮上不启动「拖拽滚动」（点开查看器、点链接跳转仍走原生），
+            // 但上面的选词锁已经生效 —— 以前这条判断在最前面，
+            // 从图片上按下就 return 了，拖动照样能选出一片字。
+            if (e.target.closest(DRAG_EXCLUDE_SELECTOR)) return;
             dragState = {
                 startY: e.clientY,
                 lastY: e.clientY,
