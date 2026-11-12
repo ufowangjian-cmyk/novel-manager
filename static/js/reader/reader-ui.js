@@ -446,6 +446,11 @@
     // 允许圈选时，mousedown 不再 preventDefault，浏览器原生选词正常工作。
     let textSelectEnabled = false;
 
+    // 按住期间的选词锁。**必须与 dragState 解耦**：dragState 会在「横向位移大于纵向」
+    // 或「鼠标移出内容区」时被清掉，但那一刻按键还没松，锁一解后半程就能拖出选区。
+    // 这个标志只在 mouseup / blur 时复位。
+    let holdPointerLock = false;
+
     // 桌面端判定：有精确指针 + 能 hover 才是桌面。
     // 比 innerWidth <= 768 准 —— 触屏笔记本不该被当成移动端。
     function isDesktopPointer() {
@@ -480,6 +485,7 @@
                 // 而 is-drag-scrolling 的 user-select:none 是拖拽激活（按住 150ms / 移动 5px）
                 // 之后才加的，来不及 —— 表现就是 Edge 里拖动顺带选中一片蓝字。
                 // 这里按下瞬间就锁选词，并清掉残留旧选区（不清会沿旧选区继续扩展）。
+                holdPointerLock = true;
                 document.body.classList.add('is-drag-holding');
                 if (window.getSelection) {
                     const _sel = window.getSelection();
@@ -500,7 +506,15 @@
                     activateDrag();
                 }
             }, DRAG_HOLD_DELAY);
+        }, { passive: false });
+
+        // 兜底：selectstart 是「选区即将开始」的最后一道闸。
+        // preventDefault(mousedown) 在多数浏览器够用，但扩展注入的
+        // user-select:text、或上面某些分支提前清状态时会漏，这里再拦一次。
+        document.addEventListener('selectstart', function (e) {
+            if (holdPointerLock && !textSelectEnabled) e.preventDefault();
         });
+
         // mousemove：移动超阈值才激活拖拽；激活后跟随滚动
         wrapper.addEventListener('mousemove', function (e) {
             if (!dragState) return;
@@ -523,10 +537,12 @@
             window.scrollBy(0, deltaY);
         });
         // mouseup / 离开窗口：结束拖拽
-        function endDrag() {
-            if (!dragState) return;
-            const wasActive = dragState.active;
+        // releaseLock=false 用于「鼠标移出内容区」：只停止滚动跟随，
+        // 但按键还按着，选词锁必须留着，否则从正文拖到页边就变成圈选。
+        function endDrag(releaseLock) {
+            const wasActive = dragState ? dragState.active : false;
             clearDragState();
+            if (releaseLock !== false) releaseHold();
             // 拖拽结束后浏览器还会派发一次 click，必须吞掉，
             // 否则会误触发「点击正文切换工具栏」
             if (wasActive) {
@@ -534,10 +550,10 @@
                 setTimeout(function () { suppressNextClick = false; }, 0);
             }
         }
-        wrapper.addEventListener('mouseup', endDrag);
-        wrapper.addEventListener('mouseleave', endDrag);
-        window.addEventListener('mouseup', endDrag);
-        window.addEventListener('blur', endDrag);
+        wrapper.addEventListener('mouseup', function () { endDrag(true); });
+        wrapper.addEventListener('mouseleave', function () { endDrag(false); });
+        window.addEventListener('mouseup', function () { endDrag(true); });
+        window.addEventListener('blur', function () { endDrag(true); });
         // 拖拽时阻止图片/文字原生拖拽，避免出现虚影
         wrapper.addEventListener('dragstart', function (e) {
             if (dragState && dragState.active) e.preventDefault();
@@ -548,14 +564,21 @@
         dragState.active = true;
         document.body.classList.add('is-drag-scrolling');
     }
+    // 只负责「拖拽滚动」的状态；选词锁归 releaseHold 管。
+    // 以前这里无条件移除 is-drag-holding，导致横向误判 / 移出容器时提前解锁。
     function clearDragState() {
-        // 按住阶段的选词锁要无条件清掉：dragState 可能已被别处清空，
-        // 只靠下面的 if 判断会漏，导致类名残留、正文从此选不中
-        document.body.classList.remove('is-drag-holding');
-        if (!dragState) return;
-        clearTimeout(dragState.holdTimer);
-        dragState = null;
+        if (dragState) {
+            clearTimeout(dragState.holdTimer);
+            dragState = null;
+        }
         document.body.classList.remove('is-drag-scrolling');
+    }
+    // 松开按键才解除选词锁。残留风险由 mouseup/blur 双通道兜住；
+    // 万一两个都没收到（例如松手在浏览器窗口外），下一次 mousedown 会重新置位，
+    // 所以不会永久锁死正文。
+    function releaseHold() {
+        holdPointerLock = false;
+        document.body.classList.remove('is-drag-holding');
     }
     // 切换「圈选文字」（与「按住拖动翻页」互斥）。偏好存后端，刷新后保留。
     function toggleTextSelect(btn) {
