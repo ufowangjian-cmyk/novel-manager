@@ -454,6 +454,39 @@ docker restart novel-manager
 桌面版另有 `is_chapter_line_strict()` 做边界判定（比 `LEVEL*_PATTERN` 严：冒号式标题
 ≤30 字、不带句读；裸词短标签 ≤8 字），细节见桌面版仓库 `DEVELOPMENT.md`。
 
+## 内置字体（全开源 + unicode-range 分包，2026-11-12）
+
+原来 9 个内置字体里有 6 个是商业字体（方正大标宋/仿宋/楷体、汉仪文黑、兰亭羲之黑、仓耳今楷），
+分享部署目录有授权风险。2026-11-12 全部换成 **4 套 SIL OFL 开源字体**，并按 unicode-range 分包：
+
+| 家族（CSS 里的名字） | 上游 | 目录 | 用在 |
+|---|---|---|---|
+| `思源黑体内置` | Noto Sans SC（可变 100-900） | `static/fonts/noto-sans/` | 双引号、方括号、空心括号 |
+| `思源宋体内置` | Noto Serif SC（可变 100-900） | `static/fonts/noto-serif/` | 括号、标题 |
+| `霞鹜文楷等宽内置` | LXGW WenKai Mono 400 | `static/fonts/wenkai-mono/` | 正文 |
+| `霞鹜文楷比例内置` | LXGW WenKai 400 | `static/fonts/wenkai/` | 单引号、书名号 |
+
+每个目录 = `index.css`（带 unicode-range 的 @font-face）+ 97~101 个 woff2 分片（每片 50-70KB）。
+浏览器只下页面实际用到的字所在分片，一页通常几百 KB，而不是原来的整包 8MB。
+
+**`static/css/font.css` 是生成物**：把四份 `index.css` 拼起来，并把「同一批 URL 的三个字重块」
+合并成一条 `font-weight: 100 900`（Google 的三档字重共用同一组分片，合并后 699 条 → 396 条）。
+当前 432KB，gzip 后 126KB，随 `?v=mtime` 缓存 30 天。**别手改，改了要同步源码**。
+
+**加载方式变了**：以前 `BUILTIN_FONTS` 里存单个 woff2 URL，用 `FontFace` 预载并显示进度；
+分包后没有"单个文件"可预载，`BUILTIN_FONTS` 里只留 `{ chunked: true, label }`，
+`common.js` 的预热和 `reader-ui.js` 的 `ensureBuiltinFont` 见到 `chunked` 直接放行，
+交给 CSS 的 unicode-range 由浏览器按需取片。
+
+**换字体的正确顺序**（漏一步就白干）：
+1. 取上游分片（Google Fonts CSS2 + 现代 UA，或 jsDelivr 上的 `lxgw-wenkai-webfont`）
+2. 分片落到 `static/fonts/<slug>/`，CSS 里的 URL 改成 `/static/fonts/<slug>/xxx.woff2`
+3. 重新生成 `static/css/font.css`
+4. 改四处清单：`templates/read_chapter.html`（`font_opts`）、`templates/config.html`
+   （`font_list` + `font_opts`）、`static/js/config.js`（`FONT_NAME_MAP`）、`static/js/common.js`（`BUILTIN_FONTS`）
+5. **迁移 `data/config.json`**：字体存的是整串 font stack，换了家族名旧值会全部回退到默认，
+   按"旧家族名 → 新 stack"逐键映射（含 `users/*/preferences/*` 里的每用户偏好）
+
 ## 标签提取（关键词 → 派生 → 排序）
 
 只读文件头 64KB，实际参与匹配的是 `header[:30000]`（约 1.5 万字）。

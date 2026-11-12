@@ -618,15 +618,12 @@ async function prevBackground() {
 // 原定义在 reader-ui.js（仅阅读页可用），现提升至此供全站预热共用；
 // reader-ui.js 改为引用本全局。新增内置字体时改这里 + font.css + 两个模板的字体下拉。
 window.BUILTIN_FONTS = {
-    '霞鹜文楷内置': { url: '/static/fonts/LXGWWenKaiMono-Medium.woff2', size: '8.6 MB', label: '霞鹜文楷' },
-    '仓耳今楷内置': { url: '/static/fonts/CEJK01-9128-W04.woff2', size: '3.4 MB', label: '仓耳今楷' },
-    '鸿蒙黑体内置': { url: '/static/fonts/HarmonyOS_Sans_SC.woff2', size: '4.1 MB', label: '鸿蒙黑体' },
-    '未来圆内置': { url: '/static/fonts/WEILAIYUANMedium.woff2', size: '8.1 MB', label: '未来圆' },
-    '汉仪文黑内置': { url: '/static/fonts/HYWenHei-55W.woff2', size: '1.5 MB', label: '汉仪文黑' },
-    '兰亭羲之黑内置': { url: '/static/fonts/LantingXiHei-GBK.woff2', size: '1.6 MB', label: '兰亭羲之黑' },
-    '方正大标宋内置': { url: '/static/fonts/FZDaBiaoSong.woff2', size: '1.4 MB', label: '方正大标宋' },
-    '方正仿宋内置': { url: '/static/fonts/FZFangSong.woff2', size: '1.5 MB', label: '方正仿宋' },
-    '方正楷体内置': { url: '/static/fonts/FZKaiTi.woff2', size: '1.6 MB', label: '方正楷体' }
+    // 全部改为 unicode-range 分包（见 font.css）：没有单个 woff2 可预载，
+    // 浏览器按页面实际出现的字自己取分片。chunked=true 表示跳过 FontFace 预加载。
+    '霞鹜文楷等宽内置': { chunked: true, label: '霞鹜文楷等宽' },
+    '霞鹜文楷比例内置': { chunked: true, label: '霞鹜文楷比例' },
+    '思源黑体内置': { chunked: true, label: '思源黑体' },
+    '思源宋体内置': { chunked: true, label: '思源宋体' }
 };
 
 /**
@@ -652,7 +649,7 @@ function warmupBuiltinFont(fontStack) {
     for (const raw of names) {
         const family = raw.replace(/'/g, '');
         const info = window.BUILTIN_FONTS[family];
-        if (!info) continue;
+        if (!info || info.chunked) continue;   // 分包字体交给 CSS
         try {
             // 已注册过就直接复用（重复调用/翻页无成本）
             if (document.fonts.check(`16px "${family}"`)) return;

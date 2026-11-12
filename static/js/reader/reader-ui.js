@@ -90,6 +90,11 @@
         if (fontLoadState[family] === 'loading') return fontLoadState[family + ':promise'];
 
         const info = BUILTIN_FONTS[family];
+        // 分包字体：由 font.css 的 unicode-range 触发，按字取片，无需 FontFace 预载
+        if (info.chunked) {
+            fontLoadState[family] = 'done';
+            return Promise.resolve(true);
+        }
         fontLoadState[family] = 'loading';
 
         const face = new FontFace(family, `url(${info.url})`, { display: 'swap' });
