@@ -469,6 +469,13 @@ docker restart novel-manager
 | `得意黑内置` | Smiley Sans Oblique（倾斜黑，标题用） | `static/fonts/smiley/` | 可选：标题 |
 | `朱雀仿宋内置` | Zhuque Fangsong v0.212（技术预览版，OFL） | `static/fonts/zhuque/` | 可选：引号/括号等装饰 |
 
+**已知缺口与补丁**：上游网页分包版 `lxgw-wenkai-webfont@1.7.0` 的 97 个分片里**没有单引号
+U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若选霞鹜文楷等宽，那两个字会
+回退到字体栈后面的字体。2026-11-14 用本地 TTF 切了两个只含 `‘’` 的补丁（各 1.4KB）：
+`static/fonts/wenkai-mono/quote-2018-{400,700}.woff2`，在 font.css 里以
+`unicode-range: U+2018-2019` 挂到同一 family。700 档用 Medium 顶（上游没发布 Bold TTF）。
+以后再加同类「补丁字形」照这个做法：同 family + 精确 unicode-range + 单独小文件。
+
 ### 字体配置要穿过 7 层，键名必须逐层对齐
 
 9 个作用域（正文、标题、双/单引号、圆/方头/方/空心括号、书名号）在仓库里各有一份键名，
