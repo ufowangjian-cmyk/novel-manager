@@ -457,14 +457,13 @@ docker restart novel-manager
 ## 内置字体（全开源 + unicode-range 分包，2026-11-12）
 
 原来 9 个内置字体里有 6 个是商业字体（方正大标宋/仿宋/楷体、汉仪文黑、兰亭羲之黑、仓耳今楷），
-分享部署目录有授权风险。2026-11-12 全部换成 **SIL OFL 开源字体**（现 8 套可选），并按 unicode-range 分包：
+分享部署目录有授权风险。2026-11-12 全部换成 **SIL OFL 开源字体**（现 7 套可选），并按 unicode-range 分包：
 
 | 家族（CSS 里的名字） | 上游 | 目录 | 用在 |
 |---|---|---|---|
 | `思源黑体内置` | Noto Sans SC（可变 100-900） | `static/fonts/noto-sans/` | 双引号、方括号、空心括号 |
 | `思源宋体内置` | Noto Serif SC（可变 100-900） | `static/fonts/noto-serif/` | 括号、标题 |
 | `霞鹜文楷等宽内置` | LXGW WenKai Mono 400 | `static/fonts/wenkai-mono/` | 正文 |
-| `霞鹜文楷比例内置` | LXGW WenKai 400 | `static/fonts/wenkai/` | 单引号、书名号 |
 | `未来圆内置` | WeiLaiYuan SC Medium（用户本地 TTF 自切） | `static/fonts/weilaiyuan/` | 空心括号 |
 | `寒蝉圆体内置` | ChillRoundGothic ExtraLight（思源黑体圆角化） | `static/fonts/chillround/` | 可选：更细的圆体 |
 | `得意黑内置` | Smiley Sans Oblique（倾斜黑，标题用） | `static/fonts/smiley/` | 可选：标题 |

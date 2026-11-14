@@ -42,7 +42,6 @@ function safeLoading(show) {
 const FONT_NAME_MAP = {
     'system-ui': '系统默认',
     "'霞鹜文楷等宽内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif": '📱 霞鹜文楷等宽（开源·分包）',
-    "'霞鹜文楷比例内置', 'LXGW WenKai', serif": '📱 霞鹜文楷比例（开源·分包）',
     "'思源黑体内置', 'Noto Sans SC', sans-serif": '📱 思源黑体（开源·分包）',
     "'思源宋体内置', 'Noto Serif SC', serif": '📱 思源宋体（开源·分包）',
     "'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif": '📱 未来圆（开源·分包）',

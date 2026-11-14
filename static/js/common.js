@@ -621,7 +621,6 @@ window.BUILTIN_FONTS = {
     // 全部改为 unicode-range 分包（见 font.css）：没有单个 woff2 可预载，
     // 浏览器按页面实际出现的字自己取分片。chunked=true 表示跳过 FontFace 预加载。
     '霞鹜文楷等宽内置': { chunked: true, label: '霞鹜文楷等宽' },
-    '霞鹜文楷比例内置': { chunked: true, label: '霞鹜文楷比例' },
     '思源黑体内置': { chunked: true, label: '思源黑体' },
     '思源宋体内置': { chunked: true, label: '思源宋体' },
     '未来圆内置': { chunked: true, label: '未来圆' },
