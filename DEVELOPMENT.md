@@ -476,6 +476,201 @@ U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若�
 `unicode-range: U+2018-2019` 挂到同一 family。700 档用 Medium 顶（上游没发布 Bold TTF）。
 以后再加同类「补丁字形」照这个做法：同 family + 精确 unicode-range + 单独小文件。
 
+### 字体从哪来、怎么自己切（AI 助手照此执行）
+
+`static/fonts/` **不在仓库里**（`.gitignore` 里），原因有两个：总共 **72MB**，以及其中三套是
+从 TTF 现切的、产物随切片参数变化，提交进 Git 只会让仓库变大还产生无意义的二进制 diff。
+
+**所以拉到代码后字体是空的**。站点照样能跑，但 7 套内置字体全部 404，阅读页退回系统字体。
+按下面这份清单生成一次即可（一次性下载约 50MB，切完 72MB 落盘，约 10 分钟）。
+
+#### 一览：7 套字体、各自的来源和产物
+
+| 家族 | 上游 | 获取方式 | 产物 |
+|---|---|---|---|
+| `思源黑体内置` | Noto Sans SC | Google Fonts **已分包** | `noto-sans/` 101 片 / 6.9MB |
+| `思源宋体内置` | Noto Serif SC | 同上 | `noto-serif/` 101 片 / 9.9MB |
+| `霞鹜文楷等宽内置` | LXGW WenKai Mono | jsDelivr **已分包** | `wenkai-mono/` 194 片（400+700）/ 13MB |
+| `未来圆内置` | WeiLaiYuan SC | **只能自切**（需本地 TTF） | `weilaiyuan/regular|medium/` 各 106 片 / 26MB |
+| `寒蝉圆体内置` | ChillRoundGothic ExtraLight | GitHub 上的 OTF，自切 | `chillround/` 78 片 / 9.0MB |
+| `得意黑内置` | Smiley Sans Oblique | GitHub release 里的 TTF，自切 | `smiley/` 27 片 / 1.9MB |
+| `朱雀仿宋内置` | Zhuque Fangsong v0.212 | GitHub release 里的 TTF，自切 | `zhuque/` 37 片 / 6.4MB |
+
+7 套齐全时 `static/css/font.css` 应生成 **752 条** `@font-face`。
+
+#### 方式 A：上游已经切好（思源两套、霞鹜文楷等宽）——直接下，别自己切
+
+这两个上游都按 `unicode-range` 分好了片，自己再切反而更差（粒度、覆盖都对不上）。
+
+```bash
+NOVEL=/path/to/novel-manager
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+
+# 1. 思源黑/宋：Google 的 CSS2 会把同一套字体按 unicode-range 拆成 100 多条规则
+curl -s -A "$UA" 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap' -o /tmp/sans.css
+curl -s -A "$UA" 'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap' -o /tmp/serif.css
+# 每个文件应含 303 / 202 条 @font-face
+
+# 2. 霞鹜文楷等宽：jsDelivr 上的网页字体包，regular / bold 各 97 条
+curl -s 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkaimono-regular.css' -o /tmp/mono-regular.css
+curl -s 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkaimono-bold.css'    -o /tmp/mono-bold.css
+```
+
+然后：**把 CSS 里每个 `url(...)` 指向的文件下载下来**（文件名可以用 URL 的 sha1 前 10 位，
+避免路径里的 `/`），改写成 `/static/fonts/<目录>/<新文件名>`，再拼进 `font.css`。
+
+思源有个必须做的优化：**三个字重请求出来的 URL 是同一批分片**（Google 对可变字体就是这么返回的）。
+按 URL 去重后写成一条 `font-weight: 100 900`，否则规则数和 CSS 体积都要 ×3
+（699 → 396 条，432KB → 164KB）。文楷的 regular / bold 是不同文件，直接映射 400 / 700。
+
+#### 方式 B：只有整包 TTF/OTF，需要自己切
+
+```bash
+pip install fonttools brotli      # brotli 是写 woff2 必需的
+```
+
+存成 `slice.py`，参数：源文件、输出目录、CSS 里的 family 名、字重：
+
+```python
+# 用法: python slice.py 源.ttf static/fonts/chillround 寒蝉圆体内置 300
+import os, sys
+from fontTools import subset
+from fontTools.ttLib import TTFont
+
+SRC, OUT, FAMILY, WEIGHT = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+PER = 350                      # 每片码位数；再大单片就上百 KB，再小请求数变多
+
+def to_range(cps):
+    out, start, prev = [], cps[0], cps[0]
+    for c in cps[1:]:
+        if c == prev + 1:
+            prev = c
+            continue
+        out.append((start, prev)); start = prev = c
+    out.append((start, prev))
+    return ', '.join('U+%04X' % a if a == b else 'U+%04X-%04X' % (a, b) for a, b in out)
+
+f = TTFont(SRC); cps = sorted(f.getBestCmap()); f.close()
+os.makedirs(OUT, exist_ok=True)
+prefix = os.path.basename(OUT)
+rules = []
+for i in range(0, len(cps), PER):
+    chunk, name = cps[i:i + PER], '%s-%03d.woff2' % (prefix, i // PER)
+    f = TTFont(SRC)
+    opts = subset.Options()
+    opts.name_IDs = ['*']            # 保留 name 表，便于排查
+    opts.notdef_outline = True
+    opts.drop_tables += ['DSIG']
+    s = subset.Subsetter(options=opts)
+    s.populate(unicodes=chunk)
+    s.subset(f)
+    f.flavor = 'woff2'
+    f.save(os.path.join(OUT, name))
+    f.close()
+    rules.append("@font-face {\n  font-family: '%s';\n  font-style: normal;\n"
+                 "  font-weight: %s;\n  font-display: swap;\n"
+                 "  src: url(/static/fonts/%s/%s) format('woff2');\n  unicode-range: %s;\n}"
+                 % (FAMILY, WEIGHT, prefix, name, to_range(chunk)))
+open(os.path.join(OUT, 'index.css'), 'w', encoding='utf-8').write('\n'.join(rules) + '\n')
+print('%s: %d 片' % (prefix, len(rules)))
+```
+
+三个源文件：
+
+```bash
+# 寒蝉圆体 ExtraLight（27k 字形，切完 78 片）
+curl -L -o /tmp/chill.otf https://raw.githubusercontent.com/Warren2060/ChillRoundGothic/main/ChillRoundGothic/ChillRoundGothic_ExtraLight.otf
+
+# 得意黑（zip 里有 ttf/otf/woff2 四份，用 ttf）
+curl -L -o /tmp/smiley.zip https://github.com/atelier-anchor/smiley-sans/releases/download/v2.0.1/smiley-sans-v2.0.1.zip
+
+# 朱雀仿宋（注意：这个仓库没有 /releases/latest，会 404，要取 releases 列表拿资产地址）
+curl -s 'https://api.github.com/repos/TrionesType/zhuque/releases?per_page=1' \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['assets'][0]['url'])" > /tmp/zq_url
+curl -sL -H 'Accept: application/octet-stream' -o /tmp/zhuque.zip "$(cat /tmp/zq_url)"
+```
+
+#### 方式 C：未来圆（唯一没有公开下载源的）
+
+上游只以本地文件流传，没有稳定的直链。**拿到 TTF 就切，拿不到就跳过**——跳过时阅读页
+会把该角色回退到字体栈里的下一个字体，不会报错。
+
+它有两个字重，而且分片文件名没有字重标识，所以必须分子目录：
+
+```bash
+python slice.py 未来圆Regular.ttf static/fonts/weilaiyuan/regular 未来圆内置 400
+python slice.py 未来圆Medium.ttf  static/fonts/weilaiyuan/medium  未来圆内置 700
+```
+
+霞鹜文楷等宽不用分子目录，因为它的分片文件名自带 `-regular-` / `-bold-`。
+
+#### 别忘了单引号补丁
+
+霞鹜文楷的网页分包版**没有 `‘ ’`（U+2018/2019）**，完整 TTF 里有（500 宽，正好落在等宽网格）。
+补法是再生成两个只含这两个码位的小文件（各 1.4KB），用 `unicode-range: U+2018-2019`
+挂到同一 family 的 400 / 700：
+
+```python
+from fontTools import subset
+from fontTools.ttLib import TTFont
+
+PAIRS = ((400, 'LXGWWenKaiMono-Regular.ttf', 'quote-2018-400.woff2'),
+         (700, 'LXGWWenKaiMono-Medium.ttf',  'quote-2018-700.woff2'))
+
+for weight, src, dst in PAIRS:
+    f = TTFont(src)
+    opts = subset.Options()
+    opts.name_IDs = ['*']
+    opts.drop_tables += ['DSIG']
+    s = subset.Subsetter(options=opts)
+    s.populate(unicodes=[0x2018, 0x2019])
+    s.subset(f)
+    f.flavor = 'woff2'
+    f.save('static/fonts/wenkai-mono/' + dst)
+    f.close()
+```
+
+上游没发布 Bold TTF（只有 Light / Medium / Regular），所以 700 档用 Medium 顶：单引号会比
+周围粗体略细一点，肉眼几乎看不出。若要改 name 表里的族名，注意 **Mac 平台记录只能用
+mac_roman 编码**，写中文族名会抛 `UnicodeEncodeError`——中文只写 Windows 平台那条。
+
+#### 校验
+
+```bash
+cd static/fonts
+for d in noto-sans noto-serif wenkai-mono chillround smiley zhuque; do echo -n "$d "; ls $d/*.woff2 | wc -l; done
+ls weilaiyuan/regular/*.woff2 | wc -l; ls weilaiyuan/medium/*.woff2 | wc -l
+# 期望：101 / 101 / 194 / 78 / 27 / 37，未来圆 regular 106、medium 106
+
+grep -c '@font-face' ../css/font.css    # 期望 752
+
+# 抽一片确认能访问、类型正确
+curl -o /dev/null -w '%{http_code} %{content_type}\n' \
+  "http://<你的地址>:5000/static/fonts/noto-sans/$(ls noto-sans/*.woff2 | head -1 | xargs basename)"
+# 期望 200 font/woff2
+```
+
+最后在浏览器打开一章，Network 面板筛 `woff2`：**应该只有十几片、每片 3–100KB，合计几百 KB**。
+如果整页拉了几十 MB，说明 `unicode-range` 丢了（见下面第 1 条）。
+
+#### 常见坑
+
+1. **Google CSS2 不带 UA 会返回整包 TTF**，没有 `unicode-range`，等于回到"一次下 8MB"。
+   必须带现代 Chrome/Safari 的 User-Agent。
+2. **`github.com/.../releases/download/...` 直链不稳定**，经常超时或 502。
+   可靠做法是用 API：`releases?per_page=1` → 取 `assets[i].url` → 带
+   `Accept: application/octet-stream` 请求。
+3. **朱雀仓库没有 `latest` 标记**，`/releases/latest` 直接 404。
+4. **`cn-font-split` 在 Windows 上用不了**（原生二进制 dlopen 失败，`ProcessPoolExecutor`
+   也会被沙箱拦），跨平台一律用 `fontTools.subset`，慢一点但哪都能跑。
+5. **`font-display: swap` 别漏**，否则字体没下完时正文是空白的。
+6. **字体目录不要提交 Git**，它是按需生成物；`.gitignore` 里已有 `static/fonts/`。
+7. 只想要一部分字体时，删掉对应的目录、`font.css` 里那一段、以及五处清单条目
+   （阅读页抽屉、`config.html` 的 `font_list` 与 `font_opts`、`config.js` 的 `FONT_NAME_MAP`、
+   `common.js` 的 `BUILTIN_FONTS`）—— 漏一处就会在配置页留下"选了没反应"的死选项。
+8. 完全不想内置字体：把 `static/css/font.css` 清成一行注释即可，正文会走系统字体
+   （配置页的下拉项还在，想干净就按上一条连清单一起删）。
+
 ### 字体配置要穿过 7 层，键名必须逐层对齐
 
 9 个作用域（正文、标题、双/单引号、圆/方头/方/空心括号、书名号）在仓库里各有一份键名，
