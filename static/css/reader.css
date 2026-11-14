@@ -3153,7 +3153,10 @@ body.dark-mode .content-line mark.search-hit,
 }
 
 /* ===== 分元素字体 加粗/斜体 切换按钮 ===== */
-.set-font-ctrl { display:flex; align-items:center; gap:8px; }
+/* flex 子项默认 min-width:auto，会被内部 select 的 min-content（最长选项文本）顶开，
+   整行溢出抽屉。里面那条 .set-select{min-width:0} 只管得住 select 自己，
+   管不住这层容器 —— 移动端字体名变长后就是这里撑破的（2026-11-14 修）。 */
+.set-font-ctrl { display:flex; align-items:center; gap:8px; flex:1 1 auto; min-width:0; }
 .set-font-ctrl .set-select { flex:1; min-width:0; }
 .set-bi {
     flex:0 0 auto;
