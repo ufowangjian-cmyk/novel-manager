@@ -470,7 +470,7 @@ docker restart novel-manager
 | `朱雀仿宋内置` | Zhuque Fangsong v0.212（技术预览版，OFL） | `static/fonts/zhuque/` | 可选：引号/括号等装饰 |
 
 **已知缺口与补丁**：上游网页分包版 `lxgw-wenkai-webfont@1.7.0` 的 97 个分片里**没有单引号
-U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若选霞鹜文楷等宽，那两个字会
+U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若选霞鹜文楷，那两个字会
 回退到字体栈后面的字体。2026-11-14 用本地 TTF 切了两个只含 `‘’` 的补丁（各 1.4KB）：
 `static/fonts/wenkai-mono/quote-2018-{400,700}.woff2`，在 font.css 里以
 `unicode-range: U+2018-2019` 挂到同一 family。700 档用 Medium 顶（上游没发布 Bold TTF）。
@@ -498,7 +498,7 @@ U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若�
 
 7 套齐全时 `static/css/font.css` 应生成 **752 条** `@font-face`。
 
-#### 方式 A：上游已经切好（思源两套、霞鹜文楷等宽）——直接下，别自己切
+#### 方式 A：上游已经切好（思源两套、霞鹜文楷）——直接下，别自己切
 
 这两个上游都按 `unicode-range` 分好了片，自己再切反而更差（粒度、覆盖都对不上）。
 
@@ -511,7 +511,7 @@ curl -s -A "$UA" 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300
 curl -s -A "$UA" 'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap' -o /tmp/serif.css
 # 每个文件应含 303 / 202 条 @font-face
 
-# 2. 霞鹜文楷等宽：jsDelivr 上的网页字体包，regular / bold 各 97 条
+# 2. 霞鹜文楷：jsDelivr 上的网页字体包，regular / bold 各 97 条
 curl -s 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkaimono-regular.css' -o /tmp/mono-regular.css
 curl -s 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkaimono-bold.css'    -o /tmp/mono-bold.css
 ```
@@ -602,7 +602,7 @@ python slice.py 未来圆Regular.ttf static/fonts/weilaiyuan/regular 未来圆�
 python slice.py 未来圆Medium.ttf  static/fonts/weilaiyuan/medium  未来圆内置 700
 ```
 
-霞鹜文楷等宽不用分子目录，因为它的分片文件名自带 `-regular-` / `-bold-`。
+霞鹜文楷不用分子目录，因为它的分片文件名自带 `-regular-` / `-bold-`。
 
 #### 别忘了单引号补丁
 
