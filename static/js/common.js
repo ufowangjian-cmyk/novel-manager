@@ -120,19 +120,15 @@ async function applyTheme() {
 function watchSystemTheme() {
     const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const handleChange = async (e) => {
-        try {
-            const response = await fetch('/config/get');
-            const config = await response.json();
-
-            if (config.theme === 'auto') {
-                const newTheme = e.matches ? 'dark' : 'light';
-                applyThemeToPage(newTheme, true);
-                localStorage.setItem('theme', newTheme);
-            }
-        } catch (err) {
-            console.error('检查主题配置失败:', err);
-        }
+    // 跟随系统时直接按系统值应用，不再先 fetch('/config/get') 确认：
+    // 手机在后台恢复、切网、离开内网时那次 fetch 会失败，主题就卡在旧档位，
+    // 只有重启（重新 load，base.html 首帧脚本重跑）才被纠正。
+    const handleChange = (e) => {
+        const setting = localStorage.getItem('theme_setting') || 'auto';
+        if (setting !== 'auto') return;          // 固定档位不跟随系统
+        const newTheme = e.matches ? 'dark' : 'light';
+        applyThemeToPage(newTheme, true);
+        localStorage.setItem('theme', newTheme);
     };
 
     if (darkModeQuery.addEventListener) {
@@ -140,6 +136,29 @@ function watchSystemTheme() {
     } else {
         darkModeQuery.addListener(handleChange);
     }
+
+    // 页面从后台恢复时浏览器可能不补发 change 事件（冻结期间系统切了模式），
+    // 回到前台主动对一次；纯本地判断，不依赖网络。
+    if (!window.__themeResumeWatched) {
+        window.__themeResumeWatched = true;
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') syncThemeIfAuto();
+        });
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) syncThemeIfAuto();
+        });
+    }
+}
+
+// 只有「跟随系统」才把页面拉回当前系统档位；固定档位不动
+function syncThemeIfAuto() {
+    const setting = localStorage.getItem('theme_setting') || 'auto';
+    if (setting !== 'auto') return;
+    const theme = getSystemTheme();
+    const isDarkNow = document.documentElement.classList.contains('dark-mode');
+    if ((theme === 'dark') === isDarkNow) return;     // 已经是正确档位，别白写 DOM
+    applyThemeToPage(theme, true);
+    localStorage.setItem('theme', theme);
 }
 
 // 检查从配置页面返回时是否需要刷新主题
@@ -620,7 +639,7 @@ async function prevBackground() {
 window.BUILTIN_FONTS = {
     // 全部改为 unicode-range 分包（见 font.css）：没有单个 woff2 可预载，
     // 浏览器按页面实际出现的字自己取分片。chunked=true 表示跳过 FontFace 预加载。
-    '霞鹜文楷等宽内置': { chunked: true, label: '霞鹜文楷' },
+    '霞鹜文楷内置': { chunked: true, label: '霞鹜文楷' },
     '思源黑体内置': { chunked: true, label: '思源黑体' },
     '思源宋体内置': { chunked: true, label: '思源宋体' },
     '未来圆内置': { chunked: true, label: '未来圆' },

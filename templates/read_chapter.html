@@ -247,7 +247,7 @@
                 {# ---- 字体（分元素：正文/标题 + reader-core 全部高亮符号各自可配）---- #}
                 {% set font_opts %}
                         <option value="system-ui">系统默认</option>
-                        <option value="'霞鹜文楷等宽内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif">霞鹜文楷</option>
+                        <option value="'霞鹜文楷内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif">霞鹜文楷</option>
                         <option value="'思源黑体内置', 'Noto Sans SC', sans-serif">思源黑体</option>
                         <option value="'思源宋体内置', 'Noto Serif SC', serif">思源宋体</option>
                         <option value="'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif">未来圆</option>
@@ -556,9 +556,12 @@
         document.addEventListener('DOMContentLoaded', async function () {
             console.log('📖 阅读页初始化开始...');
             // 1. 主题（common.js）
-            if (typeof loadAndApplyTheme === 'function') {
-                loadAndApplyTheme();
+            // 原来判断的是 loadAndApplyTheme —— 这个函数从来没存在过，
+            // 整个 if 块不执行，阅读页因此从未注册系统主题监听（2026-11-15 修）。
+            if (typeof applyTheme === 'function') {
+                applyTheme();
                 watchSystemTheme();
+                watchThemeStorage();
             }
             // 2. 轮播图（common.js）
             if (typeof initCarousel === 'function') {

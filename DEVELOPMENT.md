@@ -463,7 +463,7 @@ docker restart novel-manager
 |---|---|---|---|
 | `思源黑体内置` | Noto Sans SC（可变 100-900） | `static/fonts/noto-sans/` | 双引号、方括号、空心括号 |
 | `思源宋体内置` | Noto Serif SC（可变 100-900） | `static/fonts/noto-serif/` | 括号、标题 |
-| `霞鹜文楷等宽内置` | LXGW WenKai Mono 400 | `static/fonts/wenkai-mono/` | 正文 |
+| `霞鹜文楷内置` | LXGW WenKai Mono 400 | `static/fonts/wenkai-mono/` | 正文 |
 | `未来圆内置` | WeiLaiYuan SC Medium（用户本地 TTF 自切） | `static/fonts/weilaiyuan/` | 空心括号 |
 | `寒蝉圆体内置` | ChillRoundGothic ExtraLight（思源黑体圆角化） | `static/fonts/chillround/` | 可选：更细的圆体 |
 | `得意黑内置` | Smiley Sans Oblique（倾斜黑，标题用） | `static/fonts/smiley/` | 可选：标题 |
@@ -490,7 +490,7 @@ U+2018/2019**（完整 TTF 里有，500 宽），所以「单引号字体」若�
 |---|---|---|---|
 | `思源黑体内置` | Noto Sans SC | Google Fonts **已分包** | `noto-sans/` 101 片 / 6.9MB |
 | `思源宋体内置` | Noto Serif SC | 同上 | `noto-serif/` 101 片 / 9.9MB |
-| `霞鹜文楷等宽内置` | LXGW WenKai Mono | jsDelivr **已分包** | `wenkai-mono/` 194 片（400+700）/ 13MB |
+| `霞鹜文楷内置` | LXGW WenKai Mono | jsDelivr **已分包** | `wenkai-mono/` 194 片（400+700）/ 13MB |
 | `未来圆内置` | WeiLaiYuan SC | **只能自切**（需本地 TTF） | `weilaiyuan/regular|medium/` 各 106 片 / 26MB |
 | `寒蝉圆体内置` | ChillRoundGothic ExtraLight | GitHub 上的 OTF，自切 | `chillround/` 78 片 / 9.0MB |
 | `得意黑内置` | Smiley Sans Oblique | GitHub release 里的 TTF，自切 | `smiley/` 27 片 / 1.9MB |
