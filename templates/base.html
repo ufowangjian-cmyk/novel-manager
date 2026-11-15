@@ -37,7 +37,7 @@
          登录页有自己完整的一套配色（login.css），用 base_css 块关闭上面两个文件，
          避免 .container / body 等同名选择器互相打架。
          ⚠️ font.css 不再固定 <link>：内置字体单文件最大 8.6MB（霞鹜文楷），
-         由下方脚本按「真实低网」条件异步注入——仅在省流模式(saveData)/2g/3g 等慢网跳过；移动端 WiFi、桌面等正常网络会加载（font-display: swap，文字先显示系统字体、字体在后台慢慢下载完再替换，不阻塞首屏）。
+         由下方脚本按「真实低网」条件异步注入——仅在省流模式(saveData)/2g/3g 真慢网跳过（不再因 type=cellular 而跳过，那含 4G/5G）；移动端 WiFi、桌面等正常网络会加载（font-display: swap，文字先显示系统字体、字体在后台慢慢下载完再替换，不阻塞首屏）。
     -->
     <script>
     /* Web 字体按网络条件加载。window.LOW_NETWORK 同时供 common.js
@@ -72,7 +72,11 @@
         try {
             var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
             if (c) {
-                low = low || c.saveData === true || c.type === 'cellular' ||
+                // 注意：不要再判 c.type === 'cellular' —— NetworkInformation.type 的
+                // 'cellular' 指蜂窝网络（含 4G/5G），不是"慢网"。以前这么写会让所有
+                // 手机流量用户（哪怕 5G）整份 font.css 被跳过、内置字体全部回退系统字体。
+                // 现在字体按 unicode-range 分包（一页几百 KB），只看真实网速档位即可。
+                low = low || c.saveData === true ||
                     /(^|-)(slow-)?2g$/.test(c.effectiveType || '') ||
                     /(^|-)3g$/.test(c.effectiveType || '');
             }
