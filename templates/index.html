@@ -52,9 +52,35 @@
                             onclick="startScan(false)">{{ icon('refresh-cw', 'sm') }}</button>
                     {% endif %}
                 </div>
+                {# 窄屏专用：把快速搜索折叠成一枚圆形图标按钮（宽屏 display:none，
+                   搜索框本身直接显示，不需要这一步）。
+                   ⚠️ 位置在统计胶囊这一行，不在标题行：实测 390px 宽屏下头部可用宽度
+                   只有 330px，标题 213 + 菜单按钮 82 之后仅剩 27px，塞不下 34px 图标，
+                   硬塞会把菜单按钮挤到第三行。放这里正好与右上「菜单」形成右侧竖列。 #}
+                <button type="button" class="header-search-toggle" id="headerSearchToggle"
+                    aria-expanded="false" aria-controls="headerSearch" aria-label="搜索" title="搜索">
+                    {{ icon('search', 'sm') }}
+                </button>
             </div>
 
         </div>
+        {# 头部快速搜索。
+           ⚠️ 刻意不用绝对定位：Docker 版 ≤768px 时 .header-left 变 display:contents，
+           标题 / 菜单按钮 / 统计胶囊会被 order 重排成两行，绝对定位的框会直接压到书卡片上。
+           这里做成 .header 的普通 flex 子项，宽屏靠 order 排到「菜单」按钮左边，
+           窄屏归 order:4 + flex-basis:100% 独占第三行；再窄屏默认折叠成图标（见 style.css）。
+           只提交 search，其余筛选（作者/标签/网站）留在「菜单 → 筛选搜索」里做；
+           sort/order 用隐藏域带上，免得搜一次就把排序悄悄重置回默认。 #}
+        <form method="GET" class="header-search" id="headerSearch" role="search" aria-label="快速搜索">
+            <span class="header-search-icon">{{ icon('search', 'sm') }}</span>
+            <input type="search" name="search" id="headerSearchInput" value="{{ search_text }}"
+                placeholder="书名 / 作者 / 标签" autocomplete="off" aria-label="搜索关键词">
+            {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+            {% if sort_order %}<input type="hidden" name="order" value="{{ sort_order }}">{% endif %}
+            <button type="submit" class="header-search-submit">搜索</button>
+            <button type="button" class="header-search-close" id="headerSearchClose"
+                aria-label="收起搜索框" title="收起">{{ icon('x', 'sm') }}</button>
+        </form>
         <div class="header-right">
             {# 「菜单」按钮：点开下拉，内含原首页四个功能区块（筛选搜索 / 最近阅读 /
             扫描管理 / 每日推荐）+ 折叠面板 + 配置 / 标签 / 登出。

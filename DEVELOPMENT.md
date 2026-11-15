@@ -287,8 +287,31 @@ docker restart novel-manager
 | 登录态 | Flask session，签名用 `SECRET_KEY` 或 `data/secret_key` |
 | 章节切分正则 | 主程序中章节解析相关的正则常量 |
 | 阅读页排版 | `templates/read_chapter.html` + `static/css/reader.css` |
+| 首页头部快速搜索 | `templates/index.html` 的 `#headerSearch` + `style.css` 末尾「头部快速搜索」小节 + `main.js` 的 `initHeaderSearch()` |
 | 静态资源版本号 | `versioned_url_for()` 已全局注入 `?v=<mtime>`，模板里**绝不手写** `?v=`（会变成双问号） |
 | 每用户阅读偏好 | `users[<key>].preferences` |
+
+### 首页头部快速搜索（2026-11-15）
+
+书架页右上角的搜索胶囊。动它之前先看这几条，否则很容易把窄屏布局弄坏：
+
+- **不能用绝对定位。** ≤768px 时 `.header-left` 变 `display:contents`，标题 / 菜单按钮 /
+  统计胶囊靠 `order` 重排成两行，绝对定位的元素会脱离这个流、直接压在书卡片上。
+  搜索框是 `.header` 的普通 flex 子项，全靠 `order` 换位置：
+  宽屏 `.header-left(0) → form(2) → .header-right(3)`；
+  窄屏 `h1(1) → .header-right(2) → .stats-row(3) → form(4)` 且 `flex-basis:100%` 独占第三行。
+- **`.header-right{order:3}` 必须包在 `min-width:769px` 里。** 它和窄屏那条
+  `.header-right{order:2}` 同特异性，写在文件末尾会连窄屏顺序一起改掉。
+- **窄屏折叠开关在统计胶囊那一行，不在标题行。** 实测 390px 下头部可用宽度只有 330px，
+  标题 213 + 菜单按钮 82 之后只剩 27px，塞不下 34px 图标，硬塞会把菜单按钮挤到第三行。
+  开关是 `.header-search-toggle`，和胶囊并排靠右（`.stats-row` 在该断点改成 flex）。
+- **769～829px 会藏掉「TXT阅读工具」副标题。** 该宽度下 h1 不换行需要 425px，
+  减去胶囊 216 + 间距 12 + 菜单 96 只剩 395px，副标题会被压成两行；胶囊再窄
+  placeholder 又要被截断，两头都让不开，只能收标语。胶囊下限 216px 也是这么定出来的。
+- **只提交 `search`，另带 `sort`/`order` 隐藏域。** 作者 / 标签 / 网站筛选留在
+  「菜单 → 筛选搜索」里做；排序必须带上，否则搜一次就把排序悄悄重置回默认。
+- 附带：`/` 快捷键聚焦（正在输入框里打字时不抢键）；窄屏 Esc 或点外部收起，
+  关键字保留在输入框里。改动前端后记得递增 `static/service-worker.js` 的 `CACHE_VERSION`。
 
 ---
 

@@ -1414,6 +1414,68 @@ function initUserMenuSort() {
     // 剑哥反馈多余 —— 排序只是改书架顺序，区块该藏着就藏着（想看得自己从菜单打开）。
 }
 
+// ===== 头部快速搜索 =====
+// 宽屏搜索框常驻，这里只处理三件事：窄屏折叠开关、Esc 收起、"/" 聚焦。
+// 表单本身是普通 GET 提交（只带 search + sort/order），不拦截、不走 fetch。
+function initHeaderSearch() {
+    const header = document.querySelector('.header');
+    const form = document.getElementById('headerSearch');
+    if (!header || !form) return;
+
+    const toggle = document.getElementById('headerSearchToggle');
+    const closeBtn = document.getElementById('headerSearchClose');
+    const input = document.getElementById('headerSearchInput');
+
+    function isOpen() {
+        return header.classList.contains('is-search-open');
+    }
+
+    function setOpen(open) {
+        header.classList.toggle('is-search-open', open);
+        if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        // 刚从 display:none 变回 flex 时同一帧 focus 不生效，等下一帧
+        if (open && input) requestAnimationFrame(() => input.focus());
+    }
+
+    if (toggle) {
+        toggle.addEventListener('click', function (e) {
+            // 别让这次的点击冒泡到下面的"点外部收起"
+            e.stopPropagation();
+            setOpen(!isOpen());
+        });
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', () => setOpen(false));
+
+    // 窄屏展开后，点到搜索框以外就收起（和「菜单」下拉同一套习惯）
+    document.addEventListener('click', function (e) {
+        if (!isOpen() || form.contains(e.target)) return;
+        setOpen(false);
+    });
+
+    // Esc 收起。关键字保留在输入框里，下次展开还在，方便改一改再搜。
+    form.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && isOpen()) {
+            e.stopPropagation();
+            setOpen(false);
+        }
+    });
+
+    // "/" 快速聚焦（宽屏直接聚焦，窄屏先展开）。
+    // 正在别的输入框里打字时不抢键，避免把字打丢。
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        e.preventDefault();
+        if (isOpen()) {
+            if (input) input.focus();
+        } else {
+            setOpen(true);
+        }
+    });
+}
+
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
     // common.js 已经处理了主题和背景轮播
@@ -1421,6 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initUserMenu();
     initUserMenuSort();
+    initHeaderSearch();
     initTouchFeedback();
     checkScreenSizeAndDisplay();
     setTimeout(formatNovelTitlesAndHighlight, 200);

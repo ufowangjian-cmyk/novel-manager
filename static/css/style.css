@@ -4689,3 +4689,251 @@ body.dark-mode .user-menu-subitem.active {
     border-color: #fff;
     box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
 }
+
+/* ============================================
+   头部快速搜索（首页书架右上）
+   --------------------------------------------
+   刻意不用绝对定位，原因见 templates/index.html 里的注释：
+   Docker 版窄屏会把 .header-left 变 display:contents 并 order 重排，
+   绝对定位的元素会脱离这个流、直接压到书卡片上。
+   所以这里全部走 flex 子项 + order：
+
+     宽屏（≥769px）  .header-left(0) → form(2) → .header-right(3)
+                     搜索框贴在「菜单」按钮左侧，同为 36px 玻璃胶囊
+     窄屏（≤768px）  h1(1) → header-right(2) → stats-row(3) → form(4)
+                     搜索框独占第三行；默认折叠，点图标展开
+
+   ⚠️ .header 是 flex-wrap:wrap + align-items:center，而 header-right 写了
+   align-self:flex-start。搜索框若不加 align-self 会被垂直居中，看起来比菜单
+   按钮低半行，两者不再齐平 —— 这里跟随 header-right 一起贴顶。
+   ============================================ */
+.header-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    order: 2;
+    align-self: flex-start;
+    flex: 0 1 auto;
+    /* 下限 216px 是实测值：再窄 placeholder 就被截成「书名 / 作者 / ·」。
+       按 12(左内边距)+15(图标)+8(间隔)+约110(占位文字)+8+62(搜索按钮)+5 算的 */
+    width: clamp(216px, 25vw, 280px);
+    height: var(--header-pill-h);
+    box-sizing: border-box;
+    padding: 0 5px 0 12px;
+    border-radius: 40px;
+    background: var(--opacity-white-15);
+    border: 1px solid var(--opacity-white-25);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    color: var(--color-text-white);
+    font-size: 14px;
+    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* 桌面端 order：菜单按钮排到搜索框右边。
+   ⚠️ 必须限定 min-width：窄屏的 .header-right{order:2} 写在前面，
+   这条若全局生效（同在文件末尾、同特异性）会把窄屏顺序一起改掉。 */
+@media (min-width: 769px) {
+    .header-right {
+        order: 3;
+    }
+
+    /* 和「菜单」按钮之间留一道缝：两块都是 40px 圆角胶囊，
+       紧贴时圆角会挤在一起，看起来像一条被掐断的长条。
+       加在 form 上而不是给 header-right 加 margin-left —— 后者会顶掉
+       原来那条 margin-left:auto。 */
+    .header-search {
+        margin-right: 12px;
+    }
+}
+
+/* 聚焦时亮一圈整枚胶囊，代替 input 自己的 outline */
+.header-search:focus-within {
+    background: var(--opacity-white-25);
+    border-color: var(--opacity-white-40);
+}
+
+/* font-size 对 SVG 无效，必须显式给尺寸 */
+.header-search-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.header-search-icon .ic {
+    width: 15px;
+    height: 15px;
+    opacity: 0.85;
+    vertical-align: middle;
+}
+
+.header-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-white);
+    font: inherit;
+    /* .header 上有 text-shadow，输入的文字会糊成一片，这里单独关掉 */
+    text-shadow: none;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.header-search input::placeholder {
+    color: var(--opacity-white-70, rgba(255, 255, 255, 0.7));
+}
+
+.header-search input:focus {
+    outline: none;
+}
+
+/* type=search 自带的小叉，窄屏用自定义「收起」按钮替代，宽屏留着也碍眼 */
+.header-search input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.header-search-submit {
+    flex: none;
+    height: calc(var(--header-pill-h) - 8px);
+    padding: 0 14px;
+    border: none;
+    border-radius: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #4B6D0F;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.header-search-submit:hover {
+    background: #fff;
+}
+
+.header-search-submit:focus-visible,
+.header-search-toggle:focus-visible,
+.header-search-close:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 2px;
+}
+
+/* 收起按钮：只在窄屏出现（宽屏搜索框常驻，没有"收起"这回事） */
+.header-search-close {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.header-search-close .ic {
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+}
+
+/* 窄屏的折叠开关：和「菜单」按钮同一套玻璃质感，圆形 */
+.header-search-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: var(--header-pill-h);
+    height: var(--header-pill-h);
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--opacity-white-25);
+    background: var(--opacity-white-15);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    color: var(--color-text-white);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.header-search-toggle:hover {
+    background: var(--opacity-white-25);
+    border-color: var(--opacity-white-40);
+}
+
+.header-search-toggle[aria-expanded="true"] {
+    background: var(--opacity-white-30);
+    border-color: var(--opacity-white-40);
+}
+
+.header-search-toggle .ic {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+/* 769～829px 这一小段：头部宽度正好卡在临界点上。
+   实测 h1 不换行需要 34(图标)+8+248(标题 57px 高、等比 4.36)+8+5+122(副标题)=425px，
+   而 769px 下可用 719px，减去搜索胶囊 216 + 间距 12 + 菜单按钮 96 只剩 395px，
+   副标题会被压成「TXT阅读 / 工具」两行。胶囊再窄 placeholder 又会被截断，
+   两头都让不开 —— 这一小段直接把副标题这条装饰性标语收起来，830px 以上自然恢复。 */
+@media (min-width: 769px) and (max-width: 829px) {
+    .reader-subtitle {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* 统计胶囊行改成 flex：胶囊靠左、搜索图标靠右，与右上「菜单」按钮同一竖列。
+       宽屏下 .stats-row 里只有胶囊，且搜索图标 display:none，保持原来的块级包裹层。 */
+    .stats-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    /* 默认折叠：不占高度，头部仍是原来的两行 */
+    .header-search {
+        display: none;
+        order: 4;
+        flex: 0 0 100%;
+        width: auto;
+        height: 38px;
+        padding: 0 5px 0 12px;
+    }
+
+    .header.is-search-open .header-search {
+        display: flex;
+    }
+
+    .header-search-toggle,
+    .header-search-close {
+        display: inline-flex;
+    }
+
+    /* iOS Safari 在 font-size < 16px 的输入框获得焦点时会整体放大页面，
+       38px 高的框塞 16px 字完全放得下，没必要为省一点字高换来缩放抖动 */
+    .header-search input {
+        font-size: 16px;
+    }
+
+    .header-search-submit {
+        height: 30px;
+        padding: 0 13px;
+        font-size: 14px;
+    }
+}
+
+/* 深色模式：不单独换底色。头部是背景轮播图上面的玻璃层，
+   「菜单」按钮在暗色下也一直是白色半透明（body.dark-mode 没覆盖它），
+   这里若改成暗底反而会比旁边那枚按钮糊在照片里看不出来 —— 保持同款白玻璃。 */
