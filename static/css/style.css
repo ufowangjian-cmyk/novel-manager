@@ -4900,6 +4900,16 @@ body.dark-mode .user-menu-subitem.active {
         align-items: center;
         justify-content: space-between;
         gap: 8px;
+        /* 原来是 2px，这里补到 10px：下面把胶囊自带的 margin-top:8px 归零了，
+           补回来才能让胶囊相对标题的位置、以及头部总高度和加搜索按钮之前完全一致 */
+        margin-top: 10px;
+    }
+
+    /* ⚠️ 胶囊全局带 margin-top:8px（桌面端用来和标题拉开距离）。
+       进了 flex 行以后这个外边距会被一起居中，胶囊就比 34px 的搜索图标下沉 4px，
+       两者不在一条线上 —— 在这个断点里归零，让两个 34px 的胶囊真正贴同一条基线。 */
+    .stats-row .stats-badge {
+        margin-top: 0;
     }
 
     /* 默认折叠：不占高度，头部仍是原来的两行 */

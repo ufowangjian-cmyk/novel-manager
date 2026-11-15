@@ -312,6 +312,9 @@ docker restart novel-manager
   「菜单 → 筛选搜索」里做；排序必须带上，否则搜一次就把排序悄悄重置回默认。
 - 附带：`/` 快捷键聚焦（正在输入框里打字时不抢键）；窄屏 Esc 或点外部收起，
   关键字保留在输入框里。改动前端后记得递增 `static/service-worker.js` 的 `CACHE_VERSION`。
+- **`.stats-badge` 自带 `margin-top:8px`，进 flex 行后会被一起居中**，胶囊会比 34px 的搜索图标
+  下沉 4px（视觉上像没对齐）。该断点里要把这条外边距归零，同时把 `.stats-row` 的
+  `margin-top` 从 2px 补到 10px，头部总高度和胶囊相对标题的位置才和加按钮之前一致。
 
 ---
 
