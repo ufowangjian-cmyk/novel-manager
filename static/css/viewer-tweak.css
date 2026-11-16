@@ -140,6 +140,12 @@
     background-color: rgba(255, 255, 255, 0.14);
 }
 
+/* 实心三角的视觉体量比描边图标小，同尺寸会显得「缩进去了」，单独放大 1px 找平 */
+.viewer-toolbar > ul > li.viewer-play::before {
+    width: 21px;
+    height: 21px;
+}
+
 /* ⚠️ Viewer 给播放按钮默认挂了 .viewer-large（30px + 负 margin），会跟胶囊的 34px 打架 */
 .viewer-toolbar > ul > li.viewer-large {
     width: 34px;
