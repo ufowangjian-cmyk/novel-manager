@@ -12,3 +12,271 @@
     transition-duration: .12s;
     transition-timing-function: ease-out;
 }
+
+/* ============================================================
+   底部工具栏：单条胶囊（2026-11-16）
+   ------------------------------------------------------------
+   只覆盖 viewer.min.css，不改库本体。结构仍然是原生那套
+   .viewer-toolbar > ul > li[data-viewer-action]，所以缩放 / 旋转 /
+   翻页 / 键盘快捷键行为完全不变，这里只换皮 + 两个文字标签
+   （页码、缩放百分比，由 reader-viewer.js 的 layoutToolbar 插入）。
+
+   按钮顺序：‹ | 1/3 | › ｜ 缩小 | 百分比 | 放大 | 适应 ｜ 旋转 | 全屏 | 下载
+   ============================================================ */
+
+/* ---------- 1. 胶囊本体 ---------- */
+.viewer-toolbar > ul {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0 auto 12px;
+    padding: 0 8px;
+    height: 44px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: rgba(28, 28, 30, 0.72);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    /* 原版是 overflow:hidden，会把按钮的焦点环裁掉 */
+    overflow: visible;
+    float: none;
+}
+
+/* ---------- 2. 按钮 ---------- */
+.viewer-toolbar > ul > li {
+    float: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    transition: background-color 0.15s ease;
+    /* 原版按钮之间用 margin-left:1px，这里交给 gap */
+    margin: 0 !important;
+}
+
+.viewer-toolbar > ul > li+li {
+    margin-left: 0 !important;
+}
+
+.viewer-toolbar > ul > li:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.viewer-toolbar > ul > li:active {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.viewer-toolbar > ul > li:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+/* Viewer 给所有按钮都挂了 viewer-hide-md-down（<1200px 整条工具栏消失）。
+   这套胶囊本来就是给窄屏做的，统一放出来；JS 里也会把这个类摘掉，双保险。 */
+.viewer-toolbar > ul > li.viewer-hide-md-down {
+    display: inline-flex;
+}
+
+/* ---------- 3. 图标：mask 换成线条图标 ---------- */
+.viewer-toolbar > ul > li::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    /* ⚠️ 不能用 currentColor：Chromium 下伪元素的 background-color:currentColor
+       会被算成 transparent，图标整片消失（Edge 实测）。胶囊是深底白图标，写死白色。 */
+    background-color: #fff;
+    opacity: 0.92;
+    background-image: none;
+    -webkit-mask-image: var(--vi);
+    mask-image: var(--vi);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.viewer-toolbar > ul > li:hover::before {
+    opacity: 1;
+}
+
+/* 图标与站内 icons/*.svg 同一套 Lucide 线性风格（24 视框、圆头圆角） */
+.viewer-prev {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 18-6-6 6-6'/%3E%3C/svg%3E");
+}
+
+.viewer-next {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+}
+
+.viewer-zoom-out {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3Cpath d='M8 11h6'/%3E%3C/svg%3E");
+}
+
+.viewer-zoom-in {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3Cpath d='M11 8v6'/%3E%3Cpath d='M8 11h6'/%3E%3C/svg%3E");
+}
+
+/* 「适应窗口」：四角框 */
+.viewer-reset {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3H5a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M21 8V5a2 2 0 0 0-2-2h-3'/%3E%3Cpath d='M3 16v3a2 2 0 0 0 2 2h3'/%3E%3Cpath d='M16 21h3a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
+}
+
+.viewer-rotate-right {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8'/%3E%3Cpath d='M21 3v5h-5'/%3E%3C/svg%3E");
+}
+
+.viewer-fullscreen {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M9 21H3v-6'/%3E%3Cpath d='M21 3l-7 7'/%3E%3Cpath d='M3 21l7-7'/%3E%3C/svg%3E");
+}
+
+.viewer-download {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3Cpath d='M12 15V3'/%3E%3C/svg%3E");
+}
+
+/* ---------- 4. 分组分隔线与文字标签 ---------- */
+.viewer-toolbar > ul > li.viewer-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 6px !important;
+    border-radius: 0;
+    background-color: rgba(255, 255, 255, 0.16);
+    pointer-events: none;
+}
+
+.viewer-toolbar > ul > li.viewer-sep::before {
+    display: none;
+}
+
+.viewer-toolbar > ul > li.viewer-page,
+.viewer-toolbar > ul > li.viewer-zoom-pct {
+    width: auto;
+    min-width: 34px;
+    height: 30px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 1;
+    font-family: inherit;
+    /* 数字等宽：翻页时页码不会左右抖 */
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.viewer-toolbar > ul > li.viewer-page::before,
+.viewer-toolbar > ul > li.viewer-zoom-pct::before {
+    display: none;
+}
+
+/* 百分比可点：回到原始尺寸（等价于原来的 1:1 按钮） */
+.viewer-toolbar > ul > li.viewer-zoom-pct {
+    min-width: 46px;
+    cursor: pointer;
+}
+
+.viewer-toolbar > ul > li.viewer-zoom-pct:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* ---------- 5. 关闭按钮：80px 大圆收成 40px ---------- */
+.viewer-button.viewer-close {
+    width: 40px;
+    height: 40px;
+    right: 0;
+    top: 0;
+    margin: 14px;
+    background-color: rgba(28, 28, 30, 0.72);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viewer-button.viewer-close::before {
+    top: 50%;
+    left: 50%;
+    bottom: auto;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    background-color: #fff;
+    opacity: 0.92;
+    background-image: none;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+/* ---------- 6. 底部缩略图条：压低存在感 ---------- */
+.viewer-navbar {
+    background-color: rgba(20, 20, 22, 0.55);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* 底部标题（图片名 / 尺寸）：胶囊里已有页码，打开时右上角信息面板也会显示一次，
+   两块文字叠在一起很乱，直接收掉 */
+.viewer-title {
+    display: none;
+}
+
+/* ---------- 7. 窄屏再收一收 ---------- */
+@media (max-width: 600px) {
+
+    .viewer-toolbar > ul {
+        height: 40px;
+        padding: 0 6px;
+        gap: 0;
+        margin-bottom: 10px;
+    }
+
+    .viewer-toolbar > ul > li {
+        width: 32px;
+        height: 32px;
+    }
+
+    .viewer-toolbar > ul > li::before {
+        width: 18px;
+        height: 18px;
+    }
+
+    .viewer-toolbar > ul > li.viewer-sep {
+        margin: 0 4px !important;
+    }
+
+    .viewer-toolbar > ul > li.viewer-page,
+    .viewer-toolbar > ul > li.viewer-zoom-pct {
+        min-width: 32px;
+        height: 28px;
+        padding: 0 4px;
+        font-size: 12.5px;
+    }
+
+    /* 手机上没有浏览器全屏（iOS 不支持），下载也少用，位置让给缩放和翻页 */
+    .viewer-toolbar > ul > li.viewer-fullscreen,
+    .viewer-toolbar > ul > li.viewer-download {
+        display: none;
+    }
+
+    .viewer-button.viewer-close {
+        width: 36px;
+        height: 36px;
+        margin: 10px;
+    }
+}

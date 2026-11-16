@@ -318,6 +318,44 @@ docker restart novel-manager
 
 ---
 
+## 图片查看器工具栏（单条胶囊，2026-11-16）
+
+书架/阅读页点开大图后的底部控件，从 Viewer.js 默认的一排小圆钮改成单条胶囊：
+`‹ | 1/3 | › ｜ 缩小 | 百分比 | 放大 | 适应 ｜ 旋转 | 全屏 | 下载`。
+**不改 `viewer.min.js`**——它支持自定义 `toolbar` 的按钮项与顺序，也允许往 `<ul>` 里插自己
+的 `<li>`；缩放 / 旋转 / 翻页仍全走原生事件。改动落在两处：
+
+| 文件 | 改什么 |
+|---|---|
+| `static/css/viewer-tweak.css` | 全部外观（胶囊、mask 图标、分隔线、标签、关闭钮、缩略图条） |
+| `static/js/reader/reader-viewer.js` | `DEFAULT_OPTIONS.toolbar` 的按钮取舍；`layoutToolbar()` 统一排序；`updatePageLabel()` / `updateZoomPct()` |
+
+### 四个坑（都踩过）
+
+1. **`viewer-hide-md-down` 会把整条工具栏藏掉。** 库给每个按钮都挂了这个类，
+   而它的断点是 `@media (max-width:1199px)` —— 手机和平板上根本没有工具栏，只剩缩略图条。
+   `layoutToolbar()` 里统一摘类，CSS 里也覆写了一条 `display:inline-flex` 兜底。
+2. **伪元素上不能用 `background-color: currentColor`。** Chromium（Edge 实测）会算成
+   `transparent`，mask 图标整片消失。胶囊是深底白图标，直接写 `#fff`，hover 用 `opacity`。
+3. **百分比不能用 Viewer 的 ratio 算。** 库给大图加了
+   `.viewer-canvas > img { max-width: 90% !important }`，`scale=1` 不等于「原始尺寸」。
+   按 `渲染宽度 ÷ naturalWidth` 算；旋转 90°/270° 时渲染宽对应原图高，从
+   `transform` 的 `matrix.b` 判断后换用 `naturalHeight`。
+4. **`reset()`（适应窗口）不发 `zoomed` 事件。** 只监听事件的话，点完「适应」百分比会停在
+   旧值。胶囊上补了 click、画布上补了 wheel / pointerup / touchend 的兜底刷新，
+   键盘触发的 R / 1 / O 也各自补一次。
+
+### 按钮取舍
+
+胶囊里只放 6 枚：`prev / next / zoomOut / zoomIn / reset / rotateRight`（+ 全屏、下载）。
+播放、翻转水平/垂直、左旋、1:1 不再占位——键盘仍可用（空格 / O / Shift+O / 1），
+**点胶囊里的百分比等同于点 1:1**（`zoomTo(1, true)`）。窄屏（≤600px）再隐藏全屏与下载
+（iOS 不支持浏览器全屏，下载在手机上也不常用）。
+底部那行「图片名 / 尺寸」(`.viewer-title`) 已隐藏：胶囊里有页码，打开大图时右上角信息面板
+还会显示一次文件名，两块叠着很乱。
+
+---
+
 ## 阅读页渲染（改之前必须知道）
 
 ### 处理顺序
