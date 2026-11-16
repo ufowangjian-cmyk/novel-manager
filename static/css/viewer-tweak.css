@@ -130,6 +130,27 @@
     --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3H5a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M21 8V5a2 2 0 0 0-2-2h-3'/%3E%3Cpath d='M3 16v3a2 2 0 0 0 2 2h3'/%3E%3Cpath d='M16 21h3a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
 }
 
+/* 幻灯片播放 / 暂停：这两个用实心图形，18px 下比描边三角清楚得多 */
+.viewer-play {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M8.4 4.9c0-1 1.1-1.6 1.9-1.1l9.6 6.2a1.3 1.3 0 0 1 0 2.2l-9.6 6.2c-.8.5-1.9 0-1.9-1.1z'/%3E%3C/svg%3E");
+}
+
+.viewer-toolbar > ul > li.viewer-play.is-playing {
+    --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='6.6' y='4.6' width='4' height='14.8' rx='1.3' fill='%23000'/%3E%3Crect x='13.4' y='4.6' width='4' height='14.8' rx='1.3' fill='%23000'/%3E%3C/svg%3E");
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ⚠️ Viewer 给播放按钮默认挂了 .viewer-large（30px + 负 margin），会跟胶囊的 34px 打架 */
+.viewer-toolbar > ul > li.viewer-large {
+    width: 34px;
+    height: 34px;
+    margin: 0 !important;
+}
+
+.viewer-toolbar > ul > li.viewer-large::before {
+    margin: 0;
+}
+
 .viewer-rotate-right {
     --vi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8'/%3E%3Cpath d='M21 3v5h-5'/%3E%3C/svg%3E");
 }
@@ -221,6 +242,13 @@
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
+}
+
+/* ⚠️ 播放幻灯片时 .viewer-player 是 position:absolute + z-index:1，会连光标一起盖住整屏，
+   胶囊（z-index:auto）就被压在下面 —— 「暂停」既看不见也点不到。把胶囊提到播放层之上。
+   缩略图条保持不动（播放时不必看缩略图）。 */
+.viewer-toolbar {
+    z-index: 2;
 }
 
 /* ---------- 6. 底部缩略图条：压低存在感 ---------- */

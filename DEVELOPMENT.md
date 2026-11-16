@@ -321,7 +321,7 @@ docker restart novel-manager
 ## 图片查看器工具栏（单条胶囊，2026-11-16）
 
 书架/阅读页点开大图后的底部控件，从 Viewer.js 默认的一排小圆钮改成单条胶囊：
-`‹ | 1/3 | › ｜ 缩小 | 百分比 | 放大 | 适应 ｜ 旋转 | 全屏 | 下载`。
+`‹ | 1/3 | › ｜ 缩小 | 百分比 | 放大 | 播放 ｜ 旋转 | 全屏 | 下载`。
 **不改 `viewer.min.js`**——它支持自定义 `toolbar` 的按钮项与顺序，也允许往 `<ul>` 里插自己
 的 `<li>`；缩放 / 旋转 / 翻页仍全走原生事件。改动落在两处：
 
@@ -347,12 +347,28 @@ docker restart novel-manager
 
 ### 按钮取舍
 
-胶囊里只放 6 枚：`prev / next / zoomOut / zoomIn / reset / rotateRight`（+ 全屏、下载）。
-播放、翻转水平/垂直、左旋、1:1 不再占位——键盘仍可用（空格 / O / Shift+O / 1），
+胶囊里只放 6 枚：`prev / next / zoomOut / zoomIn / play / rotateRight`（+ 全屏、下载）。
+翻转水平/垂直、左旋、1:1 不再占位——键盘仍可用（O / Shift+O / 1），
 **点胶囊里的百分比等同于点 1:1**（`zoomTo(1, true)`）。窄屏（≤600px）再隐藏全屏与下载
 （iOS 不支持浏览器全屏，下载在手机上也不常用）。
 底部那行「图片名 / 尺寸」(`.viewer-title`) 已隐藏：胶囊里有页码，打开大图时右上角信息面板
 还会显示一次文件名，两块叠着很乱。
+
+**「适应窗口」(reset) 按钮已撤掉**（2026-11-16 剑哥说基本用不上）：双击图片本来就在
+「原始尺寸」和「适应窗口」之间切换（`toggleOnDblclick`），键盘 `R` 也是 reset，
+所以不丢功能。腾出来的位置给了幻灯片播放。
+
+### 幻灯片按钮的两个坑
+
+1. **库的播放按钮只会「开始」，再点不会停**：`play()` 里卡着 `!this.played`，
+   停止要靠点画面 / 空格 / Esc。胶囊里必须自己接管成开关，否则图标切成暂停却点不动。
+   现在 `.viewer-play` 上绑了 click（`stopPropagation` 挡掉容器委托），暂停时调 `stop()`。
+2. **播放层会盖住胶囊**：`.viewer-player` 是 `position:absolute; z-index:1; cursor:none`，
+   整屏盖住连光标都藏了。`viewer-tweak.css` 里给 `.viewer-toolbar` 补了 `z-index:2`，
+   否则「暂停」既看不见也点不到。缩略图条故意不抬（播放时不必看缩略图）。
+
+另外：`.viewer-play` 自带 `.viewer-large`（30px + 负 margin），CSS 里显式压回 34px；
+播放中页码会跟着轮播走（`playing` 事件的 `detail.index`），停播 / 关闭时把图标同步回三角。
 
 ---
 

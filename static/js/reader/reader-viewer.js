@@ -15,15 +15,16 @@
     // ===== 配置选项 =====
     const DEFAULT_OPTIONS = {
         // 工具栏：只留胶囊里要的这几项，顺序即渲染顺序（2026-11-16 改成小红书式单条胶囊）。
-        // 播放 / 翻转 / 左旋 / 1:1 从按钮里去掉，键盘仍可用（空格 / O / Shift+O / 1），
-        // 「1:1」等价于点一下胶囊里的百分比。
+        // 翻转 / 左旋 / 1:1 从按钮里去掉，键盘仍可用（O / Shift+O / 1），
+        // 「1:1」等价于点一下胶囊里的百分比；「适应窗口」靠双击图片切换，所以不留按钮
+        // （原来那枚 reset 换成了幻灯片播放，剑哥说复原基本用不上）。
         // ⚠️ 这里每项都只是「显示开关」，真正的事还归 Viewer 管，别在这里绑事件。
         toolbar: {
             prev: 4,
             next: 4,
             zoomOut: 4,
             zoomIn: 4,
-            reset: 4,
+            play: 4,
             rotateRight: 4,
         },
         // 导航栏缩略图
@@ -201,6 +202,8 @@
                 console.log(`👁️ 查看图片 #${event.detail.index + 1}/${imageCount}`);
                 updatePageLabel(event.detail.index);
                 updateZoomPct();
+                // 播到最后一张时库会自动停（loop:false），顺手把图标同步回来
+                syncPlayState(viewerInstance ? !!viewerInstance.played : false);
             },
             // 显示时回调
             shown: function() {
@@ -214,6 +217,7 @@
             hidden: function() {
                 console.log('📖 图片查看器已关闭');
                 document.body.classList.remove('viewer-open');
+                syncPlayState(false);
             },
             // 缩放回调
             zoomed: function(event) {
@@ -223,6 +227,16 @@
             rotated: function(event) {
                 console.log(`🔄 旋转: ${event.detail.degree}°`);
                 updateZoomPct();
+            },
+            // 幻灯片：播放中把图标切成「暂停」，页码跟着轮播走（playing 的 detail 里带 index）
+            playing: function(event) {
+                syncPlayState(true);
+                if (event && event.detail && typeof event.detail.index === 'number') {
+                    updatePageLabel(event.detail.index);
+                }
+            },
+            stop: function() {
+                syncPlayState(false);
             },
         };
 
@@ -524,7 +538,9 @@
             if (e.key === ' ' && !e.target.matches('input, textarea, button')) {
                 e.preventDefault();
                 if (viewerInstance) {
-                    viewerInstance.played ? viewerInstance.stop() : viewerInstance.play();
+                    const wasPlaying = viewerInstance.played;
+                    if (wasPlaying) viewerInstance.stop(); else viewerInstance.play();
+                    syncPlayState(!wasPlaying);
                 }
             }
 
@@ -579,7 +595,7 @@
         [
             q('.viewer-prev'), page, q('.viewer-next'),
             sepA,
-            q('.viewer-zoom-out'), pct, q('.viewer-zoom-in'), q('.viewer-reset'),
+            q('.viewer-zoom-out'), pct, q('.viewer-zoom-in'), q('.viewer-play'),
             sepB,
             q('.viewer-rotate-right'), q('.viewer-fullscreen'), q('.viewer-download'),
         ].filter(Boolean).forEach(node => ul.appendChild(node));
@@ -593,6 +609,27 @@
             pct.addEventListener('click', e => { e.stopPropagation(); toActual(); });
             pct.addEventListener('keydown', e => {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toActual(); }
+            });
+        }
+
+        // 播放 / 暂停：库默认点播放只会「开始」，再点不会停（play() 里有 !this.played 的门槛），
+        // 停要靠点画面或空格、Esc。这里接管成真正的开关，播到中途也能从胶囊里停。
+        const playBtn = ul.querySelector('.viewer-play');
+        if (playBtn && !playBtn.dataset.bound) {
+            playBtn.dataset.bound = '1';
+            playBtn.title = '播放幻灯片';
+            playBtn.setAttribute('aria-label', '播放幻灯片');
+            playBtn.addEventListener('click', e => {
+                e.stopPropagation();          // 别让 viewer 的容器委托再走一遍
+                e.preventDefault();
+                if (!viewerInstance) return;
+                if (viewerInstance.played) {
+                    viewerInstance.stop();
+                    syncPlayState(false);
+                } else {
+                    viewerInstance.play();
+                    syncPlayState(true);
+                }
             });
         }
 
@@ -613,6 +650,15 @@
                 canvasBox.addEventListener('touchend', later);
             }
         }
+    }
+
+    // ===== 幻灯片播放状态（图标在播放 / 暂停之间切） =====
+    function syncPlayState(playing) {
+        const btn = document.querySelector('.viewer-play');
+        if (!btn) return;
+        btn.classList.toggle('is-playing', !!playing);
+        btn.title = playing ? '暂停幻灯片' : '播放幻灯片';
+        btn.setAttribute('aria-label', playing ? '暂停幻灯片' : '播放幻灯片');
     }
 
     // ===== 页码 =====
