@@ -387,6 +387,9 @@ docker restart novel-manager
 - `z-index: 900`，必须低于 Viewer 的 `2015`，否则大图打开后按钮还浮在上面。
 - 生命周期挂在 `tapGateCleanup` 上，`destroyViewer()` 里要拆（翻上一章/切章会重建实例），
   不拆会越叠越多监听。
+- **打开指定图片只能调 `view(index)`，别调 `show(index)`。** 库里 `show()` 唯一的参数是
+  「是否跳过动画」的布尔值，索引会被当成 `true` 吞掉 —— 表现是「点了第一张，打开的却是上次
+  停在的那张」。`view()` 才会先写 `this.index` 再调 `show()`。
 
 
 ---

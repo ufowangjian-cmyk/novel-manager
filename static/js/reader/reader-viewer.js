@@ -193,7 +193,11 @@
             hide();
             const list = (viewer && viewer.images) || [];
             const index = list.indexOf(img);
-            viewer.show(index >= 0 ? index : 0);
+            // ⚠️ 必须用 view(index)，不能用 show(index)：
+            // 库里 show() 的唯一参数是「是否跳过动画」的布尔值，索引会被当成 true 吞掉，
+            // 于是每次打开都停在上次浏览的那一张（剑哥报的「点第一张却打开第六张」就是这个）。
+            // view() 才会先写 this.index 再 show()。
+            viewer.view(index >= 0 ? index : 0);
         }
 
         function onDocClick(e) {
