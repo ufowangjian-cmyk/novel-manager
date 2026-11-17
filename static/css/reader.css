@@ -3323,3 +3323,10 @@ body.dark-mode .content-line mark.search-hit,
   height: 18px;
   vertical-align: middle;
 }
+
+/* 打开大图时收起「回到最顶 / 到最底」：
+   它 z-index:2500，比 Viewer 遮罩的 2015 还高，会浮在灯箱上面（移动端尤其明显）。
+   body.viewer-open 由 reader-viewer.js 在 shown/hidden 里加删，只影响 Viewer 打开期间。 */
+body.viewer-open .reader-jump {
+  display: none;
+}
