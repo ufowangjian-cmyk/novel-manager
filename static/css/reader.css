@@ -3300,6 +3300,15 @@ body.dark-mode .content-line mark.search-hit,
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 视觉 38px，实际点按区扩到 ~50px：拇指点得准，又不用把按钮做得更抢眼
+   （同 .image-gallery-toggle 的做法） */
+.image-open-hint::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
 .image-open-hint.is-visible {
   opacity: 1;
   visibility: visible;
