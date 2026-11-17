@@ -786,7 +786,7 @@ const RandomNovel = (function () {
         const authorPlain = (n.author || '未知作者')
             + ((n.author_aliases && n.author_aliases.length) ? `（${n.author_aliases.join('、')}）` : '');
         meta.push(
-            `<span class="random-meta-item" title="${escapeHtml(authorPlain)}">${icon('pencil', 'sm')}`
+            `<span class="random-meta-item" title="${escapeHtml(authorPlain)}">${icon('user', 'sm')}`
             + `<span class="random-meta-text">${escapeHtml(n.author || '未知作者')}${aliases}</span></span>`
         );
         if (n.site && n.site !== '未知网站') {
@@ -957,7 +957,7 @@ const RecentReads = (function () {
         const progressText = rec.progress_text || '进度未知';
         const authorName = String(rec.author == null ? '' : rec.author).trim();
         const author = (authorName && PLACEHOLDER_AUTHORS.indexOf(authorName) === -1)
-            ? `<span class="recent-author" title="${escapeHtml(authorName)}">${icon('pencil', 'sm')} ${escapeHtml(authorName)}</span>`
+            ? `<span class="recent-author" title="${escapeHtml(authorName)}">${icon('user', 'sm')} ${escapeHtml(authorName)}</span>`
             : '';
         const missing = rec.missing_file
             ? '<span class="recent-missing-badge" title="文件已不在，可能被移动或删除">' + icon('circle-x', 'sm') + '文件丢失</span>'
