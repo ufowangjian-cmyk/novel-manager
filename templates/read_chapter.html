@@ -635,7 +635,7 @@
             }
             // 7. 初始化图片查看器（reader-viewer.js）
             if (typeof initViewerJS === 'function') {
-                setTimeout(() => initViewerJS('#readingContent'), 300);
+                setTimeout(() => initViewerJS('#readingContent', { tapGate: true }), 300);
             }
             // 8. 初始化朗读（reader-ui.js）
             if (typeof initSpeech === 'function') {

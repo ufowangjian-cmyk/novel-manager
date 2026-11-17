@@ -370,6 +370,25 @@ docker restart novel-manager
 另外：`.viewer-play` 自带 `.viewer-large`（30px + 负 margin），CSS 里显式压回 34px；
 播放中页码会跟着轮播走（`playing` 事件的 `detail.index`），停播 / 关闭时把图标同步回三角。
 
+### 阅读页专有：点图先浮按钮（`tapGate`）
+
+阅读页正文里图片夹在段落之间，拇指滑动时很容易误触发「点图放大」。所以阅读页
+`initViewerJS('#readingContent', { tapGate: true })`，**详情页不传**（那边点图直接放大是正常的）。
+
+- 只在 `matchMedia('(hover: none)')` 为真时生效 —— 有鼠标的设备行为完全不变，
+  所以桌面端/详情页都不用改。
+- 交互：点图 → 图片右上角浮出圆形按钮（**不打开** viewer）；点按钮 → 打开；
+  再点同一张 / 点别处 / 滚动 / Esc → 收起。
+- ⚠️ 拦截必须用 **capture** 阶段（`container.addEventListener('click', fn, true)`）：
+  Viewer 是在 container 上做的 bubble 委托，晚一步拦就已经把大图打开了。
+- ⚠️ 按钮挂在 `body` 上、`position: fixed`，坐标由 JS 按图片 rect 算并夹回可视区。
+  不要往图片容器里塞绝对定位的按钮：行内图是 `<span class="image-wrapper">`（inline），
+  配图的 figure 和画廊格子结构各不相同，塞进去必然破坏排版。
+- `z-index: 900`，必须低于 Viewer 的 `2015`，否则大图打开后按钮还浮在上面。
+- 生命周期挂在 `tapGateCleanup` 上，`destroyViewer()` 里要拆（翻上一章/切章会重建实例），
+  不拆会越叠越多监听。
+
+
 ---
 
 ## 阅读页渲染（改之前必须知道）

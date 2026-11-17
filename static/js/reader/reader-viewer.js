@@ -9,6 +9,7 @@
 
     let viewerInstance = null;
     let currentContainer = null;
+    let tapGateCleanup = null;   // 「点图浮按钮」那套监听的拆除函数
     let imageCount = 0;
     let isFullscreen = false;
 
@@ -66,7 +67,10 @@
         // 自动播放间隔（毫秒）
         interval: 3000,
         // 是否自动播放
-        autoplay: true,    // 播放按钮的自动切图开关；false 会只全屏、不自动切下一张
+        autoplay: true,
+        // 「点图先浮出按钮，再点按钮才看大图」：只在无悬停的触摸设备上生效，
+        // 阅读页开启（正文里的图容易被滑动误触发），详情页保持点图直接放大。
+        tapGate: false,    // 播放按钮的自动切图开关；false 会只全屏、不自动切下一张
         // 点击切换放大
         toggleOnDblclick: true,
         // 鼠标滚轮缩放
@@ -127,6 +131,102 @@
         }, true);
     }
     window.enableImageEdgeFlip = enableImageEdgeFlip;
+
+    // ===== 移动端「点图先浮按钮」=====
+    // 阅读页正文里的图很多，拇指滑动时容易把「点图放大」误触发；桌面端鼠标点击有明确意图，
+    // 所以只在「无悬停」的触摸设备上启用。交互：
+    //   点图 → 图片右上角浮出圆形按钮（不打开 viewer）
+    //   点按钮 → 打开大图；  再点同一张 / 点别处 / 滚动 → 收起
+    // 按钮挂在 body 上、position:fixed，所以对 inline-image / figure / 画廊格子一视同仁，
+    // 不用给每种图片容器加包裹层。
+    function setupTapGate(container, viewer) {
+        if (!window.matchMedia('(hover: none)').matches) return;   // 有鼠标就不掺和
+
+        if (tapGateCleanup) { tapGateCleanup(); tapGateCleanup = null; }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'image-open-hint';
+        btn.title = '查看大图';
+        btn.setAttribute('aria-label', '查看大图');
+        btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+            + ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            + '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/>'
+            + '<path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+        document.body.appendChild(btn);
+
+        let current = null;
+
+        function hide() {
+            current = null;
+            btn.classList.remove('is-visible');
+        }
+
+        function show(img) {
+            const r = img.getBoundingClientRect();
+            const size = 38, inset = 8, pad = 8;
+            // 图片可能贴边，也可能比按钮还小 —— 一律夹回可视区，别让按钮跑到屏幕外
+            const left = Math.min(Math.max(pad, r.right - size - inset), window.innerWidth - size - pad);
+            const top = Math.min(Math.max(pad, r.top + inset), window.innerHeight - size - pad);
+            btn.style.transform = 'translate(' + Math.round(left) + 'px,' + Math.round(top) + 'px)';
+            btn.classList.add('is-visible');
+            current = img;
+        }
+
+        // capture 阶段：抢在 Viewer 那条容器委托（bubble）之前，把这次点击拦下来
+        function onContainerClick(e) {
+            const img = e.target && e.target.closest
+                ? e.target.closest('img.local-image, img.inline-image')
+                : null;
+            if (!img || !container.contains(img)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (current === img) { hide(); return; }
+            show(img);
+        }
+
+        function onBtnClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const img = current;
+            if (!img) return;
+            hide();
+            const list = (viewer && viewer.images) || [];
+            const index = list.indexOf(img);
+            viewer.show(index >= 0 ? index : 0);
+        }
+
+        function onDocClick(e) {
+            if (!current) return;
+            if (btn.contains(e.target)) return;
+            // 点的是另一张图：留给 onContainerClick 去切换，别在这里先收掉
+            if (e.target && e.target.closest && e.target.closest('img.local-image, img.inline-image')) return;
+            hide();
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape') hide();
+        }
+
+        container.addEventListener('click', onContainerClick, true);
+        btn.addEventListener('click', onBtnClick);
+        document.addEventListener('click', onDocClick, true);
+        document.addEventListener('keydown', onKey);
+        window.addEventListener('scroll', hide, { passive: true });
+        window.addEventListener('resize', hide);
+        window.addEventListener('orientationchange', hide);
+
+        tapGateCleanup = function () {
+            container.removeEventListener('click', onContainerClick, true);
+            btn.removeEventListener('click', onBtnClick);
+            document.removeEventListener('click', onDocClick, true);
+            document.removeEventListener('keydown', onKey);
+            window.removeEventListener('scroll', hide);
+            window.removeEventListener('resize', hide);
+            window.removeEventListener('orientationchange', hide);
+            btn.remove();
+        };
+    }
 
     // ===== 核心初始化函数 =====
     function initViewerJS(containerSelector, options) {
@@ -247,6 +347,11 @@
             // 额外功能：图片计数器
            // addImageCounter();
             
+            // 移动端：点图先浮出「查看大图」按钮（阅读页专有）
+            if (mergedOptions.tapGate) {
+                setupTapGate(container, viewerInstance);
+            }
+
             // 额外功能：下载按钮
             addDownloadButton();
             
@@ -726,6 +831,8 @@
             window._viewerObserver.disconnect();
             window._viewerObserver = null;
         }
+
+        if (tapGateCleanup) { tapGateCleanup(); tapGateCleanup = null; }
 
         document.body.classList.remove('viewer-open');
         console.log('🗑️ Viewer.js 已销毁');
