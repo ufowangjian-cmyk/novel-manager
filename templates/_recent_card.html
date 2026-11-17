@@ -20,7 +20,7 @@
                后端已过滤成 author_display，这里再兜一层，防止上下文缺失时泄漏原始占位符。 #}
             {% set _author = record.author_display if record.author_display is defined and record.author_display else record.author %}
             {% if _author and _author not in ['[不详]', '不详', '未知', '未知作者', '无', 'None', 'none'] %}
-            <span class="recent-author" title="{{ _author }}">{{ icon('pencil', 'sm') }} {{ _author }}</span>
+            <span class="recent-author" title="{{ _author }}">{{ icon('user', 'sm') }} {{ _author }}</span>
             {% endif %}
             <span class="recent-chapter" title="{{ record.chapter_display }}">{{ icon('book-open', 'sm') }} {{ record.chapter_display }}</span>
         </div>
