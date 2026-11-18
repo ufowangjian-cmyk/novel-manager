@@ -28,6 +28,10 @@ services:
       - TZ=Asia/Shanghai
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
+      # glibc 默认给每个线程开独立 arena，malloc_trim(0) 只整理主 arena，
+      # 其余 arena 的碎片留得住 → 扫描/清理后 RSS 降不回去。限成 2 个后 trim 才有效。
+      # 服务是 --threads 4 且以 IO/解析为主，分配竞争可忽略。
+      - MALLOC_ARENA_MAX=2
       - FLASK_ENV=production
       - FLASK_DEBUG=0
       # 会话签名密钥：留空则自动生成并保存到 data/secret_key
