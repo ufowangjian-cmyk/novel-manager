@@ -277,6 +277,20 @@ docker restart novel-manager
 
 ---
 
+
+### 内存：为什么「扫描时变高、清理也不降」（2026-11-18 实测）
+
+- **可清的缓存很小**：深度清理后所有缓存 0 条，worker RSS 仍 77.8MB —— 这 78MB 是
+  Python + Flask + gunicorn + 已加载模块的基础占用。所以点「清理内存」看不出下降是正常的。
+- **真正的峰值来自逐本解析**：一本 13.8MB 的书要同时持有 `raw bytes`(13MB) + `str`(约 28MB)，
+  再加指纹的 `splitlines` 和分章的 `re.split` 两份行列表。实测该过程 RSS 由 9MB 冲到 46MB，
+  `del`+`gc` 后 24MB，`malloc_trim` 后 20MB —— **仍比基线高 11MB，glibc 不会全还**。
+- 全量扫描要连着读几千本，所以中途必须归还：`_scan_core` 里每 100 本执行一次
+  `gc.collect() + trim_memory(quiet=True)`（之前只在扫描收尾做一次）。
+- 多线程会摊薄 trim 效果：gunicorn `--threads 4` + 扫描线程，glibc 会给每个线程开独立 arena，
+  `malloc_trim(0)` 只整理主 arena。想更彻底可给容器加 `MALLOC_ARENA_MAX=2`（需 recreate 容器）。
+- 已知的进一步优化（未做）：指纹抽取与分章各分一次行，可合并复用，省约 13MB/本。
+
 ## 常见的二次开发点
 
 | 想改什么 | 位置 |

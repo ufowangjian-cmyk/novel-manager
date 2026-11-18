@@ -1006,12 +1006,16 @@ def work_id_cache_kb():
     return total / 1024.0
 
 
-def trim_memory():
-    """尝试将 glibc 释放的空闲内存归还给操作系统（仅 Linux）"""
+def trim_memory(quiet=False):
+    """尝试将 glibc 释放的空闲内存归还给操作系统（仅 Linux）
+
+    quiet=True 用于扫描中途的定期归还（每 100 本一次），不刷日志。
+    """
     try:
         libc = ctypes.CDLL("libc.so.6")
         libc.malloc_trim(0)
-        logger.info("✅ malloc_trim 执行完成，内存已归还系统")
+        if not quiet:
+            logger.info("✅ malloc_trim 执行完成，内存已归还系统")
         return True
     except Exception as e:
         logger.debug(f"malloc_trim 不可用: {e}")
@@ -4558,7 +4562,16 @@ def _scan_core(full_scan=False):
 
             _check_total = len(all_files)
             _checked = 0
+            # 全量扫描要连着读几千本，每本都会整本读入 + 分行；
+            # 只在收尾 trim 一次的话，中途 RSS 会一路台阶式上涨（多线程 arena 更容易留在原地）。
+            # 每 100 本归还一次（madvise 很便宜），把峰值压住。
+            _trim_counter = 0
+
             for filename, file_path in all_files.items():
+                _trim_counter += 1
+                if _trim_counter % 100 == 0:
+                    gc.collect()
+                    trim_memory(quiet=True)
                 _checked += 1
                 # 每 50 个文件刷新一次进度：这是增量扫描最耗时的环节
                 if _checked % 50 == 0:
