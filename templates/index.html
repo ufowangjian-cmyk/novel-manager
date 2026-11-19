@@ -656,24 +656,15 @@
                     <td>
                         {% if novel.tags != '无' %}
                         {% set tags_list = novel.tags.split(',') %}
-                        {% if tags_list|length > max_tags_display %}
-                        <span class="tags-wrapper" title="完整标签：{{ novel.tags }}">
+                        <span class="tags-wrapper"{% if tags_list|length > max_tags_display %} title="完整标签：{{ novel.tags }}"{% endif %}>
                             {% for tag in tags_list[:max_tags_display] %}
                             <a href="?tag={{ tag }}{% if search_text %}&search={{ search_text|urlencode }}{% endif %}{% if search_author %}&author={{ search_author|urlencode }}{% endif %}{% if search_site %}&site={{ search_site|urlencode }}{% endif %}"
                                 class="tag-badge">
                                 {{ tag }}
                             </a>
                             {% endfor %}
-                            <span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span>
+                            {% if tags_list|length > max_tags_display %}<span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span>{% endif %}
                         </span>
-                        {% else %}
-                        {% for tag in tags_list %}
-                        <a href="?tag={{ tag }}{% if search_text %}&search={{ search_text|urlencode }}{% endif %}{% if search_author %}&author={{ search_author|urlencode }}{% endif %}{% if search_site %}&site={{ search_site|urlencode }}{% endif %}"
-                            class="tag-badge">
-                            {{ tag }}
-                        </a>
-                        {% endfor %}
-                        {% endif %}
                         {% else %}
                         <span class="no-tag">无</span>
                         {% endif %}
