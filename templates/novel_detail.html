@@ -84,9 +84,9 @@
                         <span class="meta-tags-label">{{ icon('tag', 'sm') }}</span>
                         {# 标签必须包一层：直接作为 .meta-tags 的 flex 项时，
                            换行会回到容器左边缘、绕过左侧图标，第二行看起来歪了 #}
-                        {# 标签分隔符兼容中英文逗号和顿号：以前只按半角逗号切，
-                           像「人妻、背德」会被当成一个标签，顿号就跟着 # 一起显示了 #}
-                        <span class="meta-tags-body">{% for tag in tags.replace('，', ',').replace('、', ',').split(',') if tag.strip() %}<a href="/?tag={{ tag.strip() }}" class="tag-badge">#{{ tag.strip() }}</a>{% endfor %}</span>
+                        {# 标签分割与清洗：分隔符兼容半角/全角逗号与顿号；
+                           每段再 strip 掉首尾残留的标点，避免出现「#人妻、」这种 #}
+                        <span class="meta-tags-body">{% for tag in tags.replace('，', ',').replace('、', ',').split(',') %}{% set clean = tag.strip(' 、，,;；·') %}{% if clean %}<a href="/?tag={{ clean }}" class="tag-badge">#{{ clean }}</a>{% endif %}{% endfor %}</span>
                         <button type="button" class="tags-toggle" hidden>展开全部</button>
                     </div>
                     {% endif %}
