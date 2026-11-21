@@ -1933,6 +1933,7 @@ body.dark-mode .reading-status-btn.is-none:hover {
 .random-hint {
     font-size: 0.78rem;
     color: var(--color-text-gray);
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
 }
 
 .random-refresh-btn {
@@ -1946,7 +1947,7 @@ body.dark-mode .reading-status-btn.is-none:hover {
     color: var(--color-text-white);
     font-size: 0.85rem;
     font-weight: 500;
-    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
     cursor: pointer;
     box-shadow: 0 2px 8px var(--color-accent-blue-opacity-30);
     transition: background 0.2s, box-shadow 0.2s, transform 0.2s, border-color 0.2s;

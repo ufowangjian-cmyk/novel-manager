@@ -58,8 +58,9 @@
     padding: 0;
     color: var(--text-white);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.20);
-    /* 京华老宋体改用系统字体，详见 style.css 同名说明 */
-    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
+    /* 思源宋体是可变字重，900 是它的最粗档；700 在这个字号下太细 */
+    font-weight: 900;
 }
 
 /* 标题里的图标跟随标题字号（用 em，各断点自动缩放）。
@@ -1132,7 +1133,8 @@ body.dark-mode .cleanup-note {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
-    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
+    font-weight: 700;
 }
 
 .divider-hint {

@@ -20,10 +20,10 @@
     border-bottom: 1px solid var(--border-secondary);
 }.card-header h2 {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 400;
     flex: 1;
     color: var(--text-primary);
-    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
 }/* .card-header 是 flex 容器，align-items:center 已负责垂直居中；
    图标不要再用 vertical-align / font-size 干预，否则会被推偏。
    （font-size 只对 emoji 有效，对固定尺寸的 SVG 无效） */.card-icon {
