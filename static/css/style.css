@@ -4947,3 +4947,34 @@ body.dark-mode .user-menu-subitem.active {
 /* 深色模式：不单独换底色。头部是背景轮播图上面的玻璃层，
    「菜单」按钮在暗色下也一直是白色半透明（body.dark-mode 没覆盖它），
    这里若改成暗底反而会比旁边那枚按钮糊在照片里看不出来 —— 保持同款白玻璃。 */
+
+/* ============================================
+   首页标题字体（2026-11-21）
+   注意：大标题「摸鱼读物」是 static/images/title.svg（AI 转曲矢量图），
+   不是文字，改不了字体；这里处理副标题、区块小标题和表头。
+   ============================================ */
+
+.reader-subtitle {
+    font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-weight: 400;
+    /* 得意黑偏窄带倾斜，小字号笔画会糊；放大并提亮，保证在背景图上认得出 */
+    font-size: 0.92em;
+    color: rgba(255, 255, 255, 0.96);
+    letter-spacing: 0.02em;
+    /* 得意黑笔画细，浅色背景图下需要一点阴影托底 */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* 功能模块小标题：随机推荐好书 / 文件扫描 */
+.random-header h3,
+.scan-info h3 {
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+/* 书架表头：书名 / 作者 / 标签 / 字数 / 连载进度 / 发表网站 / 发表日期 */
+th {
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
+    font-weight: 700;
+}
