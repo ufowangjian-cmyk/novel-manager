@@ -1430,3 +1430,68 @@ body.dark-mode .detail-grid > .detail-card:first-child {
     }
 }
 
+
+/* ---- 手机端头部重排（2026-11-21）----
+   封面与书名并排占第一行，作者/日期/网站/字数/标签/按钮整宽铺开，
+   避免胶囊被挤在封面右侧的窄栏里被省略号截断。
+
+   ⚠️ 头部背景图是 initPage 里 setTimeout(300ms) 之后插入的绝对定位层
+   （common.js → .header-bg-container，z-index: 0）。内容项原本没有定位，
+   display: contents 拆掉 .header-main 这个盒子后就压不住它，
+   表现是刷新时标题和按钮闪一下就消失。所以下面每条内容规则都要显式 z-index: 1。 */
+@media (max-width: 768px) {
+    .hero {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 14px;
+        row-gap: 10px;
+    }
+
+    /* 内容层：一律压在背景容器之上 */
+    .hero .hero-backbar,
+    .hero .hero-cover,
+    .hero .header-main h1,
+    .hero .meta-info,
+    .hero .action-buttons {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero .hero-backbar {
+        grid-column: 1 / -1;
+    }
+
+    .hero .hero-cover {
+        grid-column: 1;
+        grid-row: 2;
+        width: 96px;
+    }
+
+    /* 让 h1 / meta-info / action-buttons 直接参与外层 grid */
+    .hero .header-main {
+        display: contents;
+    }
+
+    .hero .header-main h1 {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: start;
+        font-size: 1.5rem;
+    }
+
+    .hero .meta-info {
+        grid-column: 1 / -1;
+        margin: 2px 0 0;
+    }
+
+    .hero .action-buttons {
+        grid-column: 1 / -1;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero .hero-cover {
+        width: 84px;
+    }
+}
