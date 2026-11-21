@@ -1348,3 +1348,22 @@ body.dark-mode .hero .tag-badge {
     gap: 4px;
     min-width: 0;
 }
+
+/* ---- 内容区圆角外壳（2026-11-21）----
+   头部是圆角图，下面的简介/目录是直角白块，衔接处会像两块硬拼在一起。
+   用一层外壳统一四角，内部靠 overflow 裁切，分隔线不受影响。 */
+.content-shell {
+    border-radius: 15px;
+    overflow: hidden;
+    /* 第一块的顶部细线贴着圆角会显得毛糙，壳内首块不要上边线 */
+}
+
+.content-shell > :first-child {
+    border-top: none;
+}
+
+@media (max-width: 768px) {
+    .content-shell {
+        border-radius: 12px;
+    }
+}
