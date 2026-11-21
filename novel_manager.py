@@ -2484,6 +2484,11 @@ def find_cover_url(novel):
                 # 非请求上下文（后台线程）调用时 url_for 不可用，直接放弃封面
                 return ''
 
+    # 外链：文件里声明的「封面：https://…」行，优先于简介/预览里的图
+    declared = str(novel.get('cover_url') or '').strip()
+    if declared:
+        return declared
+
     # 外链：正文预览/简介里出现的第一张图（含「封面：http…」这种带标签的写法）
     for key in ('preview', 'intro'):
         match = _IMG_URL_RE.search(str(novel.get(key) or ''))
@@ -3525,6 +3530,19 @@ def parse_file_content_fast(file_path):
     if intro == '无简介':
         preview = extract_preview_clean(lines)
     
+    # 「封面：https://…」行：补封面工具插在「作者：」下面的一行。
+    # 只看头部前 200 行；不要求在简介块内（书库大多数书没有「简介：」行，
+    # 而 extract_preview_clean 会把这类封面行当元数据丢掉，所以必须单独认）。
+    cover_url = ''
+    for _line in lines[:200]:
+        _t = _line.strip(' \t\r\n\u3000')
+        if not _t or not _t.startswith('封面'):
+            continue
+        _m = _IMG_URL_RE.search(_t)
+        if _m:
+            cover_url = _m.group(0)
+            break
+
     result = {
         'title': title[:50] + '...' if len(title) > 50 else title,
         'author': author,
@@ -3536,7 +3554,8 @@ def parse_file_content_fast(file_path):
         'link': link,
         'file_path': file_path,
         'intro': intro,
-        'preview': preview   # 🔥 新增
+        'preview': preview,   # 🔥 新增
+        'cover_url': cover_url
     }
     
     tag_parse_cache[file_path] = (current_hash, result)

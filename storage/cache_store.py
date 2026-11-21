@@ -259,6 +259,9 @@ def _book_to_row(book):
     """dict -> SQL 参数元组。"""
     path = book.get('file_path') or book.get('filename') or ''
     extra = {key: book.get(key) for key in _EXTRA_FIELDS}
+    # 外链封面按需写：为空就不落库，避免 sync_all 把全库判成「有变化」白写一遍
+    if book.get('cover_url'):
+        extra['cover_url'] = book['cover_url']
     return (
         path,
         _clean_text(book.get('title')),
@@ -304,6 +307,9 @@ def _row_to_book(row):
         'preview': extra.get('preview'),
         'has_images': bool(extra.get('has_images')),
         'image_folder': extra.get('image_folder'),
+        # 文件里「封面：https://…」声明的外链封面（没有就不写这个键，
+        # 免得给全库 5000 多行都补一个 null 导致一次性全量重写）
+        'cover_url': extra.get('cover_url'),
     }
     # 兜底：文件里没存过的键补成与旧读取逻辑一致的默认值
     if book['intro'] is None:

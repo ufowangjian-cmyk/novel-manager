@@ -266,7 +266,12 @@ docker restart novel-manager
 封面**不是**头部字段，两种来源：
 
 1. 同名配图目录 `书名_images/`（推荐，放图片即可）；
-2. 元数据区或正文里写一行 `封面：https://…`（也认 `[img:…]`）。
+2. 文件里写一行 `封面：https://…`（也认 `[img:…]`）。
+
+第 2 种由 `parse_file_content_fast()` 扫**头部前 200 行**抓出来存成 `cover_url`，
+`find_cover_url()` 优先用它，其次才看 `preview` / `intro` 里的图。
+所以这一行放在元数据区（比如「作者：」下一行）即可，**不需要**在 `简介：` 块里——
+`extract_preview_clean()` 会把封面行当元数据丢掉，光靠 preview 是取不到的（2026-11-21 前的实际限制）。
 
 ### 推荐模板
 
