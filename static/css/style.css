@@ -4981,10 +4981,12 @@ th {
     font-weight: 700;
 }
 
-/* 功能 tab 标签（最近阅读 / 扫描管理 / 每日推荐）与头部副标题同用得意黑。
-   得意黑偏窄且只有一个字重，1rem 下会显得单薄，字号略放大补偿 */
-.tab-btn {
+/* 首页绿底区块标题条（每日推荐 / 最近阅读 / 扫描管理）用得意黑。
+   注意这是 .block-header-title，不是抽屉菜单里的 .tab-btn。
+   得意黑只有一个字重，写 600 会被浏览器合成，这里显式用 400 + 放大字号 */
+.block-header-title {
     font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
     font-size: 1.05rem;
-    letter-spacing: 0.02em;
+    font-weight: 400;
+    letter-spacing: 0.03em;
 }
