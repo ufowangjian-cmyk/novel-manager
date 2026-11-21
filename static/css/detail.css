@@ -1255,3 +1255,38 @@ body.dark-mode .detail-grid > .detail-card:first-child {
 .detail-grid:has(> :only-child) > .detail-card:first-child {
     border-right: none;
 }
+
+/* ---- 顶部返回条：返回是导航动作，独立在内容起点，不混进读书按钮堆 ---- */
+.hero-backbar {
+    flex-basis: 100%;
+    order: -1;
+    display: flex;
+    align-items: center;
+    margin-bottom: -6px;
+}
+
+.hero-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px 4px 8px;
+    border-radius: 6px;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.94);
+    text-decoration: none;
+    /* 半透明黑底：轮播图有深有浅，纯文字在浅色图上会糊掉 */
+    background: rgba(0, 0, 0, 0.2);
+    transition: background-color .15s, color .15s;
+}
+
+.hero-back:hover {
+    background: rgba(0, 0, 0, 0.36);
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .hero-back {
+        padding: 3px 10px 3px 6px;
+        font-size: 0.8rem;
+    }
+}

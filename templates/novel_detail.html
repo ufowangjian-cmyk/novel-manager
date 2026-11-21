@@ -38,6 +38,11 @@
            为空时退回占位样式；cover_initial 由后端 pick_cover_initial() 算好，
            会跳过数字与标点（「2012春之文祭」→「春」） #}
         <div class="header hero">
+            {# 返回列表独立成顶部一条：它是导航动作，位置放在内容起点比塞进
+               读书按钮堆里更容易找到。统一出口走 list_back_url()。 #}
+            <div class="hero-backbar">
+                <a href="{{ list_back_url() }}" class="hero-back">{{ icon('arrow-left', 'sm') }} 返回列表</a>
+            </div>
             <div class="hero-cover{% if not cover_url %} hero-cover-empty{% endif %}" data-initial="{{ cover_initial }}">
                 {% if cover_url %}
                 <img src="{{ cover_url }}" alt="{{ title }} 封面" loading="lazy" referrerpolicy="no-referrer"
@@ -110,8 +115,6 @@
                         {% if is_finished %}{{ icon('circle-check', 'sm') }} 已读完{% else %}{{ icon('square-check', 'sm') }} 标记已读{% endif %}
                     </button>
                     {% endif %}
-                    <a href="{{ list_back_url() }}"
-                        class="btn-nav btn-back-home">{{ icon('arrow-left', 'sm') }} 返回列表</a>
                 </div>
             </div>
         </div>
