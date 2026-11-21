@@ -381,7 +381,7 @@ body.dark-mode .chapters-more:hover {
 }@media (max-width: 768px) {.meta-info {
         gap: 8px;
     }.header-main h1 {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }.detail-card {
         padding: 10px;
     }.chapter-item {
@@ -1176,7 +1176,9 @@ body.dark-mode .detail-grid > .detail-card:first-child {
     }
 
     .hero-cover {
-        width: 64px;
+        /* 64px 在手机上像个图标，和右侧两行书名完全不成比例；
+           放到 96px（与桌面同尺寸），让封面有分量 */
+        width: 96px;
     }
 
     .hero .header-actions {
@@ -1204,7 +1206,7 @@ body.dark-mode .detail-grid > .detail-card:first-child {
 
 @media (max-width: 480px) {
     .hero-cover {
-        width: 56px;
+        width: 84px;
     }
 
     .detail-card {
@@ -1425,5 +1427,56 @@ body.dark-mode .detail-grid > .detail-card:first-child {
 
     .tags-toggle.is-visible:hover {
         color: #1F3310;
+    }
+}
+
+/* ---- 手机端头部重排（2026-11-21）----
+   原来封面与「书名 + 全部信息」并排，胶囊被挤在封面右侧的窄栏里，
+   日期、字数动不动就被省略号截断。改成 grid：封面和书名并排占第一行，
+   作者/日期/网站/字数/标签/按钮一律整宽铺开。 */
+@media (max-width: 768px) {
+    .hero {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 14px;
+        row-gap: 10px;
+    }
+
+    .hero .hero-backbar {
+        grid-column: 1 / -1;
+    }
+
+    .hero .hero-cover {
+        grid-column: 1;
+        grid-row: 2;
+        width: 96px;
+    }
+
+    /* 让 h1 / meta-info / action-buttons 直接参与外层 grid */
+    .hero .header-main {
+        display: contents;
+    }
+
+    .hero .header-main h1 {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: start;
+        font-size: 1.5rem;
+    }
+
+    .hero .meta-info {
+        grid-column: 1 / -1;
+        margin: 2px 0 0;
+    }
+
+    .hero .action-buttons {
+        grid-column: 1 / -1;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero .hero-cover {
+        width: 84px;
     }
 }
