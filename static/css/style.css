@@ -4980,3 +4980,11 @@ th {
     font-family: '思源宋体内置', 'Songti SC', 'SimSun', serif;
     font-weight: 700;
 }
+
+/* 功能 tab 标签（最近阅读 / 扫描管理 / 每日推荐）与头部副标题同用得意黑。
+   得意黑偏窄且只有一个字重，1rem 下会显得单薄，字号略放大补偿 */
+.tab-btn {
+    font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}
