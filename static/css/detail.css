@@ -1367,3 +1367,22 @@ body.dark-mode .hero .tag-badge {
         border-radius: 12px;
     }
 }
+
+/* ---- 暗色下卡片边框修正（2026-11-21）----
+   body.dark-mode .detail-card 的特异性（0,2,1）高于简洁化时的
+   .detail-grid > .detail-card（0,2,0），暗色下会把四边框和阴影加回来。
+   圆角外套一裁，顶部圆弧就露出一圈比背景亮的线。
+   浅色时本来就是「无边框 + 顶部一条细线」，暗色保持一致。 */
+body.dark-mode .detail-card {
+    border: none;
+    border-top: 1px solid var(--color-green-dark-bg);
+    box-shadow: none;
+}
+
+body.dark-mode .detail-grid > .detail-card {
+    border-top: none;
+}
+
+body.dark-mode .detail-grid > .detail-card:first-child {
+    border-right: 1px solid var(--color-green-dark-bg);
+}
