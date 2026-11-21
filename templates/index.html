@@ -875,7 +875,7 @@
 main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
 而 icon() 定义在 common.js。顺序反了会抛 ReferenceError，
 导致「今天/昨天/更早」分组标题的图标渲染不出来。 #}
-<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
 <script>
     // 内置字体预热：挑书阶段就把配置的正文字体下载好（详见 common.js warmupBuiltinFont），
     // 点进详情页/阅读页立即可用，不经历 swap 闪烁等待。不阻塞首屏，低网自动跳过。
@@ -891,7 +891,7 @@ main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
     // 没注入到时 main.js 退回内置默认表，行为与改这一版之前一致。
     window.titleHighlightWords = {{ title_highlight_words | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v={{ css_version }}"></script>
 <script>
     (function () {
         // 快速应用缓存主题（防闪烁）

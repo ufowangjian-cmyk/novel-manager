@@ -4,7 +4,7 @@
 {% block title %}标签管理 - 摸鱼读物{% endblock %}
 {% block body_class %}page-tags{% endblock %}
 {% block page_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tag_manager.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tag_manager.css') }}?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
@@ -140,8 +140,8 @@
 
 {% block scripts %}
 {# common.js 必须先于 tag-manager.js：后者渲染的按钮里用了 common.js 提供的 icon() #}
-<script src="{{ url_for('static', filename='js/common.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/tag-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
+    <script src="{{ url_for('static', filename='js/tag-manager.js') }}?v={{ css_version }}"></script>
     <script>
         // 显示通知（由 common.js 提供）
         // 显示/隐藏加载动画（由 common.js 提供）

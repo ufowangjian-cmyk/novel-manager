@@ -4,7 +4,7 @@
 {% block title %}配置管理 - 摸鱼读物{% endblock %}
 {% block body_class %}page-config{% endblock %}
 {% block page_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/config.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/config.css') }}?v={{ css_version }}">
 {% endblock %}
 {% block head_extra %}
 <meta id="app-data" data-user-role="{{ session.user_role }}" data-user-key="{{ session.user_key }}"
@@ -873,8 +873,8 @@ italic_default=False) %}
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/common.js') }}"></script>
-<script src="{{ url_for('static', filename='js/config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
+<script src="{{ url_for('static', filename='js/config.js') }}?v={{ css_version }}"></script>
 <script>
     // ===== 配置卡片展开状态记忆 =====
     // 默认全部展开；用户点过哪张就记住哪张，刷新后保持。

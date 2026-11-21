@@ -94,11 +94,14 @@
         }
     })();
     </script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-    {% block base_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">{% endblock %}
+    {# 静态资源带 ?v=：Flask 给静态文件设了 30 天强缓存（max-age=2592000），
+       不带版本号时改完 CSS 用户刷新也看不到变化，必须手动强刷。
+       css_version 由 context_processor 注入（static/css 与 js 的最新 mtime）。 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}?v={{ css_version }}">
+    {% block base_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ css_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}?v={{ css_version }}">{% endblock %}
     {# 图标系统（Lucide sprite）：放在页面样式之前，便于页面按需覆盖 #}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css') }}?v={{ css_version }}">
     {% block page_css %}{% endblock %}
 
     {# 头部背景图清单：由 context_processor 注入，所有页面（首页/详情页/配置页…）

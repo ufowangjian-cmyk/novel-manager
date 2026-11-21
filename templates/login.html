@@ -6,7 +6,7 @@
 {# 登录页使用 login.css 自成体系的配色，不加载 style.css（见 base.html 说明） #}
 {% block base_css %}{% endblock %}
 {% block page_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
