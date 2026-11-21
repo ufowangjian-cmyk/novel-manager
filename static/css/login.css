@@ -38,7 +38,7 @@
   padding: 0;
   box-sizing: border-box;
 }body {
-  font-family: '得意黑内置', 'Smiley Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-family: '霞鹜文楷内置', 'Songti SC', 'SimSun', serif;
   background: linear-gradient(135deg, var(--login-green-bg-start) 0%, var(--login-green-bg-end) 100%);
   min-height: 100vh;
   display: flex;
