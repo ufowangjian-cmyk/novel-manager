@@ -50,7 +50,7 @@
         function loadFontCss() {
             var l = document.createElement('link');
             l.rel = 'stylesheet';
-            l.href = '/static/css/font.css';
+            l.href = '/static/css/font.css?v={{ css_version }}';
             document.head.appendChild(l);
         }
         function isMobileUA() {
@@ -82,16 +82,15 @@
             }
         } catch (e) { /* ignore */ }
         window.LOW_NETWORK = low;
-        if (!low) {
-            loadFontCss();
-        } else {
-            // 真·低网（省流模式 / 2g / 3g）：默认不加载内置字体（最大单文件 8.6MB 霞鹜文楷），
-            // 文字回退系统字体。想强制加载：浏览器控制台执行
-            // localStorage.setItem('nm_load_fonts', '1') 后刷新页面。
-            try {
-                if (localStorage.getItem('nm_load_fonts') === '1') loadFontCss();
-            } catch (e) { /* ignore */ }
-        }
+        // 字体 CSS 一律加载：font.css 本身只有 1KB，真正的字体文件按 unicode-range
+        // 分包，页面用到哪几个字才下哪几个分片（标题就几个字 = 几十 KB）。
+        //
+        // 以前在 saveData / 2g / 3g 时整份跳过，结果是：详情页标题、首页区块标题
+        // 现在直接指定了内置字体，一旦跳过就全部回退系统字体，标题明显变细。
+        // 而 NetworkInformation 的估算很激进（内网 NAS 也会被判成 3g / downlink 1.4），
+        // 判定还随网络波动 —— 表现就是「刷新一下粗、再刷一下又变细」。
+        // LOW_NETWORK 仍然保留，供 common.js 压制头部背景图预热（那才是 11.7MB 的大头）。
+        loadFontCss();
     })();
     </script>
     {# 静态资源带 ?v=：Flask 给静态文件设了 30 天强缓存（max-age=2592000），
