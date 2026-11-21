@@ -33,7 +33,7 @@
     --detail-border-primary: #ccd8bc;
 }/* 详情页顶部标题 */.header-main h1 {
     font-size: 2.4rem;
-    font-weight: 800;
+    font-weight: 900;
     margin: 0 0 10px 0;
     font-family: '思源宋体内置', 'Songti SC', 'SimSun', 'Microsoft YaHei', serif;
     letter-spacing: 0.02em;
@@ -1139,7 +1139,7 @@ body.dark-mode .similar-item:hover {
 .card-title {
     font-family: '思源宋体内置', 'Songti SC', 'SimSun', 'Microsoft YaHei', serif;
     font-size: 1.15em;
-    font-weight: 700;
+    font-weight: 800;
     color: #2F4A1E;
     letter-spacing: 0.02em;
     margin-bottom: 10px;
