@@ -34,7 +34,18 @@
 {% block content %}
 
     <div class="container">
-        <div class="header">
+        {# 封面信息头：复用 find_cover_url()（配图首图 → 正文外链），
+           为空时退回占位样式（书名首字 + 底图），与「每日推荐」卡同一套降级 #}
+        {% set cover_initial = (title or '书')[:1] %}
+        <div class="header hero">
+            <div class="hero-cover{% if not cover_url %} hero-cover-empty{% endif %}" data-initial="{{ cover_initial }}">
+                {% if cover_url %}
+                <img src="{{ cover_url }}" alt="{{ title }} 封面" loading="lazy" referrerpolicy="no-referrer"
+                    onerror="var p=this.parentElement;if(!p.dataset.fb){p.dataset.fb=1;p.classList.add('hero-cover-empty');p.innerHTML='';p.textContent=p.dataset.initial;}">
+                {% else %}
+                <span class="hero-cover-initial">{{ cover_initial }}</span>
+                {% endif %}
+            </div>
             <div class="header-main">
                 <h1>{{ title }}</h1>
                 <div class="meta-info">
@@ -78,6 +89,11 @@
             </div>
         </div>
 
+        {# 简介与相似书体量接近，并排成两栏；目录另起一块保持全宽
+           （几百章的目录跟两三条相似书并排会让右栏空掉）。
+           两者都没有时整块不渲染，避免留一个空网格撑出间距。 #}
+        {% if (intro and intro != '无简介') or preview or similar_novels %}
+        <div class="detail-grid">
         <!-- 简介部分：有简介显示简介，没简介显示预览 -->
         {% if intro and intro != '无简介' %}
         <div class="detail-card" id="introCard" data-mode="intro">
@@ -89,6 +105,26 @@
             <div class="card-title">{{ icon('eye', 'sm') }} 正文预览</div>
             <div class="intro-content preview-content">{{ preview }}</div>
             <div class="preview-hint">{{ icon('info', 'sm') }} 本文未提供简介，以上为正文开头</div>
+        </div>
+        {% endif %}
+
+        {# ===== 相似书籍：与简介并排放在两栏右侧，没有结果时整块不渲染 ===== #}
+        {% if similar_novels %}
+        <div class="detail-card">
+            <div class="card-title">{{ icon('library', 'sm') }} 相似书籍</div>
+            <div class="similar-list">
+                {% for item in similar_novels %}
+                <a href="{{ item.detail_url }}" class="similar-item">
+                    <span class="similar-text">
+                        <span class="similar-title">{{ item.title }}</span>
+                        <span class="similar-sub">{{ item.author }}</span>
+                    </span>
+                    <span class="similar-reason">{{ item.reason }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         </div>
         {% endif %}
 
@@ -162,23 +198,6 @@
             </div>
         </div>
 
-        {# ===== 相似书籍：锦上添花的扩展阅读，没有结果时整块不渲染 ===== #}
-        {% if similar_novels %}
-        <div class="detail-card">
-            <div class="card-title">{{ icon('library', 'sm') }} 相似书籍</div>
-            <div class="similar-list">
-                {% for item in similar_novels %}
-                <a href="{{ item.detail_url }}" class="similar-item">
-                    <span class="similar-text">
-                        <span class="similar-title">{{ item.title }}</span>
-                        <span class="similar-sub">{{ item.author }}</span>
-                    </span>
-                    <span class="similar-reason">{{ item.reason }}</span>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
     </div>
 
     <!-- 详情页只需要 core + viewer -->
