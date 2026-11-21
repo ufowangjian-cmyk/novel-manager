@@ -1495,3 +1495,62 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         width: 84px;
     }
 }
+
+/* ---- 桌面端头部重排（2026-11-21，与桌面版一致）----
+   原来封面与「h1 + 信息 + 按钮」并排，标签和按钮只能从封面右侧开始，
+   封面下方那一竖条永远是空的，按钮也被推到右边。
+
+   注意：Docker 版模板的类名是 .header-main（桌面版才叫 .hero-main）。
+   内容项需 z-index: 1，否则会被 300ms 后插入的头部背景层盖住。 */
+@media (min-width: 769px) {
+    .hero {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 18px;
+        row-gap: 10px;
+    }
+
+    .hero .hero-backbar,
+    .hero .hero-cover,
+    .hero .header-main h1,
+    .hero .meta-info,
+    .hero .action-buttons {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero .hero-backbar {
+        grid-column: 1 / -1;
+    }
+
+    .hero .hero-cover {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .hero .header-main {
+        display: contents;
+    }
+
+    .hero .header-main h1 {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: center;
+        margin-bottom: 0;
+    }
+
+    .hero .meta-info {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    /* 标签独占一行并撑满，不跟在作者/日期胶囊后面挤成半行 */
+    .hero .meta-tags {
+        flex-basis: 100%;
+    }
+
+    .hero .action-buttons {
+        grid-column: 1 / -1;
+        margin-top: 0;
+    }
+}
