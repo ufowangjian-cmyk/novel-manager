@@ -84,7 +84,10 @@
                         <span class="meta-tags-label">{{ icon('tag', 'sm') }}</span>
                         {# 标签必须包一层：直接作为 .meta-tags 的 flex 项时，
                            换行会回到容器左边缘、绕过左侧图标，第二行看起来歪了 #}
-                        <span class="meta-tags-body">{% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">#{{ tag }}</a>{% endfor %}</span>
+                        {# 标签分隔符兼容中英文逗号和顿号：以前只按半角逗号切，
+                           像「人妻、背德」会被当成一个标签，顿号就跟着 # 一起显示了 #}
+                        <span class="meta-tags-body">{% for tag in tags.replace('，', ',').replace('、', ',').split(',') if tag.strip() %}<a href="/?tag={{ tag.strip() }}" class="tag-badge">#{{ tag.strip() }}</a>{% endfor %}</span>
+                        <button type="button" class="tags-toggle" hidden>展开全部</button>
                     </div>
                     {% endif %}
                 </div>
@@ -216,6 +219,34 @@
     <script src="{{ url_for('static', filename='js/reader/reader-viewer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
     <script>
+
+        // ---- 移动端标签折叠（2026-11-21）----
+        // 手机上几十个标签能排 9 行，把简介整块顶出屏幕。只在窄屏折叠，
+        // 桌面端 .meta-tags-body 不设 max-height，按钮也不会显示。
+        (function () {
+            var wrap = document.querySelector('.meta-tags');
+            if (!wrap) return;
+            var body = wrap.querySelector('.meta-tags-body');
+            var btn = wrap.querySelector('.tags-toggle');
+            if (!body || !btn) return;
+            var count = body.querySelectorAll('.tag-badge').length;
+
+            function render() {
+                var expanded = body.classList.contains('is-expanded');
+                // 内容是否被 max-height 截断（桌面端不截断，clipped 恒为 false）
+                var clipped = body.scrollHeight > body.clientHeight + 2;
+                btn.textContent = expanded ? '收起' : '展开全部 ' + count + ' 个';
+                btn.classList.toggle('is-visible', expanded || clipped);
+            }
+
+            btn.addEventListener('click', function () {
+                body.classList.toggle('is-expanded');
+                render();
+            });
+
+            render();
+            window.addEventListener('resize', render);
+        })();
 
         document.addEventListener('DOMContentLoaded', async function () {
             // ===== 1. 公共初始化（主题 + 轮播）=====

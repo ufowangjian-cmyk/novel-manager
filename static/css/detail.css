@@ -1386,3 +1386,50 @@ body.dark-mode .detail-grid > .detail-card {
 body.dark-mode .detail-grid > .detail-card:first-child {
     border-right: 1px solid var(--color-green-dark-bg);
 }
+
+/* ---- 移动端标签折叠（2026-11-21）----
+   几十个标签在手机上能排 9 行，把内容整块顶出屏幕。
+   只有窄屏才收成 2 行 + 「展开全部」；桌面端完整显示，按钮不出现。 */
+.tags-toggle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* 允许按钮换到下一行（图标和标签仍在第一行） */
+    .meta-item.meta-tags {
+        flex-wrap: wrap;
+    }
+
+    .meta-tags-body {
+        flex: 1 1 auto;
+        max-height: 52px;          /* 两行：标签 24 + 间距 4 */
+        overflow: hidden;
+    }
+
+    .meta-tags-body.is-expanded {
+        max-height: none;
+    }
+
+    .tags-toggle.is-visible {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-basis: 100%;
+        margin: 3px 0 0 20px;      /* 与标签左缘对齐：图标 14 + gap 6 */
+        padding: 2px 0;
+        border: none;
+        background: none;
+        /* 标签区底色是半透明白，白字会彻底看不见，这里用深绿 */
+        color: #3A5220;
+        font-family: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .tags-toggle.is-visible:hover {
+        color: #1F3310;
+    }
+}
