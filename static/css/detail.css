@@ -1245,3 +1245,13 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         max-width: 6em;
     }
 }
+
+/* 没有相似书时，简介独占整行 —— 否则右栏空着一块白，看着像没加载完。
+   :only-child 只在 grid 里恰好一张卡片（简介或预览）时命中。 */
+.detail-grid:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.detail-grid:has(> :only-child) > .detail-card:first-child {
+    border-right: none;
+}

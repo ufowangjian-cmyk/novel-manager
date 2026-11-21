@@ -34,9 +34,9 @@
 {% block content %}
 
     <div class="container">
-        {# 封面信息头：复用 find_cover_url()（配图首图 → 正文外链），
-           为空时退回占位样式（书名首字 + 底图），与「每日推荐」卡同一套降级 #}
-        {% set cover_initial = (title or '书')[:1] %}
+        {# 封面信息头：cover_url 由 find_cover_url() 决定（配图首图 → 正文外链），
+           为空时退回占位样式；cover_initial 由后端 pick_cover_initial() 算好，
+           会跳过数字与标点（「2012春之文祭」→「春」） #}
         <div class="header hero">
             <div class="hero-cover{% if not cover_url %} hero-cover-empty{% endif %}" data-initial="{{ cover_initial }}">
                 {% if cover_url %}
