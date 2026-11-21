@@ -1022,12 +1022,6 @@ body.dark-mode .similar-item:hover {
         white-space: normal;
     }
 
-    /* 顿号挂在每个标签末尾：
-       多行折行时不会出现「、」落在行首的破格排版 */
-    .meta-item.meta-tags .tag-badge:not(:last-child)::after {
-        content: "、";
-    }
-
     .meta-item.meta-tags .tag-badge:hover {
         background: none;
         color: #2f3d24;
