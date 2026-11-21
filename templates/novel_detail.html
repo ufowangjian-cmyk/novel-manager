@@ -81,11 +81,38 @@
                     </div>
                     {% endif %}
                 </div>
-            </div>
-            <div class="header-actions">
-                {# 统一出口：页码/筛选/排序一起重建，别再手拼 query 串（中文与 & 由 url_for 编码） #}
-                <a href="{{ list_back_url() }}"
-                    class="btn-nav btn-back-home">{{ icon('arrow-left', 'sm') }} 返回列表</a>
+                <div class="action-buttons">
+                    {% if continue_line %}
+                    <a href="{{ url_for('read_chapter', file_path=url_token, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
+                        class="action-btn continue-btn"
+                        title="{% if continue_chapter %}上次读到：{{ continue_chapter }}{% else %}继续上次阅读进度{% endif %}">
+                        {{ icon('play', 'sm') }} 继续阅读{% if continue_chapter %}<span class="continue-chapter">（{{ continue_chapter }}）</span>{% endif %}
+                    </a>
+                    {% endif %}
+
+                    <a href="{{ url_for('read_chapter', file_path=url_token, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
+                        class="action-btn secondary">
+                        {{ icon('book-open', 'sm') }} 从头阅读
+                    </a>
+
+                    {# ===== 已读标记：能定位到这本书（有 work_id）就显示，读过与否都可用 ===== #}
+                    {% if detail_work_id %}
+                    <button type="button" id="markReadBtn"
+                            class="action-btn mark-read-btn{% if is_finished %} is-finished{% endif %}"
+                            data-work-id="{{ detail_work_id }}"
+                            data-finished="{{ '1' if is_finished else '0' }}"
+                            data-title="{{ title }}"
+                            data-author="{{ author }}"
+                            data-file-path="{{ file_path }}"
+                            data-chapter="{{ continue_chapter }}"
+                            onclick="toggleMarkRead(this)"
+                            title="{% if is_finished %}已标记为已读完，点击取消{% else %}标记这本书为已读完{% endif %}">
+                        {% if is_finished %}{{ icon('circle-check', 'sm') }} 已读完{% else %}{{ icon('square-check', 'sm') }} 标记已读{% endif %}
+                    </button>
+                    {% endif %}
+                    <a href="{{ list_back_url() }}"
+                        class="btn-nav btn-back-home">{{ icon('arrow-left', 'sm') }} 返回列表</a>
+                </div>
             </div>
         </div>
 
@@ -166,36 +193,6 @@
             </div>
             {% endif %}
 
-            <div class="action-buttons">
-                {% if continue_line %}
-                <a href="{{ url_for('read_chapter', file_path=url_token, line_number=continue_line, list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
-                    class="action-btn continue-btn"
-                    title="{% if continue_chapter %}上次读到：{{ continue_chapter }}{% else %}继续上次阅读进度{% endif %}">
-                    {{ icon('play', 'sm') }} 继续阅读{% if continue_chapter %}<span class="continue-chapter">（{{ continue_chapter }}）</span>{% endif %}
-                </a>
-                {% endif %}
-
-                <a href="{{ url_for('read_chapter', file_path=url_token, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
-                    class="action-btn secondary">
-                    {{ icon('book-open', 'sm') }} 从头阅读
-                </a>
-
-                {# ===== 已读标记：能定位到这本书（有 work_id）就显示，读过与否都可用 ===== #}
-                {% if detail_work_id %}
-                <button type="button" id="markReadBtn"
-                        class="action-btn mark-read-btn{% if is_finished %} is-finished{% endif %}"
-                        data-work-id="{{ detail_work_id }}"
-                        data-finished="{{ '1' if is_finished else '0' }}"
-                        data-title="{{ title }}"
-                        data-author="{{ author }}"
-                        data-file-path="{{ file_path }}"
-                        data-chapter="{{ continue_chapter }}"
-                        onclick="toggleMarkRead(this)"
-                        title="{% if is_finished %}已标记为已读完，点击取消{% else %}标记这本书为已读完{% endif %}">
-                    {% if is_finished %}{{ icon('circle-check', 'sm') }} 已读完{% else %}{{ icon('square-check', 'sm') }} 标记已读{% endif %}
-                </button>
-                {% endif %}
-            </div>
         </div>
 
     </div>

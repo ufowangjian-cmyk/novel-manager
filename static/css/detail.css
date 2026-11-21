@@ -1214,3 +1214,34 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         padding: 14px;
     }
 }
+
+/* 按钮组移到头部后：原来在卡片里的 margin-top:25px 在 hero 里偏大，
+   且要和下方的 meta 胶囊拉开一点距离；返回列表沿用 .btn-nav 原样式 */
+.hero .action-buttons {
+    margin-top: 12px;
+    gap: 10px;
+}
+
+.hero .action-btn,
+.hero .btn-nav {
+    /* 头部背景是图片，给按钮一点投影避免和亮部糊在一起 */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* 移动端：返回列表沿用原 .btn-nav 尺寸会偏大，和三个阅读按钮凑不成行，
+   这里压到与 .action-btn 同档，4 个按钮尽量两行排完，避免头部吃掉半屏 */
+@media (max-width: 768px) {
+    .hero .btn-nav {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+    .hero .action-buttons {
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .hero .action-btn .continue-chapter {
+        max-width: 6em;
+    }
+}
