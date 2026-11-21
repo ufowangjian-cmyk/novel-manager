@@ -97,7 +97,7 @@
 
                     <a href="{{ url_for('read_chapter', file_path=url_token, line_number=(all_chapters[0].line_number if all_chapters else 1), list_page=back_page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}"
                         class="action-btn secondary">
-                        {{ icon('book-open', 'sm') }} 从头阅读
+                        {{ icon('rotate-ccw', 'sm') }} 从头阅读
                     </a>
 
                     {# ===== 已读标记：能定位到这本书（有 work_id）就显示，读过与否都可用 ===== #}
