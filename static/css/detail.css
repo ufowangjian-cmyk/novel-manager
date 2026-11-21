@@ -33,10 +33,12 @@
     --detail-border-primary: #ccd8bc;
 }/* 详情页顶部标题 */.header-main h1 {
     font-size: 2.4rem;
-    font-weight: 700;
+    font-weight: 800;
     margin: 0 0 10px 0;
-    font-family: 'Segoe UI', '微软雅黑', sans-serif;
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', 'Microsoft YaHei', serif;
     letter-spacing: 0.02em;
+    /* 宋体笔画细，压在花哨的背景图上容易发虚，比正文多一层近距阴影压边 */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 10px rgba(0, 0, 0, 0.8);
 }/* 详情卡片 - 移除固定高度，让内容自然撑开 */.detail-card {
     background: var(--color-green-light);
     border-radius: 20px;
@@ -1135,10 +1137,11 @@ body.dark-mode .similar-item:hover {
 }
 
 .card-title {
-    font-size: 0.92em;
-    font-weight: 600;
-    color: #5A6B3E;
-    letter-spacing: 0.03em;
+    font-family: '思源宋体内置', 'Songti SC', 'SimSun', 'Microsoft YaHei', serif;
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #2F4A1E;
+    letter-spacing: 0.02em;
     margin-bottom: 10px;
     padding-bottom: 0;
     border-bottom: none;
