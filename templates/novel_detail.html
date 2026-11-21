@@ -82,7 +82,7 @@
                     {% if tags and tags != '无' %}
                     <div class="meta-item meta-tags">
                         <span class="meta-tags-label">{{ icon('tag', 'sm') }}</span>
-                        {% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">{{ tag }}</a>{% endfor %}
+                        {% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">#{{ tag }}</a>{% endfor %}
                     </div>
                     {% endif %}
                 </div>
