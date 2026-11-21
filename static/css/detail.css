@@ -1326,3 +1326,25 @@ body.dark-mode .hero .tag-badge {
 .hero .meta-tags {
     gap: 4px;
 }
+
+/* ---- 标签区对齐修复（2026-11-21）----
+   标签直接作为 .meta-tags 的 flex 项时，换行会回到容器左边缘、绕过左侧图标，
+   第二行就和第一行不齐了。这里让图标独立成列，标签在自己的容器内换行。 */
+.meta-item.meta-tags {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.meta-tags-label {
+    flex: none;
+    /* 图标 14px、标签行高 24px，抬 5px 让它和第一行垂直居中 */
+    padding-top: 5px;
+}
+
+.meta-tags-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+}

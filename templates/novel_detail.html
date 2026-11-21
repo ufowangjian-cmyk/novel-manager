@@ -82,7 +82,9 @@
                     {% if tags and tags != '无' %}
                     <div class="meta-item meta-tags">
                         <span class="meta-tags-label">{{ icon('tag', 'sm') }}</span>
-                        {% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">#{{ tag }}</a>{% endfor %}
+                        {# 标签必须包一层：直接作为 .meta-tags 的 flex 项时，
+                           换行会回到容器左边缘、绕过左侧图标，第二行看起来歪了 #}
+                        <span class="meta-tags-body">{% for tag in tags.split(',') %}<a href="/?tag={{ tag }}" class="tag-badge">#{{ tag }}</a>{% endfor %}</span>
                     </div>
                     {% endif %}
                 </div>
