@@ -4,7 +4,7 @@
 {% block title %}{{ title or '提示' }} - 文件已变更{% endblock %}
 {% block body_class %}page-missing{% endblock %}
 {% block page_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/novel_missing.css') }}?v={{ css_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/novel_missing.css') }}">
 {% endblock %}
 {% block head_extra %}
 {% endblock %}
@@ -29,7 +29,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // 公共初始化（主题）
