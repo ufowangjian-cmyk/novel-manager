@@ -1569,3 +1569,18 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
     }
 }
+
+/* ---- 桌面端相似书限高（2026-11-22）----
+   上一轮（94cf944）只给了手机端 244px，桌面端两栏布局里右栏完全没限制：
+   书一多就被撑高，.detail-grid 默认 stretch 把左栏一起拉长。
+   这里补齐桌面端，口径与内容简介的 300px 对齐。 */
+@media (min-width: 769px) {
+    .similar-list {
+        max-height: 300px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
+        padding-right: 2px;
+    }
+}
