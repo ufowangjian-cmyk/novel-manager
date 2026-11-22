@@ -5002,3 +5002,17 @@ th {
         letter-spacing: 0.01em;
     }
 }
+
+/* ---- 窄屏统计胶囊兜底（2026-11-22）----
+   390px 及以下时「内存 98 MB」会被压成两行（count-info 高 48px），
+   412px 以上正常。这里禁止换行、禁止压缩，让胶囊按内容宽度撑开
+   （stats-row 有 330px，内容约 240px，放得下）。 */
+@media (max-width: 480px) {
+    .stats-badge {
+        white-space: nowrap;
+    }
+
+    .stats-badge > * {
+        flex-shrink: 0;
+    }
+}
