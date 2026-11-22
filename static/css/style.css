@@ -4991,3 +4991,14 @@ th {
     font-weight: 400;
     letter-spacing: 0.03em;
 }
+
+/* ---- 手机端副标题缩小（2026-11-22）----
+   原来 0.92em（h1 40px → 36.8px），8 个字符要 296px，
+   但头部只给到 213px，被挤成两行（高度 99px），比主标题图（120px 宽）还抢眼。
+   0.6em ≈ 24px，一行放得下，总宽约 190px，和主标题视觉宽度接近。 */
+@media (max-width: 768px) {
+    .reader-subtitle {
+        font-size: 0.6em;
+        letter-spacing: 0.01em;
+    }
+}
