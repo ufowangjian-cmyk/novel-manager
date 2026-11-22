@@ -1554,3 +1554,18 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         margin-top: 0;
     }
 }
+
+/* ---- 手机端相似书限高（2026-11-22）----
+   相似书多的时候会把简介挤得很靠下。这里固定显示 3 条（每条约 80px + 2px 间距
+   = 244px），超出的在区块内上下滚动；不足 3 条时自然高度，不产生空白。
+   桌面端不受影响（两栏布局里右栏本来就并排）。 */
+@media (max-width: 768px) {
+    .similar-list {
+        max-height: 244px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;   /* 滚动到边界时不带着整页一起滚 */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
+    }
+}
