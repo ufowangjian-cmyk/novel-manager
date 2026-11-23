@@ -617,3 +617,27 @@ body.dark-mode .modal-field textarea {
    改之前先确认三处仍然对齐，否则又会一页大、一页小。
    目前本文件 125 条规则无重复定义，请保持。
    ============================================ */
+
+/* ---- 三个列表容器限高（2026-11-23）----
+   关键词动辄几百个，全铺开时这一块就占三四屏（整页 4125px）。
+   限高后在容器内滚动，页面高度回到可控范围。 */
+.keyword-list-container,
+.alias-list-container,
+.rule-list-container {
+    max-height: 360px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
+    padding-right: 8px;
+}
+
+@media (max-width: 768px) {
+    .keyword-list-container,
+    .alias-list-container,
+    .rule-list-container {
+        max-height: 280px;
+        padding: 12px;
+        padding-right: 10px;
+    }
+}
