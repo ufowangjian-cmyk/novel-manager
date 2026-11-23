@@ -2032,3 +2032,65 @@ body.dark-mode .nav-link.is-active {
         display: none;
     }
 }
+
+/* ============================================
+   未保存提示条（2026-11-23）
+   只统计偏好区字段；管理员区即时生效不参与。
+   用 .is-visible 控制显隐（hidden 属性的 display:none 会被 flex 覆盖）
+   ============================================ */
+.save-bar {
+    display: none;
+    position: sticky;
+    bottom: 16px;
+    z-index: 40;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #FFFFFF;
+    border: 1px solid #C0DD97;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px -10px rgba(60, 90, 30, 0.28);
+}
+
+.save-bar.is-visible {
+    display: flex;
+}
+
+.save-bar-text {
+    font-size: 0.88rem;
+    color: #3B6D11;
+}
+
+.save-bar-text b {
+    font-weight: 600;
+    margin: 0 2px;
+}
+
+.save-bar-actions {
+    display: flex;
+    gap: 8px;
+    flex: none;
+}
+
+body.dark-mode .save-bar {
+    background: #2C3B2C;
+    border-color: #4A6B32;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .save-bar-text {
+    color: #C0DD97;
+}
+
+@media (max-width: 768px) {
+    .save-bar {
+        bottom: 12px;
+        padding: 10px 14px;
+    }
+
+    .save-bar-text {
+        font-size: 0.82rem;
+    }
+}

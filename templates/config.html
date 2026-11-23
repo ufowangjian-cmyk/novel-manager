@@ -887,6 +887,15 @@ italic_default=False) %}
 
 </form>
 
+        <!-- 未保存提示条：只统计偏好区（管理员区是即时生效的，不参与） -->
+        <div class="save-bar" id="saveBar" role="status" aria-live="polite">
+            <span class="save-bar-text"><b id="saveBarCount">0</b> 项未保存</span>
+            <div class="save-bar-actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="saveBarDiscard">放弃</button>
+                <button type="button" class="btn btn-success btn-sm" id="saveBarSave">保存</button>
+            </div>
+        </div>
+
 <!-- 底部按钮 -->
 {% if session.user_role == 'admin' %}
 <div class="button-group" style="margin-top: 20px; justify-content: center;">
@@ -1020,5 +1029,54 @@ italic_default=False) %}
         if (!initialId || !document.getElementById(initialId)) initialId = sections[0].id;
         setActive(initialId);
     }
+
+    // ===== 未保存提示条（2026-11-23）=====
+    // 只盯偏好区字段（id 以 pref_ 开头）与加粗/斜体按钮。
+    // 管理员区是即时生效的，故意不参与统计。
+    (function initSaveBar() {
+        var bar = document.getElementById('saveBar');
+        if (!bar) return;
+        var countEl = document.getElementById('saveBarCount');
+        var dirty = new Set();
+
+        function sync() {
+            countEl.textContent = dirty.size;
+            bar.classList.toggle('is-visible', dirty.size > 0);
+        }
+
+        function markDirty(id) {
+            dirty.add(id);
+            sync();
+        }
+
+        document.querySelectorAll('[id^="pref_"]').forEach(function (el) {
+            var evt = (el.tagName === 'SELECT' || el.type === 'checkbox' || el.type === 'radio') ? 'change' : 'input';
+            el.addEventListener(evt, function () { markDirty(el.id); });
+        });
+
+        // 加粗 / 斜体是按钮切换（aria-pressed），不触发 input 事件
+        document.querySelectorAll('.set-bi').forEach(function (btn) {
+            btn.addEventListener('click', function () { markDirty(btn.id); });
+        });
+
+        document.getElementById('saveBarSave').addEventListener('click', async function () {
+            await saveMyPreferences();
+            dirty.clear();
+            sync();
+        });
+
+        document.getElementById('saveBarDiscard').addEventListener('click', function () {
+            dirty.clear();
+            sync();
+            loadMyPreferences();
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+            if (dirty.size > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    })();
 </script>
 {% endblock %}
