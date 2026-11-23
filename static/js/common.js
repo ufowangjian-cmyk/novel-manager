@@ -769,3 +769,86 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+// ===== 通用「胶囊编辑」弹窗（2026-11-23）=====
+// 全项目统一交互：点胶囊 → 弹窗里改文字 / 删除 / 保存。
+// 调用：openChipEditor({ title, value, hint, onSave(newValue), onDelete() })
+// 关键词、别名、派生规则、书名高亮词共用这一套，不再每个胶囊挂一个 ×。
+(function () {
+    var modal = null;
+    var input, titleEl, hintEl, delBtn, saveBtn, cancelBtn, closeBtn;
+    var cb = { onSave: null, onDelete: null, original: '' };
+
+    function build() {
+        modal = document.createElement('div');
+        modal.className = 'chip-modal';
+        modal.innerHTML =
+            '<div class="chip-modal-card" role="dialog" aria-modal="true" aria-labelledby="chipModalTitle">' +
+                '<div class="chip-modal-head">' +
+                    '<h3 class="chip-modal-title" id="chipModalTitle"></h3>' +
+                    '<button type="button" class="chip-modal-close" aria-label="关闭">&times;</button>' +
+                '</div>' +
+                '<input type="text" class="chip-modal-input" autocomplete="off">' +
+                '<p class="chip-modal-hint"></p>' +
+                '<div class="chip-modal-actions">' +
+                    '<button type="button" class="chip-modal-del">删除</button>' +
+                    '<span class="chip-modal-spacer"></span>' +
+                    '<button type="button" class="chip-modal-cancel">取消</button>' +
+                    '<button type="button" class="chip-modal-save">保存</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(modal);
+
+        input = modal.querySelector('.chip-modal-input');
+        titleEl = modal.querySelector('.chip-modal-title');
+        hintEl = modal.querySelector('.chip-modal-hint');
+        delBtn = modal.querySelector('.chip-modal-del');
+        saveBtn = modal.querySelector('.chip-modal-save');
+        cancelBtn = modal.querySelector('.chip-modal-cancel');
+        closeBtn = modal.querySelector('.chip-modal-close');
+
+        function close() { modal.classList.remove('is-open'); }
+
+        closeBtn.addEventListener('click', close);
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+
+        saveBtn.addEventListener('click', function () {
+            var v = input.value.trim();
+            if (!v) { input.focus(); return; }
+            var fn = cb.onSave;
+            var original = cb.original;
+            close();
+            if (fn) fn(v, original);
+        });
+
+        delBtn.addEventListener('click', function () {
+            var fn = cb.onDelete;
+            var original = cb.original;
+            close();
+            if (fn) fn(original);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+        });
+    }
+
+    window.openChipEditor = function (options) {
+        options = options || {};
+        if (!modal) build();
+        cb.onSave = options.onSave || null;
+        cb.onDelete = options.onDelete || null;
+        cb.original = options.value || '';
+        titleEl.textContent = options.title || '编辑';
+        hintEl.textContent = options.hint || '';
+        hintEl.style.display = options.hint ? '' : 'none';
+        delBtn.style.display = cb.onDelete ? '' : 'none';
+        input.value = cb.original;
+        modal.classList.add('is-open');
+        setTimeout(function () { input.focus(); input.select(); }, 50);
+    };
+})();

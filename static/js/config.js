@@ -1027,19 +1027,28 @@ const HLW = (function () {
     }
 
     function makeChip(w) {
-        const s = document.createElement('span');
+        // 胶囊本身当按钮：点开弹窗改/删（2026-11-23，与标签管理同一套逻辑）
+        const s = document.createElement('button');
+        s.type = 'button';
         s.className = 'hlw-chip';
         s.textContent = w;
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'hlw-x';
-        b.setAttribute('aria-label', '删除 ' + w);
-        b.textContent = '×';
-        b.addEventListener('click', function (e) {
-            e.stopPropagation();
-            remove(w);
+        s.addEventListener('click', function () {
+            openChipEditor({
+                title: '编辑书名高亮词',
+                value: w,
+                hint: '改完点保存；也可以直接删除。长词建议放前面，避免「番外篇」被「番外」先切开。',
+                onSave: function (v) {
+                    if (v === w) return;
+                    if (words.indexOf(v) !== -1) {
+                        if (typeof showNotification === 'function') showNotification('已经存在同样的词', 'error');
+                        return;
+                    }
+                    words = words.map(function (x) { return x === w ? v : x; });
+                    render();
+                },
+                onDelete: function () { remove(w); }
+            });
         });
-        s.appendChild(b);
         return s;
     }
 

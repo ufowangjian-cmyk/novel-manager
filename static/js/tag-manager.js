@@ -20,17 +20,60 @@ function renderKeywordList(keywords) {
         container.innerHTML = '<div class="empty-hint">暂无关键词，点击"添加"创建</div>';
         return;
     }
-    
+
+    // 胶囊本身就是按钮：点开弹窗改/删，不再每个胶囊挂一个 ×（2026-11-23）
     container.innerHTML = `
         <div class="tag-items">
             ${keywords.map((keyword, index) => `
-                <div class="tag-item" data-index="${index}">
+                <button type="button" class="tag-item" data-index="${index}" data-keyword="${escapeHtml(keyword)}">
                     <span class="tag-name">${escapeHtml(keyword)}</span>
-                    <button class="tag-delete" onclick="deleteKeyword(${index})" title="删除">${icon('x', 'sm')}</button>
-                </div>
+                </button>
             `).join('')}
         </div>
     `;
+
+    container.querySelectorAll('.tag-item').forEach(el => {
+        el.addEventListener('click', function () {
+            const kw = this.dataset.keyword;
+            const idx = Number(this.dataset.index);
+            openChipEditor({
+                title: '编辑关键词',
+                value: kw,
+                hint: '改完点保存；也可以直接删除。规则改动只对之后的扫描生效。',
+                onSave: function (v) { if (v !== kw) renameKeyword(idx, v); },
+                onDelete: function () { deleteKeyword(idx, true); }
+            });
+        });
+    });
+}
+
+// 关键词重命名：接口只有 add / delete，这里先删旧的再加新的
+async function renameKeyword(index, newKeyword) {
+    const delResp = await fetch('/api/tag/keyword/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index })
+    });
+    const delResult = await delResp.json();
+    if (!delResult.success) {
+        showNotification('重命名失败: ' + (delResult.message || '删除旧词失败'), 'error');
+        return;
+    }
+
+    const addResp = await fetch('/api/tag/keyword/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword: newKeyword })
+    });
+    const addResult = await addResp.json();
+    if (!addResult.success) {
+        showNotification('重命名失败: ' + (addResult.message || '新词未能添加'), 'error');
+        loadTagRules();
+        return;
+    }
+
+    showNotification('关键词已更新', 'success');
+    loadTagRules();
 }
 
 // 渲染别名列表 - 弹窗编辑版（安全版）
@@ -49,12 +92,11 @@ function renderAliases(aliases) {
 
         html += `
             <div class="alias-item">
-                <div class="alias-display-text" data-main="${escapeHtml(mainTag)}" data-aliases="${escapeHtml(aliasStr)}">
+                <button type="button" class="alias-display-text" data-main="${escapeHtml(mainTag)}" data-aliases="${escapeHtml(aliasStr)}">
                     <span class="alias-main-badge">${escapeHtml(mainTag)}</span>
                     <span class="alias-arrow">${icon('arrow-right', 'sm')}</span>
                     <span class="alias-list-badge">${escapeHtml(aliasStr)}</span>
-                    <button class="alias-delete" data-main="${escapeHtml(mainTag)}">${icon('trash-2', 'sm')}</button>
-                </div>
+                </button>
             </div>
         `;
     }
@@ -63,8 +105,7 @@ function renderAliases(aliases) {
 
     // 事件委托：点击别名项 → 打开弹窗
     container.querySelectorAll('.alias-display-text').forEach(el => {
-        el.addEventListener('click', function (e) {
-            if (e.target.classList.contains('alias-delete')) return;
+        el.addEventListener('click', function () {
             openAliasModal(this.dataset.main, this.dataset.aliases);
         });
     });
@@ -93,6 +134,14 @@ function openAliasModal(mainTag, aliasesStr) {
     modal.style.display = 'flex';
     // 自动聚焦到文本框
     setTimeout(() => aliasesTextarea.focus(), 100);
+}
+
+// 从弹窗里删除当前编辑的别名映射
+function deleteAliasFromModal() {
+    if (!currentEditingMainTag) return;
+    var mainTag = currentEditingMainTag;
+    closeAliasModal();
+    deleteAlias(mainTag, true);
 }
 
 // 关闭弹窗
@@ -198,18 +247,71 @@ function renderRuleList(implications) {
         return;
     }
     
+    // 胶囊即按钮：点开弹窗改/删（2026-11-23）
     container.innerHTML = `
         <div class="rule-items">
             ${rulesArray.map((rule, index) => `
-                <div class="rule-item" data-index="${index}">
+                <button type="button" class="rule-item" data-index="${index}">
                     <span class="rule-source">${escapeHtml(rule.source)}</span>
                     <span class="rule-arrow">${icon('arrow-right', 'sm')}</span>
                     <span class="rule-derived">${escapeHtml(rule.derived)}</span>
-                    <button class="rule-delete"onclick="deleteDerivedRule(${index})">${icon('x', 'sm')}</button>
-                </div>
+                </button>
             `).join('')}
         </div>
     `;
+
+    container.querySelectorAll('.rule-item').forEach(el => {
+        el.addEventListener('click', function () {
+            const idx = Number(this.dataset.index);
+            const rule = rulesArray[idx];
+            if (!rule) return;
+            openChipEditor({
+                title: '编辑派生规则',
+                value: rule.source + ' → ' + rule.derived,
+                hint: '格式：源标签 → 派生标签。改完点保存，也可以直接删除这条规则。',
+                onSave: function (v) { renameRule(idx, rule, v); },
+                onDelete: function () { deleteDerivedRule(idx, true); }
+            });
+        });
+    });
+}
+
+// 派生规则重命名：接口只有 add / delete，这里先删旧规则再加新规则
+async function renameRule(index, oldRule, rawText) {
+    const parts = String(rawText).split(/→|->/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length !== 2) {
+        showNotification('格式应为：源标签 → 派生标签', 'error');
+        return;
+    }
+    const source = parts[0];
+    const derived = parts[1];
+    if (source === oldRule.source && derived === oldRule.derived) return;
+
+    const delResp = await fetch('/api/tag/rule/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: oldRule.source, derived: oldRule.derived })
+    });
+    const delResult = await delResp.json();
+    if (!delResult.success) {
+        showNotification('修改失败: ' + (delResult.message || '删除旧规则失败'), 'error');
+        return;
+    }
+
+    const addResp = await fetch('/api/tag/rule/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: source, derived: [derived] })
+    });
+    const addResult = await addResp.json();
+    if (!addResult.success) {
+        showNotification('修改失败: ' + (addResult.message || '新规则未能添加'), 'error');
+        loadTagRules();
+        return;
+    }
+
+    showNotification('派生规则已更新', 'success');
+    loadTagRules();
 }
 
 // 添加关键词
@@ -237,8 +339,8 @@ async function addKeyword() {
 }
 
 // 删除关键词
-async function deleteKeyword(index) {
-    if (!confirm('确定要删除这个关键词吗？')) return;
+async function deleteKeyword(index, skipConfirm) {
+    if (!skipConfirm && !confirm('确定要删除这个关键词吗？')) return;
     
     const response = await fetch('/api/tag/keyword/delete', {
         method: 'POST',
@@ -332,8 +434,8 @@ async function editKeyword(index) {
 
 
 // 删除别名（原地编辑版本，接收 mainTag）
-async function deleteAlias(mainTag) {
-    if (!confirm('确定要删除这个别名映射吗？')) return;
+async function deleteAlias(mainTag, skipConfirm) {
+    if (!skipConfirm && !confirm('确定要删除这个别名映射吗？')) return;
     
     const response = await fetch('/api/tag/alias/delete', {
         method: 'POST',
@@ -351,8 +453,8 @@ async function deleteAlias(mainTag) {
 }
 
 // 删除派生规则 - 修复版（发送 source 和 derived）
-async function deleteDerivedRule(index) {
-    if (!confirm('确定要删除这个派生规则吗？')) return;
+async function deleteDerivedRule(index, skipConfirm) {
+    if (!skipConfirm && !confirm('确定要删除这个派生规则吗？')) return;
     
     // 获取当前规则列表，找到对应的 source 和 derived
     const response = await fetch('/api/tag/rules/get');

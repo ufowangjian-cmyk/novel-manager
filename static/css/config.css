@@ -2094,3 +2094,16 @@ body.dark-mode .save-bar-text {
         font-size: 0.82rem;
     }
 }
+
+/* ---- 高亮词胶囊改为 button（2026-11-23）---- */
+.hlw-chip {
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.hlw-chip:focus-visible {
+    outline: 2px solid var(--color-primary, #639922);
+    outline-offset: 2px;
+}

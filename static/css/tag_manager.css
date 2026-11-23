@@ -617,3 +617,36 @@ body.dark-mode .modal-field textarea {
    改之前先确认三处仍然对齐，否则又会一页大、一页小。
    目前本文件 125 条规则无重复定义，请保持。
    ============================================ */
+
+/* ---- 胶囊改为 button（2026-11-23）----
+   关键词 / 派生规则 / 别名的胶囊现在本身就是按钮，点开弹窗改删，
+   不再各自挂一个 ×。这里重置 button 默认样式并补焦点态。 */
+.tag-item,
+.rule-item,
+.alias-display-text {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.tag-item:focus-visible,
+.rule-item:focus-visible,
+.alias-display-text:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* 不再有 × 按钮，右侧内边距恢复对称 */
+.tag-item {
+    padding: 6px 14px;
+}
+
+@media (max-width: 768px) {
+    .tag-item {
+        padding: 3px 9px;
+    }
+}

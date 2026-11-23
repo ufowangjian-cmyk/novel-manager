@@ -161,3 +161,159 @@
     height: 16px;
     vertical-align: middle;
 }
+/* ---- 通用胶囊编辑弹窗（2026-11-23）----
+   关键词 / 别名 / 派生规则 / 书名高亮词共用。 */
+.chip-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(20, 32, 15, 0.42);
+    z-index: 320;
+}
+
+.chip-modal.is-open {
+    display: flex;
+}
+
+.chip-modal-card {
+    width: min(420px, 100%);
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 18px 20px 16px;
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.45);
+}
+
+.chip-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.chip-modal-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2C3A1E;
+}
+
+.chip-modal-close {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: #8A9A78;
+    cursor: pointer;
+}
+
+.chip-modal-close:hover {
+    background: #F2F6EA;
+    color: #3B6D11;
+}
+
+.chip-modal-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #DCE4CB;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    background: #FAFCF6;
+    color: #2C3A1E;
+}
+
+.chip-modal-input:focus {
+    outline: none;
+    border-color: #97C459;
+    box-shadow: 0 0 0 3px rgba(151, 196, 89, 0.22);
+}
+
+.chip-modal-hint {
+    margin: 8px 0 0;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: #8A9A78;
+}
+
+.chip-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.chip-modal-spacer {
+    flex: 1;
+}
+
+.chip-modal-del,
+.chip-modal-cancel,
+.chip-modal-save {
+    padding: 8px 14px;
+    border-radius: 9px;
+    font-size: 0.84rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: inherit;
+}
+
+.chip-modal-del {
+    color: #A32D2D;
+    background: #FCEBEB;
+    border-color: #F7C1C1;
+}
+
+.chip-modal-del:hover {
+    background: #F7C1C1;
+}
+
+.chip-modal-cancel {
+    color: #4A5A3C;
+    background: #FFFFFF;
+    border-color: #DCE4CB;
+}
+
+.chip-modal-cancel:hover {
+    background: #F7F9F2;
+}
+
+.chip-modal-save {
+    color: #FFFFFF;
+    background: #639922;
+}
+
+.chip-modal-save:hover {
+    background: #4E7A19;
+}
+
+body.dark-mode .chip-modal-card {
+    background: #2C3B2C;
+}
+
+body.dark-mode .chip-modal-title {
+    color: #E4EBD8;
+}
+
+body.dark-mode .chip-modal-input {
+    background: #24331F;
+    border-color: #3A4D3A;
+    color: #E4EBD8;
+}
+
+body.dark-mode .chip-modal-hint {
+    color: #9DAF8C;
+}
+
+body.dark-mode .chip-modal-cancel {
+    background: #2C3B2C;
+    border-color: #3A4D3A;
+    color: #C8D4BC;
+}
