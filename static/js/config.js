@@ -377,7 +377,6 @@ function renderUserList(users, container, records) {
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button class="btn-edit-user" data-key="${user.key.replace(/"/g, '&quot;')}" data-role="${user.role}" data-userid="${(user.user_id || user.key).replace(/"/g, '&quot;')}" data-avatar-seed="${user.avatar_seed || 0}" data-preferences='${JSON.stringify(user.preferences || {}).replace(/'/g, "&#39;")}'style="background: #ffaa66; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;">${icon('pencil', 'sm')} 编辑</button>
-                                <button class="btn-delete-user" data-key="${user.key}" style="background:#ff6b6b;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;color:white;">${icon('trash-2', 'sm')} 删除</button>
                             </div>
                         </div>
                     </div>
@@ -587,6 +586,10 @@ function showEditUserModal(userKey, role, userId, preferences = {}, avatarSeed =
                         <div id="modal_edit_hint" class="form-hint" style="margin-top: 10px;"></div>
                     </div>
                     <div class="modal-footer">
+                        <button class="btn btn-danger" style="margin-right: auto;"
+                            onclick="deleteUserFromModal('${escapedUserKey.replace(/'/g, "\\'")}')">
+                            ${icon('trash-2', 'sm')} 删除用户
+                        </button>
                         <button class="btn btn-secondary"onclick="this.closest('.modal').remove()">取消</button>
                         <button class="btn btn-success"onclick="submitEditUser('${userKey}')">确认修改</button>
                     </div>
@@ -759,6 +762,14 @@ function submitEditUser(userKey) {
         });
 }
 // ========== 删除用户 ==========
+// 从编辑弹窗删除用户（2026-11-23）：关窗后走原有删除流程，仍有 confirm 二次确认
+function deleteUserFromModal(userKey) {
+    if (!userKey) return;
+    const modal = document.querySelector('.modal');
+    if (modal) modal.remove();
+    deleteUser(userKey);
+}
+
 function deleteUser(userKey) {
     if (!confirm(`确定要删除该用户吗？此操作不可恢复！`)) {
         return;
