@@ -650,3 +650,19 @@ body.dark-mode .modal-field textarea {
         padding: 3px 9px;
     }
 }
+
+/* ---- 别名项内部按钮去掉自身外观（2026-11-23）----
+   .alias-display-text 从 div 改成 button 后只重置了字体，
+   浏览器默认给了灰底 rgb(240,240,240) + 2px outset 黑边，
+   套在 .alias-item 的胶囊里就成了「胶囊套胶囊」。
+   这里把它还原成纯内容容器，视觉上只剩「主标签 → 别名」两个徽章。 */
+.alias-display-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+}
