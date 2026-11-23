@@ -1014,6 +1014,11 @@ italic_default=False) %}
             }, { rootMargin: '-12% 0px -68% 0px', threshold: 0 });
             sections.forEach(function (s) { io.observe(s); });
         }
+
+        // 初始高亮：URL 带 # 就跳到那儿，否则默认第一项
+        var initialId = (location.hash || '').replace('#', '');
+        if (!initialId || !document.getElementById(initialId)) initialId = sections[0].id;
+        setActive(initialId);
     }
 </script>
 {% endblock %}
