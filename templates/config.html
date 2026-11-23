@@ -97,7 +97,6 @@ italic_default=False) %}
                 <span class="nav-group-title">管理员专属</span>
                 <a href="#admin-memory" class="nav-link" data-target="admin-memory">内存管理</a>
                 <a href="#admin-users" class="nav-link" data-target="admin-users">用户管理</a>
-                <a href="#admin-records" class="nav-link" data-target="admin-records">用户记录</a>
                 <a href="#admin-defaults-read" class="nav-link" data-target="admin-defaults-read">阅读默认值</a>
                 <a href="#admin-defaults-list" class="nav-link" data-target="admin-defaults-list">列表默认值</a>
                 <a href="#admin-scan" class="nav-link" data-target="admin-scan">扫描配置</a>
@@ -233,37 +232,6 @@ italic_default=False) %}
                         <div class="form-hint" style="margin-top: 2px;">
                             {{ icon('alert-triangle', 'sm') }} 忘记管理员密码？删除服务器上的 data/config.json 文件，重启后恢复无密码状态。
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 用户记录管理 -->
-            <div class="config-card" id="admin-records">
-                <div class="card-header" onclick="toggleCard(this)">
-                    <span class="card-icon">{{ icon('bar-chart-3') }}</span>
-                    <h2>用户记录管理</h2>
-                    <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
-                </div>
-                <div class="card-content">
-                    <div class="user-records-header">
-                        <span class="form-hint">{{ icon('bar-chart-3', 'sm') }} 只统计每位用户读了多少本，不展示具体书目</span>
-                        <div class="user-records-actions">
-                            <button type="button" class="btn btn-warning" onclick="clearAllUserRecords()">
-                                {{ icon('alert-triangle', 'sm') }} 清除所有记录
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="refreshUserRecords()">
-                                {{ icon('refresh-cw', 'sm') }} 刷新
-                            </button>
-                        </div>
-                    </div>
-                    <div id="userRecordsContainer" class="user-records-container">
-                        <div class="loading-tags" style="text-align: center; padding: 30px;">
-                            <div class="loading-small"></div>
-                            <span style="margin-left: 10px;">加载用户记录...</span>
-                        </div>
-                    </div>
-                    <div class="form-hint">
-                        {{ icon('lightbulb', 'sm') }} 提示：出于隐私考虑，这里只显示阅读数量与最近阅读时间，不显示具体书目。
                     </div>
                 </div>
             </div>

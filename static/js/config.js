@@ -222,6 +222,35 @@ function escapeAttr(value) {
         .replace(/>/g, '&gt;');
 }
 
+// ========== 从用户编辑弹窗里清除阅读记录（2026-11-23） ==========
+async function clearRecordsForUser(userName, btn) {
+    if (!userName) return;
+    if (!confirm('确定要清除「' + userName + '」的阅读记录吗？此操作不可恢复！')) return;
+
+    if (btn) btn.disabled = true;
+    try {
+        const response = await fetch('/admin/clear_user_records', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_display: userName })
+        });
+        const result = await response.json();
+        if (result.success) {
+            safeNotify('已清除「' + userName + '」的阅读记录', 'success');
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+            loadUserList();
+        } else {
+            safeNotify(result.message || '清除失败', 'error');
+            if (btn) btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('清除用户记录失败:', error);
+        safeNotify('清除失败，请重试', 'error');
+        if (btn) btn.disabled = false;
+    }
+}
+
 // ========== 清除单个用户的阅读记录 ==========
 async function clearUserRecords(btn) {
     const item = btn.closest('.user-record-item');
@@ -304,15 +333,24 @@ async function loadUserList() {
             throw new Error(`HTTP ${response.status}`);
         }
         const users = await response.json();
-        renderUserList(users, container);
-        await loadUserRecords();
+
+        // 同时拉用户阅读记录，直接并入用户列表（2026-11-23 合并「用户记录管理」卡片）
+        let records = {};
+        try {
+            const recordsResp = await fetch('/admin/user_records', { headers: { 'Cache-Control': 'no-cache' } });
+            if (recordsResp.ok) records = await recordsResp.json();
+        } catch (e) { records = {}; }
+        window.__USER_RECORDS = records;
+
+        renderUserList(users, container, records);
     } catch (error) {
         console.error('加载用户列表失败:', error);
         container.innerHTML = `<div class="form-hint" style="color: #ff6b6b;">${icon('circle-x', 'sm')} 加载失败: ${error.message}</div>`;
     }
 }
 // ========== 渲染用户列表 ==========
-function renderUserList(users, container) {
+function renderUserList(users, container, records) {
+    records = records || window.__USER_RECORDS || {};
     if (!users || users.length === 0) {
         container.innerHTML = '<div class="form-hint">' + icon('file-text', 'sm') + '暂无用户，请添加</div>';
         return;
@@ -331,6 +369,11 @@ function renderUserList(users, container) {
                                 <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(90, 143, 76, 0.25); padding: 2px 10px 2px 4px; border-radius: 12px; font-size: 11px;"><span class="user-avatar user-avatar--sm" style="--av-color: ${user.avatar_color || '#7BA05B'}">${icon(user.avatar_icon || 'user', 'xs')}</span>${escapeHtml(user.user_id || user.key)}</span>
                                 <span class="record-badge ${roleClass}" style="font-size: 11px; padding: 2px 8px;">${roleName}</span>
                                 ${isCurrentUser ? '<span style="font-size: 10px; background: #4caf50; padding: 2px 6px; border-radius: 10px;">当前用户</span>' : ''}
+                                ${(() => {
+                                    const rec = records[user.user_id || user.key] || {};
+                                    const cnt = rec.count || 0;
+                                    return `<span class="record-count-badge" style="font-size: 11px;">${icon('library', 'sm')} ${cnt} 本</span>`;
+                                })()}
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button class="btn-edit-user" data-key="${user.key.replace(/"/g, '&quot;')}" data-role="${user.role}" data-userid="${(user.user_id || user.key).replace(/"/g, '&quot;')}" data-avatar-seed="${user.avatar_seed || 0}" data-preferences='${JSON.stringify(user.preferences || {}).replace(/'/g, "&#39;")}'style="background: #ffaa66; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;">${icon('pencil', 'sm')} 编辑</button>
@@ -522,6 +565,24 @@ function showEditUserModal(userKey, role, userId, preferences = {}, avatarSeed =
                                 <div>${icon('music', 'sm')} 朗读音调: ${prefs.speech_pitch || '未设置'}</div>
                             </div>
                             <div class="form-hint" style="margin-top: 5px;">${icon('lightbulb', 'sm')} 偏好设置不会因编辑用户而丢失</div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px; padding: 10px; background: rgba(255,193,7,0.08); border-radius: 8px; border: 1px solid rgba(255,193,7,0.22);">
+                            <label style="display: block; margin-bottom: 8px; color: #a0c0ff;">${icon('bar-chart-3', 'sm')} 阅读记录</label>
+                            ${(() => {
+                                const rec = (window.__USER_RECORDS || {})[userId] || {};
+                                const cnt = rec.count || 0;
+                                const last = rec.last_read ? formatTimestamp(rec.last_read) : '从未阅读';
+                                return `
+                                <div style="font-size: 13px; color: #aaa; margin-bottom: 10px;">
+                                    <div>${icon('library', 'sm')} 已读 ${cnt} 本</div>
+                                    <div>${icon('clock', 'xs')} 最近阅读：${escapeHtml(last)}</div>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-compact"
+                                    onclick="clearRecordsForUser('${escapedUserId.replace(/'/g, "\\'")}', this)">
+                                    ${icon('trash-2', 'sm')} 清除阅读记录
+                                </button>`;
+                            })()}
+                            <div class="form-hint" style="margin-top: 6px;">${icon('lightbulb', 'sm')} 只清阅读记录，不影响账号与偏好</div>
                         </div>
                         <div id="modal_edit_hint" class="form-hint" style="margin-top: 10px;"></div>
                     </div>
