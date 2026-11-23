@@ -250,8 +250,9 @@ body.dark-mode {
     --color-text-secondary: #e2e8f0;
     --color-text-tertiary: #9ca3af;
     --color-text-quaternary: #8cbd6e;
-    /* 补上：分页统计等用的强调文字，之前暗色下仍是 #333 看不清（2026-11-23） */
-    --color-text-strong: #f0f3ec;
+    /* 补上：分页统计等用的强调文字，之前暗色下仍是 #333 看不清（2026-11-23）
+       亮度再压一档：这类信息亮成接近白反而抢眼（2026-11-23） */
+    --color-text-strong: #a8b4c2;
     /* 补上：slate 系列（卡片小标题等用的 --color-text-slate 及其变体），
        之前只有亮色值，深色下标题仍是 #2d3748（2026-11-23） */
     /* 卡片小标题用的 slate：不用纯白，柔和中浅灰更符合「次要标题」的分量 */
