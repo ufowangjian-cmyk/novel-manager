@@ -332,7 +332,9 @@
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: modalFadeIn 0.2s ease both;
+    animation: modalFadeIn 0.2s ease;
+    /* 兜底：动画被禁用/未播放时（无头渲染、系统减少动效）不会停在 opacity:0 */
+    opacity: 1;
     /* 兜底：屏幕极小时整个弹窗层可滚，不会把内容顶出可视区 */
     overflow-y: auto;
     padding: 20px;
@@ -355,7 +357,8 @@
     width: 90%;
     max-width: 420px;
     box-shadow: var(--shadow-lg);
-    animation: modalSlideUp 0.3s ease both;
+    animation: modalSlideUp 0.3s ease;
+    opacity: 1;
     border: 1px solid var(--border-secondary);
     /* 三栏布局：头部/底部固定，中间内容区自己滚。
        不加这几行的话，手机上编辑用户这种长表单会把底部按钮顶出屏幕且无法滚动。
