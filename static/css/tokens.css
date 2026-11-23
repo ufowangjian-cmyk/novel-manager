@@ -250,6 +250,8 @@ body.dark-mode {
     --color-text-secondary: #e2e8f0;
     --color-text-tertiary: #9ca3af;
     --color-text-quaternary: #8cbd6e;
+    /* 补上：分页统计等用的强调文字，之前暗色下仍是 #333 看不清（2026-11-23） */
+    --color-text-strong: #f0f3ec;
 
     --color-bg-secondary: #1b2418;
     --color-bg-tertiary: #232f1f;
