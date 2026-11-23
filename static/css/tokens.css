@@ -254,8 +254,9 @@ body.dark-mode {
     --color-text-strong: #f0f3ec;
     /* 补上：slate 系列（卡片小标题等用的 --color-text-slate 及其变体），
        之前只有亮色值，深色下标题仍是 #2d3748（2026-11-23） */
-    --color-text-slate: #e2e8f0;
-    --color-text-slate-light: #cbd5e1;
+    /* 卡片小标题用的 slate：不用纯白，柔和中浅灰更符合「次要标题」的分量 */
+    --color-text-slate: #b0bccb;
+    --color-text-slate-light: #a5b1c0;
     --color-text-slate-lighter: #94a3b8;
     --color-text-slate-pale: #64748b;
     /* 其余语义文字色，同样只有亮色定义（2026-11-23） */
