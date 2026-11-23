@@ -341,13 +341,15 @@
     box-sizing: border-box;
 }
 
+/* 只做遮罩的层次过渡，不动 opacity：
+   opacity 动画在禁用动效或未播放时会停在起始帧，整块弹窗变成不可见。 */
 @keyframes modalFadeIn {
     from {
-        opacity: 0;
+        backdrop-filter: blur(0);
     }
 
     to {
-        opacity: 1;
+        backdrop-filter: blur(4px);
     }
 }
 
@@ -375,12 +377,10 @@
 @keyframes modalSlideUp {
     from {
         transform: translateY(30px);
-        opacity: 0;
     }
 
     to {
         transform: translateY(0);
-        opacity: 1;
     }
 }
 
