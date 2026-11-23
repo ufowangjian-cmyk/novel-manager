@@ -258,6 +258,11 @@ body.dark-mode {
     --color-text-slate-light: #cbd5e1;
     --color-text-slate-lighter: #94a3b8;
     --color-text-slate-pale: #64748b;
+    /* 其余语义文字色，同样只有亮色定义（2026-11-23） */
+    --color-text-ink: #e2e8f0;
+    --color-text-gray: #94a3b8;
+    --color-text-ash: #94a3b8;
+    --color-text-olive: #a8bd8c;
 
     --color-bg-secondary: #1b2418;
     --color-bg-tertiary: #232f1f;
