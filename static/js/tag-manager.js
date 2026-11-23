@@ -267,24 +267,24 @@ function renderRuleList(implications) {
             if (!rule) return;
             openChipEditor({
                 title: '编辑派生规则',
-                value: rule.source + ' → ' + rule.derived,
-                hint: '格式：源标签 → 派生标签。改完点保存，也可以直接删除这条规则。',
-                onSave: function (v) { renameRule(idx, rule, v); },
+                fields: [
+                    { label: '源标签', value: rule.source, placeholder: '例如：jk' },
+                    { label: '派生标签', value: rule.derived, placeholder: '例如：制服诱惑' }
+                ],
+                hint: '分别修改源标签和派生标签，互不影响；也可以直接删除这条规则。',
+                onSave: function (values) { renameRule(rule, values[0], values[1]); },
                 onDelete: function () { deleteDerivedRule(idx, true); }
             });
         });
     });
 }
 
-// 派生规则重命名：接口只有 add / delete，这里先删旧规则再加新规则
-async function renameRule(index, oldRule, rawText) {
-    const parts = String(rawText).split(/→|->/).map(function (s) { return s.trim(); }).filter(Boolean);
-    if (parts.length !== 2) {
-        showNotification('格式应为：源标签 → 派生标签', 'error');
-        return;
-    }
-    const source = parts[0];
-    const derived = parts[1];
+// 派生规则重命名：接口只有 add / delete，这里先删旧规则再加新规则。
+// 源标签与派生标签分别传入（弹窗里是两个独立输入框），不再解析文本。
+async function renameRule(oldRule, source, derived) {
+    source = String(source || '').trim();
+    derived = String(derived || '').trim();
+    if (!source || !derived) return;
     if (source === oldRule.source && derived === oldRule.derived) return;
 
     const delResp = await fetch('/api/tag/rule/delete', {

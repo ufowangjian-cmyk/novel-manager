@@ -317,3 +317,23 @@ body.dark-mode .chip-modal-cancel {
     border-color: #3A4D3A;
     color: #C8D4BC;
 }
+
+/* 多字段弹窗：字段之间留一点间距，标签在上、输入框在下 */
+.chip-modal-field {
+    display: block;
+}
+
+.chip-modal-field + .chip-modal-field {
+    margin-top: 12px;
+}
+
+.chip-modal-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.78rem;
+    color: #6B7A5E;
+}
+
+body.dark-mode .chip-modal-label {
+    color: #9DAF8C;
+}

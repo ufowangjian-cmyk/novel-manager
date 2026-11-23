@@ -769,14 +769,17 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
-// ===== 通用「胶囊编辑」弹窗（2026-11-23）=====
-// 全项目统一交互：点胶囊 → 弹窗里改文字 / 删除 / 保存。
-// 调用：openChipEditor({ title, value, hint, onSave(newValue), onDelete() })
-// 关键词、别名、派生规则、书名高亮词共用这一套，不再每个胶囊挂一个 ×。
+// ===== 通用「胶囊编辑」弹窗（2026-11-23，支持多字段）=====
+// 全项目统一交互：点胶囊 → 弹窗里改 / 删除 / 保存。
+// 单字段：openChipEditor({ title, value, hint, onSave(v), onDelete() })
+// 多字段：openChipEditor({ title, fields: [{label, value, placeholder}, ...],
+//                          hint, onSave([v1, v2]), onDelete() })
+// 派生规则用两个输入框，从根上免掉「箭头被删掉就解析失败」这类问题。
 (function () {
     var modal = null;
-    var input, titleEl, hintEl, delBtn, saveBtn, cancelBtn, closeBtn;
-    var cb = { onSave: null, onDelete: null, original: '' };
+    var fieldsBox, titleEl, hintEl, delBtn, saveBtn, cancelBtn, closeBtn;
+    var inputs = [];
+    var cb = { onSave: null, onDelete: null, originals: [] };
 
     function build() {
         modal = document.createElement('div');
@@ -787,7 +790,7 @@ if ('serviceWorker' in navigator) {
                     '<h3 class="chip-modal-title" id="chipModalTitle"></h3>' +
                     '<button type="button" class="chip-modal-close" aria-label="关闭">&times;</button>' +
                 '</div>' +
-                '<input type="text" class="chip-modal-input" autocomplete="off">' +
+                '<div class="chip-modal-fields"></div>' +
                 '<p class="chip-modal-hint"></p>' +
                 '<div class="chip-modal-actions">' +
                     '<button type="button" class="chip-modal-del">删除</button>' +
@@ -798,7 +801,7 @@ if ('serviceWorker' in navigator) {
             '</div>';
         document.body.appendChild(modal);
 
-        input = modal.querySelector('.chip-modal-input');
+        fieldsBox = modal.querySelector('.chip-modal-fields');
         titleEl = modal.querySelector('.chip-modal-title');
         hintEl = modal.querySelector('.chip-modal-hint');
         delBtn = modal.querySelector('.chip-modal-del');
@@ -813,23 +816,28 @@ if ('serviceWorker' in navigator) {
         modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
 
         saveBtn.addEventListener('click', function () {
-            var v = input.value.trim();
-            if (!v) { input.focus(); return; }
+            var values = inputs.map(function (i) { return i.value.trim(); });
+            for (var i = 0; i < values.length; i++) {
+                if (!values[i]) { inputs[i].focus(); return; }
+            }
             var fn = cb.onSave;
-            var original = cb.original;
+            var orig = cb.originals.slice();
             close();
-            if (fn) fn(v, original);
+            if (fn) fn(values.length === 1 ? values[0] : values, orig);
         });
 
         delBtn.addEventListener('click', function () {
             var fn = cb.onDelete;
-            var original = cb.original;
+            var orig = cb.originals.slice();
             close();
-            if (fn) fn(original);
+            if (fn) fn(orig.length === 1 ? orig[0] : orig);
         });
 
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        modal.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                e.preventDefault();
+                saveBtn.click();
+            }
         });
 
         document.addEventListener('keydown', function (e) {
@@ -840,15 +848,48 @@ if ('serviceWorker' in navigator) {
     window.openChipEditor = function (options) {
         options = options || {};
         if (!modal) build();
+
+        var list = (options.fields && options.fields.length)
+            ? options.fields
+            : [{ value: options.value || '', placeholder: options.placeholder || '' }];
+
+        fieldsBox.innerHTML = '';
+        inputs = [];
+        cb.originals = [];
+
+        list.forEach(function (f) {
+            var wrap = document.createElement('label');
+            wrap.className = 'chip-modal-field';
+
+            if (f.label) {
+                var lab = document.createElement('span');
+                lab.className = 'chip-modal-label';
+                lab.textContent = f.label;
+                wrap.appendChild(lab);
+            }
+
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'chip-modal-input';
+            inp.value = f.value || '';
+            inp.placeholder = f.placeholder || '';
+            inp.autocomplete = 'off';
+            wrap.appendChild(inp);
+
+            fieldsBox.appendChild(wrap);
+            inputs.push(inp);
+            cb.originals.push(f.value || '');
+        });
+
         cb.onSave = options.onSave || null;
         cb.onDelete = options.onDelete || null;
-        cb.original = options.value || '';
         titleEl.textContent = options.title || '编辑';
         hintEl.textContent = options.hint || '';
         hintEl.style.display = options.hint ? '' : 'none';
         delBtn.style.display = cb.onDelete ? '' : 'none';
-        input.value = cb.original;
         modal.classList.add('is-open');
-        setTimeout(function () { input.focus(); input.select(); }, 50);
+        setTimeout(function () {
+            if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }
+        }, 50);
     };
 })();
