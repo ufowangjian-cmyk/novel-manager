@@ -1889,3 +1889,146 @@ body.dark-mode .switch input[type="checkbox"]:checked + .switch-track {
         grid-template-columns: 1fr;
     }
 }
+/* ============================================
+   左侧导航 + 两栏布局（2026-11-23）
+   桌面：sticky 侧栏 208px；手机：横向 chips
+   ============================================ */
+.config-layout {
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.config-nav {
+    position: sticky;
+    top: 20px;
+    background: #FFFFFF;
+    border-radius: 15px;
+    border: 1px solid #DCE4CB;
+    padding: 14px 10px;
+}
+
+.nav-group + .nav-group {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #EAEFE0;
+}
+
+.nav-group-title {
+    display: block;
+    font-size: 0.7rem;
+    color: #8A9A78;
+    letter-spacing: 0.08em;
+    padding: 0 8px 6px;
+}
+
+.nav-link {
+    display: block;
+    position: relative;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #4A5A3C;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+    background: #F2F6EA;
+}
+
+.nav-link.is-active {
+    background: #EAF3DE;
+    color: #3B6D11;
+    font-weight: 600;
+}
+
+.nav-link.is-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: #639922;
+}
+
+body.dark-mode .config-nav {
+    background: #2C3B2C;
+    border-color: #3A4D3A;
+}
+
+body.dark-mode .nav-group + .nav-group {
+    border-top-color: #3A4D3A;
+}
+
+body.dark-mode .nav-link {
+    color: #C8D4BC;
+}
+
+body.dark-mode .nav-link:hover {
+    background: #35472F;
+}
+
+body.dark-mode .nav-link.is-active {
+    background: #3A4D2A;
+    color: #C0DD97;
+}
+
+/* 手机：导航变横向 chips，吸顶 */
+@media (max-width: 768px) {
+    .config-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .config-nav {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 8px 10px;
+        border-radius: 12px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .config-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+
+    .nav-group-title {
+        display: none;
+    }
+
+    .nav-link {
+        flex: none;
+        white-space: nowrap;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #F4F7EE;
+        font-size: 0.8rem;
+    }
+
+    body.dark-mode .nav-link {
+        background: #2C3B2C;
+    }
+
+    .nav-link.is-active::before {
+        display: none;
+    }
+}

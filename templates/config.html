@@ -89,7 +89,30 @@ italic_default=False) %}
         </div>
     </div>
 
-    <!-- 配置表单 -->
+    <!-- 配置表单：左侧导航 + 右侧内容；手机端导航变横向 chips -->
+    <div class="config-layout">
+        <nav class="config-nav" id="configNav" aria-label="设置导航">
+            {% if session.user_role == 'admin' %}
+            <div class="nav-group">
+                <span class="nav-group-title">管理员专属</span>
+                <a href="#admin-memory" class="nav-link" data-target="admin-memory">内存管理</a>
+                <a href="#admin-users" class="nav-link" data-target="admin-users">用户管理</a>
+                <a href="#admin-records" class="nav-link" data-target="admin-records">用户记录</a>
+                <a href="#admin-defaults-read" class="nav-link" data-target="admin-defaults-read">阅读默认值</a>
+                <a href="#admin-defaults-list" class="nav-link" data-target="admin-defaults-list">列表默认值</a>
+                <a href="#admin-scan" class="nav-link" data-target="admin-scan">扫描配置</a>
+                <a href="#admin-tags" class="nav-link" data-target="admin-tags">标签自动化</a>
+            </div>
+            {% endif %}
+            <div class="nav-group">
+                <span class="nav-group-title">我的偏好</span>
+                <a href="#pref-basic" class="nav-link" data-target="pref-basic">阅读体验</a>
+                <a href="#pref-font" class="nav-link" data-target="pref-font">字体样式</a>
+                <a href="#pref-list" class="nav-link" data-target="pref-list">列表与显示</a>
+            </div>
+        </nav>
+
+        <div class="config-main">
     <form id="configForm">
 
         {% if session.user_role == 'admin' %}
@@ -108,7 +131,7 @@ italic_default=False) %}
             </div>
 
             <!-- 内存管理 -->
-            <div class="config-card">
+            <div class="config-card" id="admin-memory">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('trash-2') }}</span>
                     <h2>内存管理</h2>
@@ -180,7 +203,7 @@ italic_default=False) %}
             </div>
 
             <!-- 用户管理 -->
-            <div class="config-card">
+            <div class="config-card" id="admin-users">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('users') }}</span>
                     <h2>用户管理</h2>
@@ -215,7 +238,7 @@ italic_default=False) %}
             </div>
 
             <!-- 用户记录管理 -->
-            <div class="config-card">
+            <div class="config-card" id="admin-records">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('bar-chart-3') }}</span>
                     <h2>用户记录管理</h2>
@@ -246,7 +269,7 @@ italic_default=False) %}
             </div>
 
             <!-- 阅读默认值（全局，作为新用户的初始值） -->
-            <div class="config-card">
+            <div class="config-card" id="admin-defaults-read">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('compass') }}</span>
                     <h2>阅读默认值（新用户初始值）</h2>
@@ -357,7 +380,7 @@ italic_default=False) %}
             </div>
 
             <!-- 列表与显示（原「其他配置」卡的「显示配置」部分拆出） -->
-            <div class="config-card">
+            <div class="config-card" id="admin-defaults-list">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('file') }}</span>
                     <h2>列表与显示（新用户初始值）</h2>
@@ -443,7 +466,7 @@ italic_default=False) %}
             </div>
 
             <!-- 扫描配置（原「其他配置」卡的同名小节拆出） -->
-            <div class="config-card">
+            <div class="config-card" id="admin-scan">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('refresh-cw') }}</span>
                     <h2>扫描配置</h2>
@@ -490,7 +513,7 @@ italic_default=False) %}
             </div>
 
             <!-- 标签自动化（原「其他配置」卡的同名小节拆出） -->
-            <div class="config-card">
+            <div class="config-card" id="admin-tags">
                 <div class="card-header" onclick="toggleCard(this)">
                     <span class="card-icon">{{ icon('tag') }}</span>
                     <h2>标签自动化</h2>
@@ -546,11 +569,12 @@ italic_default=False) %}
         后端未改：/config/save 仍兼容 password 字段（改当前登录用户自己的密码），
         只是前端不再提供这个入口。 #}
 
-        <!-- 阅读体验（个人偏好：每个用户各自一份，走 /api/save_preferences） -->
-        <div class="config-card">
+        <!-- 阅读体验（个人偏好：每个用户各自一份，走 /api/save_preferences）
+             2026-11-23 拆成三张卡（阅读体验 / 字体样式 / 列表与显示），配合左侧导航 -->
+        <div class="config-card" id="pref-basic">
             <div class="card-header" onclick="toggleCard(this)">
                 <span class="card-icon">{{ icon('book-open') }}</span>
-                <h2>我的阅读偏好</h2>
+                <h2>阅读体验</h2>
                 <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
             </div>
             <div class="card-content">
@@ -608,6 +632,16 @@ italic_default=False) %}
                             min="0" max="99" step="1" placeholder="跟随默认">
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="config-card" id="pref-font">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('type') }}</span>
+                <h2>字体样式</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
                 <h3>
                     {{ icon('type', 'sm') }} 字体设置
                 </h3>
@@ -750,6 +784,16 @@ italic_default=False) %}
                         </div>
                     </div>
                 </div>{# /.font-grid #}
+            </div>
+        </div>
+
+        <div class="config-card" id="pref-list">
+            <div class="card-header" onclick="toggleCard(this)">
+                <span class="card-icon">{{ icon('list') }}</span>
+                <h2>列表与显示</h2>
+                <span class="expand-icon">{{ icon('chevron-down', 'sm') }}</span>
+            </div>
+            <div class="card-content">
                 <h3>
                     {{ icon('bar-chart-3', 'sm') }} 杂项设置
                 </h3>
@@ -867,6 +911,8 @@ italic_default=False) %}
     <br>阅读偏好改完请点上方卡片里的「{{ icon('save', 'sm') }} 保存我的阅读偏好」。
 </div>
 {% endif %}
+        </div>
+    </div>
 </div>
 
 
@@ -920,6 +966,54 @@ italic_default=False) %}
         loadMyPreferences();
         // 记住配置卡片的展开/折叠状态
         initConfigCardMemory();
+        // 左侧导航：滚动高亮 + 平滑跳转
+        initConfigNav();
     });
+
+    // ===== 左侧导航（2026-11-23）=====
+    // 桌面：sticky 侧栏，滚动时用 IntersectionObserver 高亮当前区块；
+    // 手机：横向 chips，点击跳转并把当前 chip 滚动到可视区。
+    function initConfigNav() {
+        var nav = document.getElementById('configNav');
+        if (!nav) return;
+        var links = Array.prototype.slice.call(nav.querySelectorAll('.nav-link'));
+        var sections = links.map(function (a) {
+            return document.getElementById(a.getAttribute('data-target'));
+        }).filter(Boolean);
+        if (!sections.length) return;
+
+        function setActive(id) {
+            links.forEach(function (a) {
+                var on = a.getAttribute('data-target') === id;
+                a.classList.toggle('is-active', on);
+                if (on && window.innerWidth <= 768 && a.scrollIntoView) {
+                    a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+                }
+            });
+        }
+
+        links.forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                var id = a.getAttribute('data-target');
+                var el = document.getElementById(id);
+                if (!el) return;
+                e.preventDefault();
+                var offset = window.innerWidth <= 768 ? 64 : 16;
+                var top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top: top, behavior: 'smooth' });
+                setActive(id);
+                if (history.replaceState) history.replaceState(null, '', '#' + id);
+            });
+        });
+
+        if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(function (entries) {
+                var visible = entries.filter(function (en) { return en.isIntersecting; })
+                    .sort(function (x, y) { return x.boundingClientRect.top - y.boundingClientRect.top; });
+                if (visible.length) setActive(visible[0].target.id);
+            }, { rootMargin: '-12% 0px -68% 0px', threshold: 0 });
+            sections.forEach(function (s) { io.observe(s); });
+        }
+    }
 </script>
 {% endblock %}
