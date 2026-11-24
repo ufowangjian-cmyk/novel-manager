@@ -2381,6 +2381,7 @@ body.dark-mode .save-bar-text {
     .font-grid > .form-group .set-font-ctrl {
         width: 100%;
         gap: 6px;
+        justify-content: flex-end;   /* 下拉 + B/I 整体靠右，空白留给标题与下拉之间 */
     }
 
     .font-grid > .form-group .set-font-ctrl select {
