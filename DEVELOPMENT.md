@@ -777,6 +777,20 @@ curl -s 'https://api.github.com/repos/TrionesType/zhuque/releases?per_page=1' \
 curl -sL -H 'Accept: application/octet-stream' -o /tmp/zhuque.zip "$(cat /tmp/zq_url)"
 ```
 
+#### 方式 D：猫啃硬笔楷书（OFL，2026-11-24 新增）
+
+上游 `maoken-fonts/MaokenYingBiKaiShuJ`，v0.20，SIL OFL 1.1（可自由嵌入与分发）。
+6763 汉字（GB2312）+ 符号，单字重。GitHub 直连不通时用 jsDelivr：
+
+```bash
+curl -sL -o MaokenYingBiKaiShuJ.ttf \
+  https://cdn.jsdelivr.net/gh/maoken-fonts/MaokenYingBiKaiShuJ@main/MaokenYingBiKaiShuJ_0.20.ttf
+python slice.py MaokenYingBiKaiShuJ.ttf static/fonts/maoken-kaishu "猫啃硬笔楷书内置" 400
+cat static/fonts/maoken-kaishu/index.css >> static/css/font.css
+```
+
+切出 22 片 woff2（3.6MB，原 TTF 6.1MB）。
+
 #### 方式 C：未来圆（唯一没有公开下载源的）
 
 上游只以本地文件流传，没有稳定的直链。**拿到 TTF 就切，拿不到就跳过**——跳过时阅读页
