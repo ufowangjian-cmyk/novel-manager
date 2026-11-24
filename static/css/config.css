@@ -2621,3 +2621,25 @@ body.dark-mode .memory-detail .stat-value {
 
 }
 
+
+/* 手机端字体项：右列要给「下拉 + B + I」腾地方，
+   B/I 收到 26px，下拉 flex 撑满剩余宽度（否则只剩图标） */
+@media (max-width: 768px) {
+    .font-grid .set-font-ctrl {
+        flex-wrap: nowrap;
+        gap: 5px;
+    }
+
+    .font-grid .set-font-ctrl select {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+    }
+
+    .font-grid .set-font-ctrl .set-bi {
+        flex: 0 0 auto;
+        width: 26px;
+        padding: 0;
+        font-size: 12px;
+    }
+}
