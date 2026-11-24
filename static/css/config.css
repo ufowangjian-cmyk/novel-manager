@@ -2464,3 +2464,11 @@ body.dark-mode .save-bar-text {
         min-width: 0;
     }
 }
+
+/* 开关组（杂项设置 / 标签自动化）的间距与字段对齐：10 → 150 */
+@media (min-width: 769px) {
+    .switch-grid {
+        column-gap: 150px;
+        row-gap: 20px;
+    }
+}
