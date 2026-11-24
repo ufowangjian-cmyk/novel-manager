@@ -254,19 +254,19 @@ italic_default=False) %}
                     空间，也和下方紧凑字段不成体系。 #}
                     <div class="form-group-inline compact">
                         <div class="form-group">
-                            <label title="单位：像素 (px)，建议 16-24">{{ icon('pencil', 'sm') }} 默认字体大小</label>
+                            <label>{{ icon('pencil', 'sm') }} 默认字体大小</label><span class="field-note">单位：像素 (px)，建议 16-24</span>
                             <input type="number" id="font_size" name="font_size" value="{{ config.font_size }}" min="12"
                                 max="48" step="1">
                         </div>
 
                         <div class="form-group">
-                            <label title="建议 1.5-2.0">{{ icon('ruler', 'sm') }} 默认行高</label>
+                            <label>{{ icon('ruler', 'sm') }} 默认行高</label><span class="field-note">建议 1.5-2.0</span>
                             <input type="number" id="line_height" name="line_height" value="{{ config.line_height }}"
                                 min="1.2" max="2.5" step="0.1">
                         </div>
 
                         <div class="form-group">
-                            <label title="网文一般保留缩进">{{ icon('summary', 'sm') }} 首行缩进</label>
+                            <label>{{ icon('summary', 'sm') }} 首行缩进</label><span class="field-note">网文一般保留缩进</span>
                             <select id="indent_paragraph" name="indent_paragraph">
                                 <option value="true" {% if config.indent_paragraph %}selected{% endif %}>缩进两字符（默认）
                                 </option>
@@ -276,13 +276,13 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label title="单位：rem，0 表示段落紧贴">{{ icon('list', 'sm') }} 默认段间距</label>
+                            <label>{{ icon('list', 'sm') }} 默认段间距</label><span class="field-note">单位：rem，0 表示段落紧贴</span>
                             <input type="number" id="paragraph_spacing" name="paragraph_spacing"
                                 value="{{ config.paragraph_spacing }}" min="0" max="3" step="0.1">
                         </div>
 
                         <div class="form-group">
-                            <label title="选择阅读页面的颜色主题">{{ icon('palette', 'sm') }} 默认主题</label>
+                            <label>{{ icon('palette', 'sm') }} 默认主题</label><span class="field-note">选择阅读页面的颜色主题</span>
                             <select id="theme" name="theme" onchange="onThemeChange()">
                                 <option value="dark" {% if config.theme=='dark' %}selected{% endif %}>🌙 暗色主题</option>
                                 <option value="light" {% if config.theme=='light' %}selected{% endif %}>☀️ 亮色主题</option>
@@ -291,7 +291,7 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label title="连续 N 张及以上配图自动排成缩略图网格；0 = 关闭（全部竖向大图）。这是全局默认值，用户可在「我的阅读偏好」里单独覆盖">{{ icon('image', 'sm') }} 默认配图画廊起始张数</label>
+                            <label>{{ icon('image', 'sm') }} 默认配图画廊起始张数</label><span class="field-note">连续 N 张及以上配图自动排成缩略图网格；0 = 关闭（全部竖向大图）。这是全局默认值，用户可在「我的阅读偏好」里单独覆盖</span>
                             <input type="number" id="gallery_min_images" name="gallery_min_images"
                                 value="{{ config.get('gallery_min_images', 3) }}" min="0" max="99" step="1">
                         </div>
@@ -360,7 +360,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group-inline compact">
                         <div class="form-group">
-                            <label title="选择主页默认的排序方式">{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label>
+                            <label>{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label><span class="field-note">选择主页默认的排序方式</span>
                             <select id="default_sort_by" name="default_sort_by">
                                 <option value="title" {% if config.default_sort_by=='title' %}selected{% endif %}>书名
                                     (A-Z)</option>
@@ -376,8 +376,8 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label title="选择主页默认的排序方向">{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }}
-                                默认排序方向</label>
+                            <label>{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }}
+                                默认排序方向</label><span class="field-note">选择主页默认的排序方向</span>
                             <select id="default_sort_order" name="default_sort_order">
                                 <option value="asc" {% if config.default_sort_order=='asc' %}selected{% endif %}>升序
                                     (A-Z, 从小到大)</option>
@@ -387,25 +387,25 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label title="小说列表每页显示多少本，建议 50-200">{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label>
+                            <label>{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
                             <input type="number" id="per_page" name="per_page" value="{{ config.per_page }}" min="20"
                                 max="500" step="10">
                         </div>
 
                         <div class="form-group">
-                            <label title="阅读时每页显示多少字，建议 5000-10000">{{ icon('book-open', 'sm') }} 每页显示字数</label>
+                            <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
                             <input type="number" id="words_per_page" name="words_per_page"
                                 value="{{ config.words_per_page }}" min="1000" max="50000" step="1000">
                         </div>
 
                         <div class="form-group">
-                            <label title="小说列表中最多显示多少个标签，多余的会折叠">{{ icon('tag', 'sm') }} 最大标签显示数</label>
+                            <label>{{ icon('tag', 'sm') }} 最大标签显示数</label><span class="field-note">小说列表中最多显示多少个标签，多余的会折叠</span>
                             <input type="number" id="max_tags_display" name="max_tags_display"
                                 value="{{ config.max_tags_display }}" min="1" max="10" step="1">
                         </div>
 
                         <div class="form-group">
-                            <label title="选择日期显示格式">{{ icon('calendar', 'sm') }} 日期格式</label>
+                            <label>{{ icon('calendar', 'sm') }} 日期格式</label><span class="field-note">选择日期显示格式</span>
                             <select id="date_format" name="date_format">
                                 <option value="YYYY-MM-DD" {% if config.date_format=='YYYY-MM-DD' %}selected{% endif %}>
                                     2024-01-01</option>
@@ -418,7 +418,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group full-width">
-                        <label title="主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）">{{ icon('sparkles', 'sm') }} 书名高亮词</label>
+                        <label>{{ icon('sparkles', 'sm') }} 书名高亮词</label><span class="field-note">主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）</span>
                         <div class="hlw-editor" id="hlw-editor">
                             <input type="text" class="hlw-input" id="hlw-input"
                                    placeholder="输入一个词，回车或逗号添加" autocomplete="off">
@@ -449,8 +449,8 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label title="单位：MB，超过此大小的文件将被跳过；示例: 100（只扫描100MB以下的文件）">{{ icon('database', 'sm') }}
-                                最大文件大小</label>
+                            <label>{{ icon('database', 'sm') }}
+                                最大文件大小</label><span class="field-note">单位：MB，超过此大小的文件将被跳过；示例: 100（只扫描100MB以下的文件）</span>
                             <input type="number" id="max_file_size_mb" name="max_file_size_mb"
                                 value="{{ config.max_file_size_mb }}" min="1" max="500" step="1">
                         </div>
@@ -555,19 +555,19 @@ italic_default=False) %}
                 每项被 flex 拉到半屏宽。 #}
                 <div class="form-group-inline compact">
                     <div class="form-group">
-                        <label title="单位：px，建议 16-24">{{ icon('pencil', 'sm') }} 字体大小</label>
+                        <label>{{ icon('pencil', 'sm') }} 字体大小</label><span class="field-note">单位：px，建议 16-24</span>
                         <input type="number" id="pref_font_size" name="pref_font_size" min="12" max="48" step="1"
                             placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="建议 1.5-2.0">{{ icon('ruler', 'sm') }} 行高</label>
+                        <label>{{ icon('ruler', 'sm') }} 行高</label><span class="field-note">建议 1.5-2.0</span>
                         <input type="number" id="pref_line_height" name="pref_line_height" min="1.2" max="2.5"
                             step="0.1" placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="网文一般保留缩进">{{ icon('summary', 'sm') }} 首行缩进</label>
+                        <label>{{ icon('summary', 'sm') }} 首行缩进</label><span class="field-note">网文一般保留缩进</span>
                         {# 原来这个下拉用的 id 与上方「阅读默认值」的那个重复，
                         getElementById 永远只拿到上面那个，本页这个等于摆设；
                         改成 pref_ 前缀后由 PREF_FIELDS 正常接管（JS 已支持 SELECT）。 #}
@@ -579,13 +579,13 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label title="单位：rem，0 表示段落紧贴">{{ icon('list', 'sm') }} 段间距</label>
+                        <label>{{ icon('list', 'sm') }} 段间距</label><span class="field-note">单位：rem，0 表示段落紧贴</span>
                         <input type="number" id="pref_paragraph_spacing" name="pref_paragraph_spacing" min="0" max="3"
                             step="0.1" placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="选择阅读页面的颜色主题">{{ icon('palette', 'sm') }} 主题</label>
+                        <label>{{ icon('palette', 'sm') }} 主题</label><span class="field-note">选择阅读页面的颜色主题</span>
                         <select id="pref_theme" name="pref_theme">
                             <option value="">跟随默认</option>
                             <option value="dark">🌙 暗色主题</option>
@@ -595,7 +595,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label title="连续 N 张及以上配图自动排成缩略图网格；填 0 = 关闭（全部竖向大图）；留空跟随管理员在「阅读默认值」里设定的全局默认">{{ icon('image', 'sm') }} 配图画廊起始张数</label>
+                        <label>{{ icon('image', 'sm') }} 配图画廊起始张数</label><span class="field-note">连续 N 张及以上配图自动排成缩略图网格；填 0 = 关闭（全部竖向大图）；留空跟随管理员在「阅读默认值」里设定的全局默认</span>
                         <input type="number" id="pref_gallery_min_images" name="pref_gallery_min_images"
                             min="0" max="99" step="1" placeholder="跟随默认">
                     </div>
@@ -785,7 +785,7 @@ italic_default=False) %}
                 </div>
                 <div class="form-group-inline compact">
                     <div class="form-group">
-                        <label title="主页列表默认按什么排序">{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label>
+                        <label>{{ icon('bar-chart-3', 'sm') }} 默认排序方式</label><span class="field-note">主页列表默认按什么排序</span>
                         <select id="pref_default_sort_by" name="pref_default_sort_by">
                             <option value="">跟随默认</option>
                             <option value="title">书名 (A-Z)</option>
@@ -797,7 +797,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label title="选择主页默认的排序方向">{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }} 默认排序方向</label>
+                        <label>{{ icon('upload', 'sm') }}{{ icon('download', 'sm') }} 默认排序方向</label><span class="field-note">选择主页默认的排序方向</span>
                         <select id="pref_default_sort_order" name="pref_default_sort_order">
                             <option value="">跟随默认</option>
                             <option value="asc">升序 (A-Z)</option>
@@ -806,25 +806,25 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label title="小说列表每页显示多少本，建议 50-200">{{ icon('library', 'sm') }} 每页显示数量</label>
+                        <label>{{ icon('library', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
                         <input type="number" id="pref_per_page" name="pref_per_page" min="20" max="500" step="10"
                             placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="阅读时每页显示多少字，建议 5000-10000">{{ icon('book-open', 'sm') }} 每页显示字数</label>
+                        <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
                         <input type="number" id="pref_words_per_page" name="pref_words_per_page" min="1000" max="50000"
                             step="1000" placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="列表中最多显示几个标签，多余的会折叠">{{ icon('tag', 'sm') }} 最大标签显示数</label>
+                        <label>{{ icon('tag', 'sm') }} 最大标签显示数</label><span class="field-note">列表中最多显示几个标签，多余的会折叠</span>
                         <input type="number" id="pref_max_tags_display" name="pref_max_tags_display" min="1" max="10"
                             step="1" placeholder="跟随默认">
                     </div>
 
                     <div class="form-group">
-                        <label title="列表里日期的显示格式">{{ icon('calendar', 'sm') }} 日期格式</label>
+                        <label>{{ icon('calendar', 'sm') }} 日期格式</label><span class="field-note">列表里日期的显示格式</span>
                         <select id="pref_date_format" name="pref_date_format">
                             <option value="">跟随默认</option>
                             <option value="YYYY-MM-DD">2024-01-01</option>

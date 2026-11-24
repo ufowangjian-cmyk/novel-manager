@@ -2110,3 +2110,74 @@ body.dark-mode .save-bar-text {
     outline: 2px solid var(--color-primary, #639922);
     outline-offset: 2px;
 }
+
+/* ============================================
+   设置项改为左右结构（2026-11-24）
+   左：标题 + 小字注释；右：输入框 / 下拉
+   以前是「上标题 + 下满宽输入框」，纵向很占地方，
+   而且 label 的说明藏在 title 属性里要 hover 才看得到。
+   ============================================ */
+.form-group {
+    display: grid;
+    grid-template-columns: minmax(104px, 38%) minmax(0, 1fr);
+    grid-template-areas:
+        "label control"
+        "note  control";
+    column-gap: 14px;
+    row-gap: 3px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.form-group > label {
+    grid-area: label;
+    margin-bottom: 0;
+    align-self: end;
+}
+
+.form-group > .field-note {
+    grid-area: note;
+    margin: 0 0 2px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-weight: 400;
+    color: var(--text-tertiary, #8a9a78);
+    align-self: start;
+}
+
+.form-group > input,
+.form-group > select,
+.form-group > textarea {
+    grid-area: control;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-group > .form-hint {
+    grid-column: 1 / -1;
+}
+
+/* 行内紧凑组：每项加宽，一行改成 3 个，配合左右结构不至于挤 */
+.form-group-inline.compact .form-group {
+    flex: 0 1 320px;
+    min-width: 250px;
+    margin-bottom: 0;
+}
+
+/* 手机：回到上下结构，左右挤不开 */
+@media (max-width: 768px) {
+    .form-group {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "label"
+            "note"
+            "control";
+        row-gap: 4px;
+        margin-bottom: 16px;
+    }
+
+    .form-group-inline.compact .form-group {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+}
