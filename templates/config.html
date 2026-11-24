@@ -431,10 +431,14 @@ italic_default=False, note=None) %}
                         <div class="form-group">
                             <label>{{ icon('tag', 'sm') }} 最大标签显示数</label><span class="field-note">小说列表中最多显示多少个标签，多余的会折叠</span>
                             <select id="max_tags_display" name="max_tags_display">
-    {% if config.max_tags_display|int not in [1, 3, 5, 8] %}<option value="{{ config.max_tags_display }}" selected>{{ config.max_tags_display }} 个（当前）</option>{% endif %}
+    {% if config.max_tags_display|int not in [1, 2, 3, 4, 5, 6, 7, 8] %}<option value="{{ config.max_tags_display }}" selected>{{ config.max_tags_display }} 个（当前）</option>{% endif %}
     <option value="1" {% if config.max_tags_display|int == 1 %}selected{% endif %}>1 个</option>
+    <option value="2" {% if config.max_tags_display|int == 2 %}selected{% endif %}>2 个</option>
     <option value="3" {% if config.max_tags_display|int == 3 %}selected{% endif %}>3 个</option>
+    <option value="4" {% if config.max_tags_display|int == 4 %}selected{% endif %}>4 个</option>
     <option value="5" {% if config.max_tags_display|int == 5 %}selected{% endif %}>5 个</option>
+    <option value="6" {% if config.max_tags_display|int == 6 %}selected{% endif %}>6 个</option>
+    <option value="7" {% if config.max_tags_display|int == 7 %}selected{% endif %}>7 个</option>
     <option value="8" {% if config.max_tags_display|int == 8 %}selected{% endif %}>8 个</option>
                 </select>
                         </div>
@@ -898,8 +902,12 @@ italic_default=False, note=None) %}
                         <select id="pref_max_tags_display" name="pref_max_tags_display">
     <option value="">跟随默认</option>
     <option value="1">1 个</option>
+    <option value="2">2 个</option>
     <option value="3">3 个</option>
+    <option value="4">4 个</option>
     <option value="5">5 个</option>
+    <option value="6">6 个</option>
+    <option value="7">7 个</option>
     <option value="8">8 个</option>
                 </select>
                     </div>
