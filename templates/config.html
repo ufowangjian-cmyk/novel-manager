@@ -256,7 +256,7 @@ italic_default=False) %}
                         <div class="form-group">
                             <label>{{ icon('pencil', 'sm') }} 默认字体大小</label><span class="field-note">单位：像素 (px)，建议 16-24</span>
                             <select id="font_size" name="font_size">
-    <option value="12" {% if config.font_size|int == 12 %}selected{% endif %}>12 px</option>
+    {% if config.font_size|int not in [14, 16, 18, 20, 22, 24, 26, 28] %}<option value="{{ config.font_size }}" selected>{{ config.font_size }} px（当前）</option>{% endif %}
     <option value="14" {% if config.font_size|int == 14 %}selected{% endif %}>14 px</option>
     <option value="16" {% if config.font_size|int == 16 %}selected{% endif %}>16 px</option>
     <option value="18" {% if config.font_size|int == 18 %}selected{% endif %}>18 px</option>
@@ -265,26 +265,18 @@ italic_default=False) %}
     <option value="24" {% if config.font_size|int == 24 %}selected{% endif %}>24 px</option>
     <option value="26" {% if config.font_size|int == 26 %}selected{% endif %}>26 px</option>
     <option value="28" {% if config.font_size|int == 28 %}selected{% endif %}>28 px</option>
-    <option value="30" {% if config.font_size|int == 30 %}selected{% endif %}>30 px</option>
-    <option value="32" {% if config.font_size|int == 32 %}selected{% endif %}>32 px</option>
-    <option value="36" {% if config.font_size|int == 36 %}selected{% endif %}>36 px</option>
-    <option value="40" {% if config.font_size|int == 40 %}selected{% endif %}>40 px</option>
-    <option value="48" {% if config.font_size|int == 48 %}selected{% endif %}>48 px</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
                             <label>{{ icon('ruler', 'sm') }} 默认行高</label><span class="field-note">建议 1.5-2.0</span>
                             <select id="line_height" name="line_height">
-    <option value="1.2" {% if config.line_height|float == 1.2 %}selected{% endif %}>1.2</option>
-    <option value="1.4" {% if config.line_height|float == 1.4 %}selected{% endif %}>1.4</option>
-    <option value="1.5" {% if config.line_height|float == 1.5 %}selected{% endif %}>1.5</option>
+    {% if config.line_height|float not in [1.6, 1.8, 2, 2.2] %}<option value="{{ config.line_height }}" selected>{{ config.line_height }}（当前）</option>{% endif %}
     <option value="1.6" {% if config.line_height|float == 1.6 %}selected{% endif %}>1.6</option>
     <option value="1.8" {% if config.line_height|float == 1.8 %}selected{% endif %}>1.8</option>
     <option value="2" {% if config.line_height|float == 2 %}selected{% endif %}>2</option>
     <option value="2.2" {% if config.line_height|float == 2.2 %}selected{% endif %}>2.2</option>
-    <option value="2.5" {% if config.line_height|float == 2.5 %}selected{% endif %}>2.5</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
@@ -300,15 +292,14 @@ italic_default=False) %}
                         <div class="form-group">
                             <label>{{ icon('list', 'sm') }} 默认段间距</label><span class="field-note">单位：rem，0 表示段落紧贴</span>
                             <select id="paragraph_spacing" name="paragraph_spacing">
+    {% if config.paragraph_spacing|int not in [0, 0.3, 0.5, 0.8, 1, 1.2] %}<option value="{{ config.paragraph_spacing }}" selected>{{ config.paragraph_spacing }} rem（当前）</option>{% endif %}
     <option value="0" {% if config.paragraph_spacing|int == 0 %}selected{% endif %}>0 rem</option>
     <option value="0.3" {% if config.paragraph_spacing|int == 0.3 %}selected{% endif %}>0.3 rem</option>
     <option value="0.5" {% if config.paragraph_spacing|int == 0.5 %}selected{% endif %}>0.5 rem</option>
     <option value="0.8" {% if config.paragraph_spacing|int == 0.8 %}selected{% endif %}>0.8 rem</option>
     <option value="1" {% if config.paragraph_spacing|int == 1 %}selected{% endif %}>1 rem</option>
     <option value="1.2" {% if config.paragraph_spacing|int == 1.2 %}selected{% endif %}>1.2 rem</option>
-    <option value="1.5" {% if config.paragraph_spacing|int == 1.5 %}selected{% endif %}>1.5 rem</option>
-    <option value="2" {% if config.paragraph_spacing|int == 2 %}selected{% endif %}>2 rem</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
@@ -427,41 +418,33 @@ italic_default=False) %}
                         <div class="form-group">
                             <label>{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
                             <select id="per_page" name="per_page">
-    <option value="20" {% if config.per_page|int == 20 %}selected{% endif %}>20 本</option>
-    <option value="30" {% if config.per_page|int == 30 %}selected{% endif %}>30 本</option>
+    {% if config.per_page|int not in [50, 100, 150] %}<option value="{{ config.per_page }}" selected>{{ config.per_page }} 本（当前）</option>{% endif %}
     <option value="50" {% if config.per_page|int == 50 %}selected{% endif %}>50 本</option>
     <option value="100" {% if config.per_page|int == 100 %}selected{% endif %}>100 本</option>
     <option value="150" {% if config.per_page|int == 150 %}selected{% endif %}>150 本</option>
-    <option value="200" {% if config.per_page|int == 200 %}selected{% endif %}>200 本</option>
-    <option value="300" {% if config.per_page|int == 300 %}selected{% endif %}>300 本</option>
-    <option value="500" {% if config.per_page|int == 500 %}selected{% endif %}>500 本</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
                             <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
                             <select id="words_per_page" name="words_per_page">
-    <option value="1000" {% if config.words_per_page|int == 1000 %}selected{% endif %}>1000 字</option>
-    <option value="1500" {% if config.words_per_page|int == 1500 %}selected{% endif %}>1500 字</option>
-    <option value="2000" {% if config.words_per_page|int == 2000 %}selected{% endif %}>2000 字</option>
+    {% if config.words_per_page|int not in [3000, 5000, 8000, 10000] %}<option value="{{ config.words_per_page }}" selected>{{ config.words_per_page }} 字（当前）</option>{% endif %}
     <option value="3000" {% if config.words_per_page|int == 3000 %}selected{% endif %}>3000 字</option>
     <option value="5000" {% if config.words_per_page|int == 5000 %}selected{% endif %}>5000 字</option>
     <option value="8000" {% if config.words_per_page|int == 8000 %}selected{% endif %}>8000 字</option>
     <option value="10000" {% if config.words_per_page|int == 10000 %}selected{% endif %}>10000 字</option>
-    <option value="20000" {% if config.words_per_page|int == 20000 %}selected{% endif %}>20000 字</option>
-    <option value="50000" {% if config.words_per_page|int == 50000 %}selected{% endif %}>50000 字</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
                             <label>{{ icon('tag', 'sm') }} 最大标签显示数</label><span class="field-note">小说列表中最多显示多少个标签，多余的会折叠</span>
                             <select id="max_tags_display" name="max_tags_display">
+    {% if config.max_tags_display|int not in [1, 3, 5, 8] %}<option value="{{ config.max_tags_display }}" selected>{{ config.max_tags_display }} 个（当前）</option>{% endif %}
     <option value="1" {% if config.max_tags_display|int == 1 %}selected{% endif %}>1 个</option>
     <option value="3" {% if config.max_tags_display|int == 3 %}selected{% endif %}>3 个</option>
     <option value="5" {% if config.max_tags_display|int == 5 %}selected{% endif %}>5 个</option>
     <option value="8" {% if config.max_tags_display|int == 8 %}selected{% endif %}>8 个</option>
-    <option value="10" {% if config.max_tags_display|int == 10 %}selected{% endif %}>10 个</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
@@ -505,32 +488,23 @@ italic_default=False) %}
                         <div class="form-group">
                             <label>{{ icon('clock', 'sm') }} 自动扫描间隔</label>
                             <select id="scan_interval_hours" name="scan_interval_hours">
-    <option value="0" {% if config.scan_interval_hours|int == 0 %}selected{% endif %}>关闭（不自动扫描）</option>
-    <option value="1" {% if config.scan_interval_hours|int == 1 %}selected{% endif %}>1 小时</option>
-    <option value="2" {% if config.scan_interval_hours|int == 2 %}selected{% endif %}>2 小时</option>
-    <option value="4" {% if config.scan_interval_hours|int == 4 %}selected{% endif %}>4 小时</option>
+    {% if config.scan_interval_hours|int not in [6, 12, 24, 48] %}<option value="{{ config.scan_interval_hours }}" selected>{{ config.scan_interval_hours }} 小时（当前）</option>{% endif %}
     <option value="6" {% if config.scan_interval_hours|int == 6 %}selected{% endif %}>6 小时</option>
     <option value="12" {% if config.scan_interval_hours|int == 12 %}selected{% endif %}>12 小时</option>
     <option value="24" {% if config.scan_interval_hours|int == 24 %}selected{% endif %}>24 小时</option>
     <option value="48" {% if config.scan_interval_hours|int == 48 %}selected{% endif %}>48 小时</option>
-    <option value="72" {% if config.scan_interval_hours|int == 72 %}selected{% endif %}>72 小时</option>
-    <option value="168" {% if config.scan_interval_hours|int == 168 %}selected{% endif %}>168 小时</option>
-</select>
+                </select>
                         </div>
 
                         <div class="form-group">
                             <label>{{ icon('database', 'sm') }}
                                 最大文件大小</label><span class="field-note">单位 MB，超过则跳过）</span>
                             <select id="max_file_size_mb" name="max_file_size_mb">
-    <option value="1" {% if config.max_file_size_mb|int == 1 %}selected{% endif %}>1 MB</option>
-    <option value="5" {% if config.max_file_size_mb|int == 5 %}selected{% endif %}>5 MB</option>
-    <option value="10" {% if config.max_file_size_mb|int == 10 %}selected{% endif %}>10 MB</option>
+    {% if config.max_file_size_mb|int not in [20, 30, 50] %}<option value="{{ config.max_file_size_mb }}" selected>{{ config.max_file_size_mb }} MB（当前）</option>{% endif %}
     <option value="20" {% if config.max_file_size_mb|int == 20 %}selected{% endif %}>20 MB</option>
+    <option value="30" {% if config.max_file_size_mb|int == 30 %}selected{% endif %}>30 MB</option>
     <option value="50" {% if config.max_file_size_mb|int == 50 %}selected{% endif %}>50 MB</option>
-    <option value="100" {% if config.max_file_size_mb|int == 100 %}selected{% endif %}>100 MB</option>
-    <option value="200" {% if config.max_file_size_mb|int == 200 %}selected{% endif %}>200 MB</option>
-    <option value="500" {% if config.max_file_size_mb|int == 500 %}selected{% endif %}>500 MB</option>
-</select>
+                </select>
                         </div>
                     </div>
                     <div class="form-hint">
@@ -636,7 +610,6 @@ italic_default=False) %}
                         <label>{{ icon('pencil', 'sm') }} 字体大小</label><span class="field-note">单位：px，建议 16-24</span>
                         <select id="pref_font_size" name="pref_font_size">
     <option value="">跟随默认</option>
-    <option value="12">12 px</option>
     <option value="14">14 px</option>
     <option value="16">16 px</option>
     <option value="18">18 px</option>
@@ -645,27 +618,18 @@ italic_default=False) %}
     <option value="24">24 px</option>
     <option value="26">26 px</option>
     <option value="28">28 px</option>
-    <option value="30">30 px</option>
-    <option value="32">32 px</option>
-    <option value="36">36 px</option>
-    <option value="40">40 px</option>
-    <option value="48">48 px</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">
                         <label>{{ icon('ruler', 'sm') }} 行高</label><span class="field-note">建议 1.5-2.0</span>
                         <select id="pref_line_height" name="pref_line_height">
     <option value="">跟随默认</option>
-    <option value="1.2">1.2</option>
-    <option value="1.4">1.4</option>
-    <option value="1.5">1.5</option>
     <option value="1.6">1.6</option>
     <option value="1.8">1.8</option>
     <option value="2">2</option>
     <option value="2.2">2.2</option>
-    <option value="2.5">2.5</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">
@@ -690,9 +654,7 @@ italic_default=False) %}
     <option value="0.8">0.8 rem</option>
     <option value="1">1 rem</option>
     <option value="1.2">1.2 rem</option>
-    <option value="1.5">1.5 rem</option>
-    <option value="2">2 rem</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">
@@ -929,31 +891,21 @@ italic_default=False) %}
                         <label>{{ icon('library', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
                         <select id="pref_per_page" name="pref_per_page">
     <option value="">跟随默认</option>
-    <option value="20">20 本</option>
-    <option value="30">30 本</option>
     <option value="50">50 本</option>
     <option value="100">100 本</option>
     <option value="150">150 本</option>
-    <option value="200">200 本</option>
-    <option value="300">300 本</option>
-    <option value="500">500 本</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">
                         <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
                         <select id="pref_words_per_page" name="pref_words_per_page">
     <option value="">跟随默认</option>
-    <option value="1000">1000 字</option>
-    <option value="1500">1500 字</option>
-    <option value="2000">2000 字</option>
     <option value="3000">3000 字</option>
     <option value="5000">5000 字</option>
     <option value="8000">8000 字</option>
     <option value="10000">10000 字</option>
-    <option value="20000">20000 字</option>
-    <option value="50000">50000 字</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">
@@ -964,8 +916,7 @@ italic_default=False) %}
     <option value="3">3 个</option>
     <option value="5">5 个</option>
     <option value="8">8 个</option>
-    <option value="10">10 个</option>
-</select>
+                </select>
                     </div>
 
                     <div class="form-group">

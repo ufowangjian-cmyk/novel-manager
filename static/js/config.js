@@ -866,7 +866,16 @@ async function loadMyPreferences() {
             const el = document.getElementById('pref_' + key);
             if (!el) return;
             const val = prefs[key];
-            el.value = (val === undefined || val === null || val === '') ? '' : val;
+            const strVal = (val === undefined || val === null || val === '') ? '' : String(val);
+            // 精简选项后，老设置可能不在列表里；补一个「当前」项，避免被静默重置
+            if (strVal !== '' && el.tagName === 'SELECT'
+                && !Array.prototype.some.call(el.options, o => o.value === strVal)) {
+                const opt = document.createElement('option');
+                opt.value = strVal;
+                opt.textContent = strVal + '（当前）';
+                el.appendChild(opt);
+            }
+            el.value = strVal;
             // 占位提示显示「当前生效值」，让用户知道留空会用什么
             // 字段已从 input 改成 select，select 没有 placeholder，改成更新首项文字
             if (effective[key] !== undefined) {
