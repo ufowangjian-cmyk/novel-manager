@@ -2247,8 +2247,8 @@ body.dark-mode .save-bar-text {
 
 .form-group:has(> label) {
     display: grid;
-    grid-template-columns: minmax(104px, 34%) minmax(0, 1fr);
-    column-gap: 16px;
+    grid-template-columns: minmax(160px, 46%) minmax(0, 1fr);
+    column-gap: 14px;
     row-gap: 4px;
     align-items: center;
 }
@@ -2281,7 +2281,7 @@ body.dark-mode .save-bar-text {
 /* 行内紧凑组也要左右：每项 320px 里左标题占 32%，右侧控件占余下 */
 .form-group-inline .form-group {
     display: grid;
-    grid-template-columns: minmax(72px, 32%) minmax(0, 1fr);
+    grid-template-columns: minmax(150px, 46%) minmax(0, 1fr);
     column-gap: 10px;
     align-items: center;
 }
@@ -2314,4 +2314,11 @@ body.dark-mode .save-bar-text {
    标题和注释留在左列，内容区跨满两列，不再只占右列。 */
 .form-group.full-width:has(> label) > *:not(label):not(.field-note) {
     grid-column: 1 / -1;
+}
+
+/* 下拉不需要撑满右列：内容普遍只有 3-6 个字，
+   拉满之后标题反而被挤到换行。文本输入框保持 100%（可能很长）。 */
+.form-group select {
+    width: 100%;
+    max-width: 230px;
 }
