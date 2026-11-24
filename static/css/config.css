@@ -2677,3 +2677,41 @@ body.dark-mode .memory-detail .stat-value {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* 字体项：标题 + 说明放在左列，控件在右列并与标题同行（2026-11-24） */
+@media (min-width: 769px) {
+    .font-grid > .form-group {
+        grid-template-rows: auto auto;
+        align-items: center;
+    }
+
+    .font-grid .form-group > label {
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .font-grid .form-group > .set-font-ctrl {
+        grid-row: 1;
+        grid-column: 2;
+    }
+
+    .font-grid .form-group > .field-note {
+        grid-row: 2;
+        grid-column: 1 / -1;
+        margin: 2px 0 0;
+        justify-self: start;
+        text-align: left;
+        font-size: 0.7rem;
+        line-height: 1.35;
+        color: var(--text-tertiary, #8a9a78);
+    }
+}
+
+@media (max-width: 768px) {
+    .font-grid .form-group > .field-note {
+        margin: 2px 0 0;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        color: var(--text-tertiary, #8a9a78);
+    }
+}

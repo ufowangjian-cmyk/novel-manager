@@ -704,6 +704,7 @@ italic_default=False) %}
                 <div class="font-grid">
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 正文字体</label>
+                        <span class="field-note">阅读正文的基础字体，正文的加粗/斜体也在这里设</span>
                         <div class="set-font-ctrl">
                             <select id="pref_font_family" name="pref_font_family">{{ font_opts }}</select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_body_bold"
@@ -714,6 +715,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 标题字体</label>
+                        <span class="field-note">章节标题使用的字体，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_title_font_family" name="pref_title_font_family">
                                 {{ font_opts }}
@@ -726,6 +728,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 双引号字体</label>
+                        <span class="field-note">「」等双引号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_double_quote_font_family" name="pref_double_quote_font_family">
                                 {{ font_opts }}
@@ -738,6 +741,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 单引号字体</label>
+                        <span class="field-note">『』等单引号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_single_quote_font_family" name="pref_single_quote_font_family">
                                 {{ font_opts }}
@@ -750,6 +754,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 圆括号字体</label>
+                        <span class="field-note">（）等圆括号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_bracket_font_family" name="pref_bracket_font_family">
                                 {{ font_opts }}
@@ -762,6 +767,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 方头括号字体</label>
+                        <span class="field-note">【】等方头括号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_font_family" name="pref_square_bracket_font_family">
                                 {{ font_opts }}
@@ -774,6 +780,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 方括号字体</label>
+                        <span class="field-note">[] ［］等方括号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_1_font_family" name="pref_square_bracket_1_font_family">
                                 {{ font_opts }}
@@ -786,6 +793,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 空心括号字体</label>
+                        <span class="field-note">〖〗等空心括号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_hollow_bracket_font_family" name="pref_hollow_bracket_font_family">
                                 {{ font_opts }}
@@ -798,6 +806,7 @@ italic_default=False) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 书名号字体</label>
+                        <span class="field-note">《》等书名号，留空则跟随正文</span>
                         <div class="set-font-ctrl">
                             <select id="pref_book_font_family" name="pref_book_font_family">
                                 {{ font_opts }}
