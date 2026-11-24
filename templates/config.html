@@ -349,23 +349,23 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="font-grid">
                         {{ admin_font_field('正文字体', 'font_family', 'system-ui', bold_id='body_bold',
-                        italic_id='body_italic', note='阅读正文的基础字体，正文的加粗/斜体也在这里设') }}
+                        italic_id='body_italic', note='正文基础字体，加粗/斜体也在这里设') }}
                         {{ admin_font_field('标题字体', 'title_font_family', '', '跟随默认', bold_id='title_bold',
-                        italic_id='title_italic', bold_default=True, note='章节标题使用的字体，留空则跟随正文') }}
+                        italic_id='title_italic', bold_default=True, note='章节标题字体') }}
                         {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随默认',
-                        bold_id='double_quote_bold', italic_id='double_quote_italic', note='「」等双引号，留空则跟随正文') }}
+                        bold_id='double_quote_bold', italic_id='double_quote_italic', note='「」等双引号') }}
                         {{ admin_font_field('单引号字体', 'single_quote_font_family', '', '跟随默认',
-                        bold_id='single_quote_bold', italic_id='single_quote_italic', note='『』等单引号，留空则跟随正文') }}
+                        bold_id='single_quote_bold', italic_id='single_quote_italic', note='『』等单引号') }}
                         {{ admin_font_field('圆括号字体', 'bracket_font_family', '', '跟随默认', bold_id='bracket_bold',
-                        italic_id='bracket_italic', note='（）等圆括号，留空则跟随正文') }}
+                        italic_id='bracket_italic', note='（）等圆括号') }}
                         {{ admin_font_field('方头括号字体', 'square_bracket_font_family', '', '跟随默认',
-                        bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True, note='【】等方头括号，留空则跟随正文') }}
+                        bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True, note='【】等方头括号') }}
                         {{ admin_font_field('方括号字体', 'square_bracket_1_font_family', '', '跟随默认',
-                        bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic', note='[] ［］等方括号，留空则跟随正文') }}
+                        bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic', note='[] ［］等方括号') }}
                         {{ admin_font_field('空心括号字体', 'hollow_bracket_font_family', '', '跟随默认',
-                        bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True, note='〖〗等空心括号，留空则跟随正文') }}
+                        bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True, note='〖〗等空心括号') }}
                         {{ admin_font_field('书名号字体', 'book_font_family', '', '跟随默认', bold_id='book_bold',
-                        italic_id='book_italic', bold_default=True, note='《》等书名号，留空则跟随正文') }}
+                        italic_id='book_italic', bold_default=True, note='《》等书名号') }}
                     </div>{# /.font-grid #}
                 </div>
             </div>
@@ -705,7 +705,7 @@ italic_default=False, note=None) %}
                 <div class="font-grid">
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 正文字体</label>
-                        <span class="field-note">阅读正文的基础字体，正文的加粗/斜体也在这里设</span>
+                        <span class="field-note">正文基础字体，加粗/斜体也在这里设</span>
                         <div class="set-font-ctrl">
                             <select id="pref_font_family" name="pref_font_family">{{ font_opts }}</select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_body_bold"
@@ -716,7 +716,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 标题字体</label>
-                        <span class="field-note">章节标题使用的字体，留空则跟随正文</span>
+                        <span class="field-note">章节标题字体</span>
                         <div class="set-font-ctrl">
                             <select id="pref_title_font_family" name="pref_title_font_family">
                                 {{ font_opts }}
@@ -729,7 +729,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 双引号字体</label>
-                        <span class="field-note">「」等双引号，留空则跟随正文</span>
+                        <span class="field-note">「」等双引号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_double_quote_font_family" name="pref_double_quote_font_family">
                                 {{ font_opts }}
@@ -742,7 +742,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 单引号字体</label>
-                        <span class="field-note">『』等单引号，留空则跟随正文</span>
+                        <span class="field-note">『』等单引号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_single_quote_font_family" name="pref_single_quote_font_family">
                                 {{ font_opts }}
@@ -755,7 +755,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 圆括号字体</label>
-                        <span class="field-note">（）等圆括号，留空则跟随正文</span>
+                        <span class="field-note">（）等圆括号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_bracket_font_family" name="pref_bracket_font_family">
                                 {{ font_opts }}
@@ -768,7 +768,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 方头括号字体</label>
-                        <span class="field-note">【】等方头括号，留空则跟随正文</span>
+                        <span class="field-note">【】等方头括号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_font_family" name="pref_square_bracket_font_family">
                                 {{ font_opts }}
@@ -781,7 +781,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 方括号字体</label>
-                        <span class="field-note">[] ［］等方括号，留空则跟随正文</span>
+                        <span class="field-note">[] ［］等方括号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_1_font_family" name="pref_square_bracket_1_font_family">
                                 {{ font_opts }}
@@ -794,7 +794,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 空心括号字体</label>
-                        <span class="field-note">〖〗等空心括号，留空则跟随正文</span>
+                        <span class="field-note">〖〗等空心括号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_hollow_bracket_font_family" name="pref_hollow_bracket_font_family">
                                 {{ font_opts }}
@@ -807,7 +807,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 书名号字体</label>
-                        <span class="field-note">《》等书名号，留空则跟随正文</span>
+                        <span class="field-note">《》等书名号</span>
                         <div class="set-font-ctrl">
                             <select id="pref_book_font_family" name="pref_book_font_family">
                                 {{ font_opts }}
