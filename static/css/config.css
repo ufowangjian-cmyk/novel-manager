@@ -2224,3 +2224,82 @@ body.dark-mode .save-bar-text {
     font-size: 0.72rem;
     color: var(--text-tertiary, #8a9a78);
 }
+
+/* ============================================
+   统一左右结构（2026-11-24 重做）
+   凡是带直接 label 的 .form-group，一律「左标题 + 右控件」。
+   复合结构（如「管理所有用户」，label 包在 div 里）保持纵向，
+   否则按钮和列表会被塞进同一格。
+   ============================================ */
+.form-group {
+    display: block;
+}
+
+.form-group:has(> label) {
+    display: grid;
+    grid-template-columns: minmax(96px, 28%) minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 4px;
+    align-items: center;
+}
+
+.form-group:has(> label) > label {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    align-self: start;
+    padding-top: 7px;
+}
+
+.form-group:has(> label) > .field-note {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+    align-self: start;
+}
+
+.form-group:has(> label) > .form-hint {
+    grid-column: 1 / -1;
+}
+
+/* 其余元素（input / select / textarea / 自定义控件容器）统一进右列 */
+.form-group:has(> label) > *:not(label):not(.field-note):not(.form-hint) {
+    grid-column: 2;
+    min-width: 0;
+}
+
+/* 行内紧凑组也要左右：每项 320px 里左标题占 32%，右侧控件占余下 */
+.form-group-inline .form-group {
+    display: grid;
+    grid-template-columns: minmax(72px, 32%) minmax(0, 1fr);
+    column-gap: 10px;
+    align-items: center;
+}
+
+.form-group-inline .form-group > label {
+    margin-bottom: 0;
+    padding-top: 6px;
+}
+
+.form-group-inline .form-group > .field-note {
+    display: none;
+}
+
+/* 手机端：左右挤不开，恢复上下 */
+@media (max-width: 768px) {
+    .form-group:has(> label),
+    .form-group-inline .form-group {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 4px;
+        align-items: start;
+    }
+
+    .form-group:has(> label) > label,
+    .form-group:has(> label) > .field-note,
+    .form-group:has(> label) > *:not(label):not(.field-note):not(.form-hint),
+    .form-group-inline .form-group > label {
+        grid-column: 1;
+        grid-row: auto;
+        padding-top: 0;
+    }
+}
