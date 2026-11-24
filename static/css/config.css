@@ -2163,8 +2163,8 @@ body.dark-mode .save-bar-text {
 
 /* 行内紧凑组：每项加宽，一行改成 3 个，配合左右结构不至于挤 */
 .form-group-inline.compact .form-group {
-    flex: 0 1 320px;
-    min-width: 250px;
+    flex: 0 1 430px;
+    min-width: 300px;
     margin-bottom: 0;
 }
 
@@ -2194,7 +2194,10 @@ body.dark-mode .save-bar-text {
 }
 
 .form-group-inline .form-group > .field-note {
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     font-size: 0.66rem;
     line-height: 1.3;
     color: var(--text-tertiary, #8a9a78);
