@@ -23,9 +23,10 @@ bold_id / italic_id 显式给出对应配置键（正文 font_family → body_bo
 bold_default / italic_default 用于 config 尚未写入该键时回显真实的硬默认值，
 避免管理员未改动就被迫把 title_bold 等从 True 覆写成 False。 #}
 {% macro admin_font_field(label, id, default_val, follow_label=None, bold_id=None, italic_id=None, bold_default=False,
-italic_default=False) %}
+italic_default=False, note=None) %}
 <div class="form-group">
     <label>{{ icon('type', 'sm') }} {{ label }}</label>
+    {% if note %}<span class="field-note">{{ note }}</span>{% endif %}
     <div class="set-font-ctrl">
         <select id="{{ id }}" name="{{ id }}">
             {% if follow_label %}
@@ -348,23 +349,23 @@ italic_default=False) %}
                     </div>
                     <div class="font-grid">
                         {{ admin_font_field('正文字体', 'font_family', 'system-ui', bold_id='body_bold',
-                        italic_id='body_italic') }}
+                        italic_id='body_italic', note='阅读正文的基础字体，正文的加粗/斜体也在这里设') }}
                         {{ admin_font_field('标题字体', 'title_font_family', '', '跟随默认', bold_id='title_bold',
-                        italic_id='title_italic', bold_default=True) }}
+                        italic_id='title_italic', bold_default=True, note='章节标题使用的字体，留空则跟随正文') }}
                         {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随默认',
-                        bold_id='double_quote_bold', italic_id='double_quote_italic') }}
+                        bold_id='double_quote_bold', italic_id='double_quote_italic', note='「」等双引号，留空则跟随正文') }}
                         {{ admin_font_field('单引号字体', 'single_quote_font_family', '', '跟随默认',
-                        bold_id='single_quote_bold', italic_id='single_quote_italic') }}
+                        bold_id='single_quote_bold', italic_id='single_quote_italic', note='『』等单引号，留空则跟随正文') }}
                         {{ admin_font_field('圆括号字体', 'bracket_font_family', '', '跟随默认', bold_id='bracket_bold',
-                        italic_id='bracket_italic') }}
+                        italic_id='bracket_italic', note='（）等圆括号，留空则跟随正文') }}
                         {{ admin_font_field('方头括号字体', 'square_bracket_font_family', '', '跟随默认',
-                        bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True) }}
+                        bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True, note='【】等方头括号，留空则跟随正文') }}
                         {{ admin_font_field('方括号字体', 'square_bracket_1_font_family', '', '跟随默认',
-                        bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic') }}
+                        bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic', note='[] ［］等方括号，留空则跟随正文') }}
                         {{ admin_font_field('空心括号字体', 'hollow_bracket_font_family', '', '跟随默认',
-                        bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True) }}
+                        bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True, note='〖〗等空心括号，留空则跟随正文') }}
                         {{ admin_font_field('书名号字体', 'book_font_family', '', '跟随默认', bold_id='book_bold',
-                        italic_id='book_italic', bold_default=True) }}
+                        italic_id='book_italic', bold_default=True, note='《》等书名号，留空则跟随正文') }}
                     </div>{# /.font-grid #}
                 </div>
             </div>
