@@ -2596,6 +2596,12 @@ body.dark-mode .memory-detail .stat-value {
         column-gap: 0;
         row-gap: 10px;
     }
+
+    /* 默认右列 140px 要塞「下拉 + B + I」，下拉只剩 52px，显示不出字体名。
+       字体项单独加宽到 180px，其他字段保持 140px 不动。 */
+    .font-grid > .form-group {
+        grid-template-columns: minmax(0, 1fr) 180px;
+    }
 }
 
 /* 与 .form-group-inline .form-group 共用同一套字段样式 */
