@@ -2625,24 +2625,39 @@ body.dark-mode .memory-detail .stat-value {
 /* 手机端字体项：右列要给「下拉 + B + I」腾地方，
    B/I 收到 26px，下拉 flex 撑满剩余宽度（否则只剩图标） */
 @media (max-width: 768px) {
-    /* 手机右列只有 140px，「下拉 + B + I」横排会把下拉压成一条图标，
-       改成下拉独占一行、B/I 落到下一行并靠右 */
-    .font-grid .set-font-ctrl {
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 5px;
+    /* 手机上字体项走单列：标题 / 说明 / 控件各占一行。
+       桌面是「左标题 + 右下拉」，但右列只有 140px，塞下 B+I 后下拉仅剩几十像素，
+       字体名显示成「📱 ...」，所以手机上单独放宽。 */
+    .font-grid > .form-group {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "label"
+            "note"
+            "control";
+        row-gap: 4px;
+    }
+
+    .font-grid .form-group > label {
+        grid-area: label;
+        justify-self: start;
+        text-align: left;
+    }
+
+    .font-grid .form-group > .field-note {
+        grid-area: note;
+        justify-self: start;
+        text-align: left;
+        margin: 0;
+    }
+
+    .font-grid .form-group > .set-font-ctrl {
+        grid-area: control;
+        justify-self: start;
     }
 
     .font-grid .set-font-ctrl select {
-        flex: 1 1 100%;
-        width: 100%;
+        flex: 1 1 auto;
+        width: auto;
         min-width: 0;
-    }
-
-    .font-grid .set-font-ctrl .set-bi {
-        flex: 0 0 auto;
-        width: 28px;
-        padding: 0;
-        font-size: 12px;
     }
 }
