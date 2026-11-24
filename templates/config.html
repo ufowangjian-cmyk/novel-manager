@@ -187,14 +187,8 @@ italic_default=False) %}
 
                         <div class="memory-hint">
                             <span class="memory-hint-line">{{ icon('lightbulb', 'sm') }}
-                                <b>清理内存</b>会清空全部缓存（标签 · 章节 · 图片 · 指纹），内存降得最彻底；
-                                代价是之后首次访问小说列表和详情页会重新解析，稍慢一点。</span>
-                            <span class="memory-hint-line">{{ icon('hash', 'sm') }} <b>指纹缓存</b>（去重扫描时计算的作品指纹，上限 2000 +
-                                800 条）同样参与清理。</span>
-                            <span class="memory-hint-line">{{ icon('library', 'sm') }}
-                                <b>阅读缓存</b>（打开小说时产生的正文缓存）是占用内存的主要部分，任何模式都会完全清空。</span>
-                            <span class="memory-hint-line">{{ icon('book-open', 'sm') }} 书库数据（约 5000
-                                本小说的标题、作者、标签等）属于常驻数据，<b>不参与清理</b>，清理不会影响浏览书库。</span>
+                                清空全部缓存（标签 · 章节 · 图片 · 指纹）；<b>书库数据不受影响</b>。
+                                之后首次访问会重新解析，稍慢一点。</span>
                         </div>
                     </div>
                 </div>
