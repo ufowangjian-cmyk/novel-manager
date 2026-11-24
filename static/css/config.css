@@ -2386,4 +2386,18 @@ body.dark-mode .save-bar-text {
         width: 100%;
         max-width: none;
     }
+
+    /* 字体项内部原本是 auto 1fr（标题与控件并排，特异性高于 :has 规则），
+       390px 下把控件压到 160px、下拉显示成「…」。移动端拆成上下。 */
+    .font-grid > .form-group {
+        display: block;
+    }
+
+    .font-grid > .form-group > label {
+        margin-bottom: 6px;
+    }
+
+    .font-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
