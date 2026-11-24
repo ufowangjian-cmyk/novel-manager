@@ -2515,6 +2515,18 @@ body.dark-mode .save-bar-text {
         column-gap: 12px;
     }
 
+    /* 控件钉在第一行右侧 */
+    .form-group:has(> label) > *:not(label):not(.field-note):not(.form-hint) {
+        grid-row: 1;
+        grid-column: 2;
+    }
+
+    /* 说明跨两列，否则它会把标题列撑宽（auto 取最大内容） */
+    .form-group:has(> label) > .field-note {
+        grid-row: 2;
+        grid-column: 1 / -1;
+    }
+
     .form-group select {
         width: 100%;
         max-width: 170px;
