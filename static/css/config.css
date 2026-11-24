@@ -1298,11 +1298,6 @@ body.dark-mode .set-bi:focus-visible {
 
 /* 网格子项默认 stretch，会让每格里的 select 高度被拉齐；
    这里让 .form-group 自身保持内容高度即可（margin-bottom 提供行距）。 */
-.font-grid>.form-group {
-    min-width: 0;
-    /* 关键：防止 select 撑破网格列（grid 项默认 min-width:auto） */
-    margin-bottom: 20px;
-}
 
 @media (max-width: 768px) {
 
@@ -1514,20 +1509,6 @@ body.dark-mode .form-group .hlw-chip {
     column-gap: 16px;
     row-gap: 10px;
 }
-.font-grid > .form-group {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 4px 10px;
-    margin-bottom: 0;
-    min-width: 0;
-}
-.font-grid .form-group label {
-    margin-bottom: 0;
-    justify-self: end;
-    white-space: nowrap;
-    font-size: 13px;
-}
 
 /* 卡片内小节标题（h3）：跨满列 + 紧凑间距（替代原内联 style） */
 .card-content > h3 {
@@ -1642,16 +1623,6 @@ body.dark-mode .form-group .hlw-chip {
     .font-grid {
         grid-template-columns: 1fr;
         column-gap: 0;
-    }
-    .font-grid > .form-group {
-        /* 用固定 em 宽度而不是 auto：9 个条目的标签字数不一样，
-           auto 会让每行的下拉起点参差不齐 */
-        grid-template-columns: 8em minmax(0, 1fr);
-        gap: 4px 8px;
-        margin-bottom: 10px;
-    }
-    .font-grid .form-group label {
-        justify-self: start;
     }
 
     /* 行内组移动端纵向堆叠，间距压缩 */
@@ -2365,33 +2336,6 @@ body.dark-mode .save-bar-text {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .font-grid > .form-group {
-        display: grid;
-        grid-template-columns: 100px minmax(0, 1fr);
-        column-gap: 14px;
-        align-items: center;
-    }
-
-    .font-grid > .form-group > label {
-        margin-bottom: 0;
-        padding-top: 0;
-        font-size: 0.78rem;
-        white-space: nowrap;
-    }
-
-    .font-grid > .form-group .set-font-ctrl {
-        width: 100%;
-        gap: 6px;
-        justify-content: flex-end;   /* 下拉 + B/I 整体靠右，空白留给标题与下拉之间 */
-    }
-
-    .font-grid > .form-group .set-font-ctrl select {
-        width: auto;
-        flex: 0 1 auto;      /* 不铺满，给标题留出呼吸空间 */
-        max-width: 128px;
-        min-width: 0;
-    }
-
     /* 通栏字段（书名高亮词）在手机上仍是通栏 */
     .form-group.full-width > * {
         grid-column: 1 / -1;
@@ -2448,21 +2392,8 @@ body.dark-mode .save-bar-text {
         row-gap: 20px;
     }
 
-    .font-grid .form-group {
-        width: 100%;
-        min-width: 0;
-    }
-
     /* 字体项内的下拉 + B/I 贴右 */
-    .font-grid .set-font-ctrl {
-        justify-content: flex-end;
-    }
 
-    .font-grid .set-font-ctrl select {
-        flex: 0 1 auto;
-        max-width: 220px;
-        min-width: 0;
-    }
 }
 
 /* 开关组（杂项设置 / 标签自动化）的间距与字段对齐：10 → 150 */
@@ -2678,44 +2609,6 @@ body.dark-mode .memory-detail .stat-value {
     }
 }
 
-/* 字体项：标题 + 说明放在左列，控件在右列并与标题同行（2026-11-24） */
-@media (min-width: 769px) {
-    .font-grid > .form-group {
-        grid-template-rows: auto auto;
-        align-items: center;
-    }
-
-    .font-grid .form-group > label {
-        grid-row: 1;
-        grid-column: 1;
-    }
-
-    .font-grid .form-group > .set-font-ctrl {
-        grid-row: 1;
-        grid-column: 2;
-    }
-
-    .font-grid .form-group > .field-note {
-        grid-row: 2;
-        grid-column: 1 / -1;
-        margin: 2px 0 0;
-        justify-self: start;
-        text-align: left;
-        font-size: 0.7rem;
-        line-height: 1.35;
-        color: var(--text-tertiary, #8a9a78);
-    }
-}
-
-@media (max-width: 768px) {
-    .font-grid .form-group > .field-note {
-        margin: 2px 0 0;
-        font-size: 0.72rem;
-        line-height: 1.35;
-        color: var(--text-tertiary, #8a9a78);
-    }
-}
-
 /* ============================================
    字体项：标题 + 说明在左列成组，控件右列跨两行居中
    桌面端两者作为一组与下拉对齐；手机端说明限制单行，避免撑高间距
@@ -2723,107 +2616,8 @@ body.dark-mode .memory-detail .stat-value {
 @media (min-width: 769px) {
     /* 左列固定宽度：不同字体项标题字数不同（4~7 字），
        用 auto 会让每行下拉起点参差不齐，看着像粘在标题上 */
-    .font-grid > .form-group {
-        grid-template-columns: 8.6em minmax(0, 1fr);
-        grid-template-rows: auto auto;
-        align-items: center;
-    }
 
     /* 标题与说明右对齐，紧贴下拉，两者作为一组 */
-    .font-grid .form-group > label {
-        grid-row: 1;
-        grid-column: 1;
-        justify-self: end;
-        align-self: end;
-        text-align: right;
-    }
 
-    .font-grid .form-group > .field-note {
-        grid-row: 2;
-        grid-column: 1;
-        justify-self: end;
-        align-self: start;
-        text-align: right;
-        margin: 1px 0 0;
-        font-size: 0.69rem;
-        line-height: 1.3;
-        white-space: nowrap;
-    }
-
-    .font-grid .form-group > .set-font-ctrl {
-        grid-row: 1 / span 2;
-        grid-column: 2;
-        align-self: center;
-        justify-self: start;
-    }
 }
 
-/* 手机：说明强制单行（显式 -webkit-box，否则 line-clamp 不生效） */
-@media (max-width: 768px) {
-    .font-grid .form-group > .field-note {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin: 1px 0 0;
-        font-size: 0.7rem;
-        line-height: 1.3;
-        max-width: 100%;
-    }
-}
-
-/* ============================================
-   字体项回归普通字段布局（2026-11-24 收口）
-   此前为了「标题+说明成组」加了几套自定义列宽/对齐，结果和页面其他字段不一致。
-   这里一次性重置：字体项 = 普通 .form-group 的「左标题 / 右控件」，
-   不再单独定义列宽。之前的 .font-grid 相关规则保留但被本段覆盖。
-   ============================================ */
-.font-grid > .form-group {
-    grid-template-columns: minmax(104px, 38%) minmax(0, 1fr);
-    grid-template-areas: "label control" "note control";
-    column-gap: 14px;
-    row-gap: 3px;
-    align-items: center;
-}
-
-.font-grid .form-group > label {
-    grid-area: label;
-    justify-self: stretch;
-    text-align: left;
-    align-self: end;
-}
-
-.font-grid .form-group > .set-font-ctrl {
-    grid-area: control;
-    justify-self: start;
-    align-self: center;
-    min-width: 0;
-}
-
-.font-grid .form-group > .field-note {
-    grid-area: note;
-    justify-self: stretch;
-    text-align: left;
-    margin: 0 0 2px;
-    font-size: 0.72rem;
-    line-height: 1.4;
-}
-
-/* 手机端：字体项也是左标题右控件，说明回到标题下方一行 */
-@media (max-width: 768px) {
-    .font-grid > .form-group {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas:
-            "label"
-            "note"
-            "control";
-    }
-
-    .font-grid .form-group > .field-note {
-        display: block;
-        -webkit-line-clamp: unset;
-        overflow: visible;
-        white-space: normal;
-    }
-}
