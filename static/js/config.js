@@ -868,8 +868,16 @@ async function loadMyPreferences() {
             const val = prefs[key];
             el.value = (val === undefined || val === null || val === '') ? '' : val;
             // 占位提示显示「当前生效值」，让用户知道留空会用什么
+            // 字段已从 input 改成 select，select 没有 placeholder，改成更新首项文字
             if (effective[key] !== undefined) {
-                el.placeholder = `跟随默认（${effective[key]}）`;
+                if (el.tagName === 'SELECT') {
+                    const first = el.options[0];
+                    if (first && first.value === '') {
+                        first.textContent = `跟随默认（${effective[key]}）`;
+                    }
+                } else {
+                    el.placeholder = `跟随默认（${effective[key]}）`;
+                }
             }
         });
 
