@@ -161,13 +161,9 @@ italic_default=False) %}
 
                         <div class="memory-actions"
                             style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-warning" onclick="forceCleanupMemory(false)"
-                                id="cleanupBtn">
-                                {{ icon('trash-2', 'sm') }} 释放内存
-                            </button>
-                            <button type="button" class="btn btn-danger" onclick="forceCleanupMemory(true)"
+                            <button type="button" class="btn btn-warning" onclick="forceCleanupMemory(true)"
                                 id="deepCleanupBtn">
-                                {{ icon('zap', 'sm') }} 彻底清理
+                                {{ icon('trash-2', 'sm') }} 清理内存
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="refreshMemoryInfo()">
                                 {{ icon('refresh-cw', 'sm') }} 刷新状态
@@ -178,12 +174,10 @@ italic_default=False) %}
 
                         <div class="memory-hint">
                             <span class="memory-hint-line">{{ icon('lightbulb', 'sm') }}
-                                说明：清理会删掉大部分缓存以释放内存，但会<b>保留少量热缓存</b>（标签 ≤100 · 章节 ≤30 · 图片 ≤100 · 指纹
-                                ≤200），所以清理后上面的数字<b>不会归零</b>，这是正常的。</span>
-                            <span class="memory-hint-line">{{ icon('zap', 'sm') }}
-                                <b>彻底清理</b>会把热缓存也一并清空（包括图片缓存和指纹缓存），内存降得最彻底，代价是之后首次访问小说/详情页会重新解析、稍慢一点。</span>
+                                <b>清理内存</b>会清空全部缓存（标签 · 章节 · 图片 · 指纹），内存降得最彻底；
+                                代价是之后首次访问小说列表和详情页会重新解析，稍慢一点。</span>
                             <span class="memory-hint-line">{{ icon('hash', 'sm') }} <b>指纹缓存</b>（去重扫描时计算的作品指纹，上限 2000 +
-                                800 条）过去从不参与清理，现在已纳入。</span>
+                                800 条）同样参与清理。</span>
                             <span class="memory-hint-line">{{ icon('library', 'sm') }}
                                 <b>阅读缓存</b>（打开小说时产生的正文缓存）是占用内存的主要部分，任何模式都会完全清空。</span>
                             <span class="memory-hint-line">{{ icon('book-open', 'sm') }} 书库数据（约 5000

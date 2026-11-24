@@ -1566,9 +1566,7 @@ async function forceCleanupMemory(deep = false) {
         return;
     }
 
-    const msg = deep
-        ? '确定要「彻底清理」吗？\n\n会清空全部缓存，包括标签、章节、\n图片缓存和指纹缓存，不保留任何热缓存。\n\n内存降得最彻底，但之后首次访问小说列表和详情页会重新解析，明显变慢。'
-        : '确定要清理缓存释放内存吗？\n\n这将释放标签缓存、章节缓存、图片缓存和指纹缓存，\n但会保留少量热缓存以加快下次访问。';
+    const msg = '确定要清理内存吗？\n\n会清空全部缓存：标签、章节、图片、指纹。\n内存降得最彻底，但之后首次访问小说列表和详情页会重新解析，稍慢一点。';
     if (!confirm(msg)) {
         return;
     }
@@ -1577,10 +1575,10 @@ async function forceCleanupMemory(deep = false) {
     const originalText = btn.textContent;
 
     btn.disabled = true;
-    btn.innerHTML = icon('loader', 'sm') + (deep ? ' 彻底清理中...' : ' 清理中...');
+    btn.innerHTML = icon('loader', 'sm') + ' 清理中...';
     if (otherBtn) otherBtn.disabled = true;
     if (resultEl) {
-        resultEl.innerHTML = icon('loader', 'sm') + (deep ? ' 正在彻底清理缓存...' : ' 正在清理缓存...');
+        resultEl.innerHTML = icon('loader', 'sm') + ' 正在清理缓存...';
         resultEl.style.color = '#ffaa66';
     }
 
