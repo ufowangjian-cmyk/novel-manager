@@ -2181,3 +2181,19 @@ body.dark-mode .save-bar-text {
         min-width: 0;
     }
 }
+
+/* 行内紧凑组：本来就是「每项 220px、三四项并排」的紧凑设计，
+   硬套左右结构会让注释被挤成两三行。这里保持纵向，并省掉注释。 */
+.form-group-inline .form-group {
+    display: block;
+    margin-bottom: 0;
+}
+
+.form-group-inline .form-group > .field-note {
+    display: none;
+}
+
+.form-group-inline .form-group > label {
+    display: flex;
+    margin-bottom: 4px;
+}
