@@ -2333,62 +2333,46 @@ body.dark-mode .save-bar-text {
 }
 
 /* ============================================
-   移动端兜底（2026-11-24）
-   前面几条左右结构规则写在媒体查询之后，会盖掉移动端的单列设定，
-   导致 390px 宽度下 label 和控件挤在同一行（336px 列 + 0px 列）。
-   这里放到文件最末尾，确保移动端一律纵向。
+   移动端（2026-11-24）
+   与桌面保持一致的左右结构：左标题 + 右控件。
+   390px 屏里卡片内宽约 348px，标题 46%（约 160px）+ 下拉 140px 放得下。
+   字体项因为控件里还带 B / I 两个按钮，横排会挤，单独保持上下。
    ============================================ */
 @media (max-width: 768px) {
     .form-group,
-    .form-group:has(> label),
-    .form-group.full-width:has(> label),
-    .form-group-inline .form-group,
-    .form-group-inline.compact .form-group {
-        display: block;
-        grid-template-columns: none;
-        width: auto;
-        min-width: 0;
+    .form-group:has(> label) {
+        display: grid;
+        grid-template-columns: minmax(104px, 46%) auto;
+        column-gap: 10px;
+        row-gap: 3px;
+        align-items: center;
     }
 
     .form-group-inline.compact .form-group {
         flex: 1 1 100%;
-        margin-bottom: 12px;
-    }
-
-    .form-group-inline .form-group > label,
-    .form-group:has(> label) > label {
-        display: flex;
-        margin-bottom: 4px;
-        padding-top: 0;
-    }
-
-    .form-group select,
-    .form-group input[type="text"],
-    .form-group input[type="password"],
-    .form-group input[type="number"] {
         width: 100%;
+        min-width: 0;
+    }
+
+    .form-group select {
+        width: 140px;
         max-width: none;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
+        width: 100%;
+        min-width: 0;
     }
 
     .form-group > .field-note,
     .form-group:has(> label) > .field-note {
-        grid-column: auto;
-        margin-bottom: 4px;
+        grid-column: 1;
+        margin-bottom: 2px;
     }
 
-    .form-group.full-width > * {
-        grid-column: auto;
-    }
-
-    /* 自定义控件容器（字体选择器、高亮词编辑器）在移动端也铺满 */
-    .form-group .set-font-ctrl,
-    .form-group .hlw-editor {
-        width: 100%;
-        max-width: none;
-    }
-
-    /* 字体项内部原本是 auto 1fr（标题与控件并排，特异性高于 :has 规则），
-       390px 下把控件压到 160px、下拉显示成「…」。移动端拆成上下。 */
+    /* 字体项：控件里含 字体下拉 + B + I 三件，横排在 348px 里会挤成一条，
+       这一项保持「标题在上、控件在下」 */
     .font-grid > .form-group {
         display: block;
     }
@@ -2399,5 +2383,10 @@ body.dark-mode .save-bar-text {
 
     .font-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* 通栏字段（书名高亮词）在手机上仍是通栏 */
+    .form-group.full-width > * {
+        grid-column: 1 / -1;
     }
 }
