@@ -2597,10 +2597,22 @@ body.dark-mode .memory-detail .stat-value {
         row-gap: 10px;
     }
 
-    /* 默认右列 140px 要塞「下拉 + B + I」，下拉只剩 52px，显示不出字体名。
-       字体项单独加宽到 180px，其他字段保持 140px 不动。 */
+    /* 手机端字体项要在一行里塞「下拉 + B + I」。默认右列 140px 时下拉只有 52px；
+       加到 180px 后是 92px，长字体名仍被截成「得…」。
+       这里右列给到 210px，并把 B/I 收窄到 30px、间距 6px，
+       下拉约 138px，6 字字体名（如「猫啃硬笔楷书」）能完整显示。
+       只作用于 .font-grid 内的字体项，其他字段仍是 140px / 36px 原样。 */
     .font-grid > .form-group {
-        grid-template-columns: minmax(0, 1fr) 180px;
+        grid-template-columns: minmax(0, 1fr) 210px;
+    }
+
+    .font-grid .set-font-ctrl {
+        gap: 6px;
+    }
+
+    .font-grid .set-bi {
+        width: 30px;
+        font-size: 14px;
     }
 }
 
