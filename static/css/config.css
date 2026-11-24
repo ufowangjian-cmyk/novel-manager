@@ -2320,5 +2320,8 @@ body.dark-mode .save-bar-text {
    拉满之后标题反而被挤到换行。文本输入框保持 100%（可能很长）。 */
 .form-group select {
     width: 100%;
-    max-width: 230px;
+    max-width: 168px;          /* 内容普遍 3-6 字，168px 足够；展开的原生列表里仍能看全 */
+    text-overflow: ellipsis;   /* 兜底：部分浏览器对 select 生效 */
 }
+
+/* 超长的选项文字由浏览器截断显示，展开列表里完整可见 */
