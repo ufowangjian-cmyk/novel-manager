@@ -1499,17 +1499,6 @@ body.dark-mode .form-group .hlw-chip {
     margin-bottom: 0;
 }
 
-/* ---------- 5. 字体网格：桌面自适应 3 列，label 与控件同行 ----------
-   参考桌面版 .hl-font-grid：每项内部为「label | 控件」子网格（同行），
-   项高从 ~75px 压到 ~36px；9 个条目从 5 行变 3 行。
-   1400px 卡宽下 3 列 × ~440px，label ~100px + 控件 ~330px 不挤。 */
-.font-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    column-gap: 16px;
-    row-gap: 10px;
-}
-
 /* 卡片内小节标题（h3）：跨满列 + 紧凑间距（替代原内联 style） */
 .card-content > h3 {
     margin: 12px 0 4px;
@@ -1616,13 +1605,6 @@ body.dark-mode .form-group .hlw-chip {
     }
     .card-header h2 {
         font-size: 15px;
-    }
-
-    /* 字体网格移动端单列；但 label 仍与控件同行（原来 label 独占一行，
-       9 个字体条目每条都多浪费一整行高度）。label 按内容宽度，控件占剩余。 */
-    .font-grid {
-        grid-template-columns: 1fr;
-        column-gap: 0;
     }
 
     /* 行内组移动端纵向堆叠，间距压缩 */
@@ -2330,12 +2312,6 @@ body.dark-mode .save-bar-text {
         margin-bottom: 2px;
     }
 
-    /* 字体项也一行放下（与阅读页的设置一致）：标题 + 字体下拉 + B/I 横排。
-       字体名去掉「（开源·分包）」后只有 3-4 个字，152px 的下拉足够。 */
-    .font-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     /* 通栏字段（书名高亮词）在手机上仍是通栏 */
     .form-group.full-width > * {
         grid-column: 1 / -1;
@@ -2384,15 +2360,6 @@ body.dark-mode .save-bar-text {
         min-width: 0;
         margin-bottom: 0;
     }
-
-    /* 字体区也是两列铺满 */
-    .font-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: 150px;
-        row-gap: 20px;
-    }
-
-    /* 字体项内的下拉 + B/I 贴右 */
 
 }
 
@@ -2607,4 +2574,61 @@ body.dark-mode .memory-detail .stat-value {
     .memory-detail .memory-stats {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* ============================================
+   字体设置（2026-11-24 重写）
+   删掉此前散落在 4 个位置的 .font-grid 覆盖规则，只保留这一份。
+   字体项内部不再另造布局：和普通字段共用同一条声明（并列选择器），
+   说明字号 0.66rem / line-height 1.3 / row-gap 3px / 控件跨两行，
+   与「默认排序方式」等字段完全一致。
+   ============================================ */
+.font-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 150px;
+    row-gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .font-grid {
+        grid-template-columns: minmax(0, 1fr);
+        column-gap: 0;
+        row-gap: 10px;
+    }
+}
+
+/* 与 .form-group-inline .form-group 共用同一套字段样式 */
+.form-group-inline .form-group > .field-note,
+.font-grid > .form-group > .field-note {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.66rem;
+    line-height: 1.3;
+    color: var(--text-tertiary, #8a9a78);
+    margin: 0;
+    align-self: start;
+}
+
+.form-group-inline .form-group > label,
+.font-grid > .form-group > label {
+    padding-top: 6px;
+    margin-bottom: 0;
+}
+
+.form-group-inline .form-group,
+.font-grid > .form-group {
+    row-gap: 3px;
+    margin-bottom: 0;
+    align-items: center;
+}
+
+/* 普通字段的控件靠 grid-template-areas 跨两行；字体项控件包在
+   .set-font-ctrl 里，同样跨两行，标题与说明的间距才不会多出 10px */
+.font-grid > .form-group > .set-font-ctrl {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
 }
