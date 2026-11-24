@@ -829,7 +829,7 @@ const FONT_PREF_KEYS = new Set([
 ]);
 
 // 同样支持「跟随默认」= 清除个人覆盖的键（排序 / 日期格式）
-const CLEARABLE_PREF_KEYS = new Set(['default_sort_by', 'default_sort_order', 'date_format']);
+const CLEARABLE_PREF_KEYS = new Set(['default_sort_by', 'default_sort_order', 'date_format', 'theme']);
 
 // 字体设置里的「加粗 / 斜体」切换按钮（阅读偏好页使用，与阅读页交互一致）
 function toggleConfigBi(btn) {
@@ -970,9 +970,10 @@ function collectMyPreferences() {
     PREF_FIELDS.bool.forEach(key => {
         const el = document.getElementById('pref_' + key);
         if (!el) return;
-        // 下拉的「空值」是明确的三态之一（跟随默认），必须直接跳过，
-        // 不能落到下面的 false 分支里，否则会把用户的缩进设置误关掉
-        if (el.tagName === 'SELECT' && el.value === '') return;
+        // 下拉的「空值」是明确的三态之一（跟随默认）：下发空串让后端删除覆盖。
+        // 不能落到下面的 false 分支（会把缩进误关掉），也不能直接 return
+        // （那样旧覆盖删不掉，刷新后下拉会弹回上次的值）。
+        if (el.tagName === 'SELECT' && el.value === '') { payload[key] = ''; return; }
         // 按钮用 aria-pressed，下拉用 value，复选框用 checked
         let isOn;
         if (el.tagName === 'BUTTON') {
