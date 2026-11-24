@@ -2772,3 +2772,58 @@ body.dark-mode .memory-detail .stat-value {
         max-width: 100%;
     }
 }
+
+/* ============================================
+   字体项回归普通字段布局（2026-11-24 收口）
+   此前为了「标题+说明成组」加了几套自定义列宽/对齐，结果和页面其他字段不一致。
+   这里一次性重置：字体项 = 普通 .form-group 的「左标题 / 右控件」，
+   不再单独定义列宽。之前的 .font-grid 相关规则保留但被本段覆盖。
+   ============================================ */
+.font-grid > .form-group {
+    grid-template-columns: minmax(104px, 38%) minmax(0, 1fr);
+    grid-template-areas: "label control" "note control";
+    column-gap: 14px;
+    row-gap: 3px;
+    align-items: center;
+}
+
+.font-grid .form-group > label {
+    grid-area: label;
+    justify-self: stretch;
+    text-align: left;
+    align-self: end;
+}
+
+.font-grid .form-group > .set-font-ctrl {
+    grid-area: control;
+    justify-self: start;
+    align-self: center;
+    min-width: 0;
+}
+
+.font-grid .form-group > .field-note {
+    grid-area: note;
+    justify-self: stretch;
+    text-align: left;
+    margin: 0 0 2px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+/* 手机端：字体项也是左标题右控件，说明回到标题下方一行 */
+@media (max-width: 768px) {
+    .font-grid > .form-group {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "label"
+            "note"
+            "control";
+    }
+
+    .font-grid .form-group > .field-note {
+        display: block;
+        -webkit-line-clamp: unset;
+        overflow: visible;
+        white-space: normal;
+    }
+}
