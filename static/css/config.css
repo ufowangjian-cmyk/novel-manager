@@ -2472,3 +2472,11 @@ body.dark-mode .save-bar-text {
         row-gap: 20px;
     }
 }
+
+/* 单个开关不铺满整行：占左半列，与上方两列字段对齐（2026-11-24） */
+@media (min-width: 769px) {
+    .switch-grid.single {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 150px;
+    }
+}
