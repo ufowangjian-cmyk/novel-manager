@@ -349,7 +349,7 @@ italic_default=False, note=None) %}
                     </div>
                     <div class="font-grid">
                         {{ admin_font_field('正文字体', 'font_family', 'system-ui', bold_id='body_bold',
-                        italic_id='body_italic', note='正文基础字体，加粗/斜体也在这里设') }}
+                        italic_id='body_italic', note='正文基础字体') }}
                         {{ admin_font_field('标题字体', 'title_font_family', '', '跟随默认', bold_id='title_bold',
                         italic_id='title_italic', bold_default=True, note='章节标题字体') }}
                         {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随默认',
@@ -705,7 +705,7 @@ italic_default=False, note=None) %}
                 <div class="font-grid">
                     <div class="form-group">
                         <label>{{ icon('type', 'sm') }} 正文字体</label>
-                        <span class="field-note">正文基础字体，加粗/斜体也在这里设</span>
+                        <span class="field-note">正文基础字体</span>
                         <div class="set-font-ctrl">
                             <select id="pref_font_family" name="pref_font_family">{{ font_opts }}</select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_body_bold"
