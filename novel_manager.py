@@ -969,6 +969,22 @@ def cleanup_cache():
     gc.collect()
     trim_memory()
 
+def cache_bytes_total():
+    """估算所有运行时缓存的占用（正文精确，其余按条数粗估）。
+
+    用途：把 RSS 拆成「常驻」和「可清理」两部分——
+    用户点清理后只指望可清理那部分下降，避免盯着几乎不变的总数以为没生效。
+    """
+    total = line_cache_bytes()
+    total += len(tag_parse_cache) * 2048        # 标签集合，按每本 2KB 粗估
+    total += len(chapter_cache) * 8192          # 章节列表，按每次 8KB 粗估
+    total += len(image_cache) * 1024            # 图片信息，按每条 1KB 粗估
+    total += len(_image_check_cache) * 256
+    total += len(_work_id_file_cache) * 512
+    total += len(_work_id_sets) * 4096
+    return total
+
+
 def line_cache_bytes():
     """粗略估算 line_cache 占用的字节数（content + lines + 开销）
 
@@ -7407,6 +7423,9 @@ def get_cache_stats():
     work_id_count = len(_work_id_file_cache) + len(_work_id_sets)
     work_id_kb = round(work_id_cache_kb(), 1)
 
+    cache_mb = round(cache_bytes_total() / 1024 / 1024, 1)
+    resident_mb = round(max(0.0, (memory_mb or 0) - cache_mb), 1) if memory_mb else None
+
     return jsonify({
         'tag_cache': len(tag_parse_cache),
         'chapter_cache': len(chapter_cache),
@@ -7416,7 +7435,9 @@ def get_cache_stats():
         'line_cache_mb': round(line_cache_bytes() / 1024 / 1024, 2),
         'work_id_count': work_id_count,
         'work_id_kb': work_id_kb,
-        'memory_mb': memory_mb
+        'memory_mb': memory_mb,
+        'cache_mb': cache_mb,
+        'resident_mb': resident_mb
     })
 
 # ==================== 当前书内搜索 API ====================

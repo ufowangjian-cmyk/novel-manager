@@ -1498,6 +1498,8 @@ async function refreshMemoryInfo() {
     const imageEl = document.getElementById('imageCacheCount');
     const lineEl = document.getElementById('lineCacheCount');
     const workIdEl = document.getElementById('workIdCacheCount');
+    const residentEl = document.getElementById('residentMemory');
+    const cacheTotalEl = document.getElementById('cacheTotal');
 
     if (!memoryEl) return;
 
@@ -1536,6 +1538,16 @@ async function refreshMemoryInfo() {
             workIdEl.textContent = (wkb !== undefined && wkb > 0)
                 ? `${wc} 条 · ${wkb} KB`
                 : `${wc} 条`;
+        }
+
+        // 可清理缓存合计 / 常驻部分
+        if (cacheTotalEl) {
+            const cm = data.cache_mb;
+            cacheTotalEl.textContent = (cm !== undefined && cm !== null) ? `${cm} MB` : '--';
+        }
+        if (residentEl) {
+            const rm = data.resident_mb;
+            residentEl.textContent = (rm !== undefined && rm !== null) ? `${rm} MB` : '--';
         }
 
         if (data.memory_mb !== null && data.memory_mb !== undefined && data.memory_mb > 0) {

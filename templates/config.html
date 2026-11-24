@@ -131,30 +131,46 @@ italic_default=False) %}
                 <div class="card-content">
                     <div class="memory-management">
                         <div class="memory-info" id="memoryInfo">
-                            <div class="memory-stats">
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('bar-chart-3', 'sm') }} 当前内存占用</span>
-                                    <span class="stat-value" id="currentMemory">-- MB</span>
+                            <div class="memory-group">
+                                <div class="memory-group-title">{{ icon('database', 'sm') }} 常驻（清理不动）</div>
+                                <div class="memory-stats">
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('bar-chart-3', 'sm') }} 进程总占用</span>
+                                        <span class="stat-value" id="currentMemory">-- MB</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('hard-drive', 'sm') }} 书库等常驻数据</span>
+                                        <span class="stat-value" id="residentMemory">-- MB</span>
+                                    </div>
                                 </div>
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('tag', 'sm') }} 标签缓存</span>
-                                    <span class="stat-value" id="tagCacheCount">--</span>
-                                </div>
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('book-open', 'sm') }} 章节缓存</span>
-                                    <span class="stat-value" id="chapterCacheCount">--</span>
-                                </div>
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('image', 'sm') }} 图片缓存</span>
-                                    <span class="stat-value" id="imageCacheCount">--</span>
-                                </div>
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('library', 'sm') }} 阅读缓存</span>
-                                    <span class="stat-value" id="lineCacheCount">--</span>
-                                </div>
-                                <div class="memory-stat-item">
-                                    <span class="stat-label">{{ icon('hash', 'sm') }} 指纹缓存</span>
-                                    <span class="stat-value" id="workIdCacheCount">--</span>
+                            </div>
+                            <div class="memory-group">
+                                <div class="memory-group-title">{{ icon('trash-2', 'sm') }} 可清理缓存</div>
+                                <div class="memory-stats">
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('pie-chart', 'sm') }} 缓存合计</span>
+                                        <span class="stat-value" id="cacheTotal">-- MB</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('library', 'sm') }} 阅读缓存</span>
+                                        <span class="stat-value" id="lineCacheCount">--</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('tag', 'sm') }} 标签缓存</span>
+                                        <span class="stat-value" id="tagCacheCount">--</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('book-open', 'sm') }} 章节缓存</span>
+                                        <span class="stat-value" id="chapterCacheCount">--</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('image', 'sm') }} 图片缓存</span>
+                                        <span class="stat-value" id="imageCacheCount">--</span>
+                                    </div>
+                                    <div class="memory-stat-item">
+                                        <span class="stat-label">{{ icon('hash', 'sm') }} 指纹缓存</span>
+                                        <span class="stat-value" id="workIdCacheCount">--</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

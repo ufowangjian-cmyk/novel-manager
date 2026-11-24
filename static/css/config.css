@@ -2521,3 +2521,24 @@ body.dark-mode .save-bar-text {
         margin-bottom: 0;
     }
 }
+
+/* 内存管理：常驻 / 可清理 两组分隔（2026-11-24） */
+.memory-group + .memory-group {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.memory-group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7a5e);
+    margin-bottom: 8px;
+}
+
+body.dark-mode .memory-group + .memory-group {
+    border-top-color: rgba(255, 255, 255, 0.15);
+}
