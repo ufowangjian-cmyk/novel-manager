@@ -1760,8 +1760,9 @@ body.dark-mode .form-group .hlw-chip {
    密度对齐「列表与显示」里的字段。
    必须写在 .switch-grid.single 之后 —— 两者特异性相同，靠顺序覆盖。 */
 .switch-grid.compact {
-    grid-template-columns: repeat(auto-fit, minmax(230px, 260px));
-    justify-content: start;
+    /* 原先每列上限 260px（justify-content:start），右侧留一大片空白，
+       开关下方的说明只能挤在窄列里折行。改为平分容器宽度。 */
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
 
 /* 开关 + 它自己的一条说明（目前只有「标签自动化」的两个开关用）。
