@@ -2625,20 +2625,23 @@ body.dark-mode .memory-detail .stat-value {
 /* 手机端字体项：右列要给「下拉 + B + I」腾地方，
    B/I 收到 26px，下拉 flex 撑满剩余宽度（否则只剩图标） */
 @media (max-width: 768px) {
+    /* 手机右列只有 140px，「下拉 + B + I」横排会把下拉压成一条图标，
+       改成下拉独占一行、B/I 落到下一行并靠右 */
     .font-grid .set-font-ctrl {
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 5px;
     }
 
     .font-grid .set-font-ctrl select {
-        flex: 1 1 auto;
+        flex: 1 1 100%;
+        width: 100%;
         min-width: 0;
-        width: auto;
     }
 
     .font-grid .set-font-ctrl .set-bi {
         flex: 0 0 auto;
-        width: 26px;
+        width: 28px;
         padding: 0;
         font-size: 12px;
     }
