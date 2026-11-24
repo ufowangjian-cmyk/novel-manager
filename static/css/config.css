@@ -2358,18 +2358,35 @@ body.dark-mode .save-bar-text {
         margin-bottom: 2px;
     }
 
-    /* 字体项：控件里含 字体下拉 + B + I 三件，横排在 348px 里会挤成一条，
-       这一项保持「标题在上、控件在下」 */
+    /* 字体项也一行放下（与阅读页的设置一致）：标题 + 字体下拉 + B/I 横排。
+       字体名去掉「（开源·分包）」后只有 3-4 个字，152px 的下拉足够。 */
+    .font-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .font-grid > .form-group {
-        display: block;
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        column-gap: 8px;
+        align-items: center;
     }
 
     .font-grid > .form-group > label {
-        margin-bottom: 6px;
+        margin-bottom: 0;
+        padding-top: 0;
+        font-size: 0.8rem;
+        white-space: nowrap;
     }
 
-    .font-grid {
-        grid-template-columns: minmax(0, 1fr);
+    .font-grid > .form-group .set-font-ctrl {
+        width: 100%;
+        gap: 6px;
+    }
+
+    .font-grid > .form-group .set-font-ctrl select {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     /* 通栏字段（书名高亮词）在手机上仍是通栏 */
