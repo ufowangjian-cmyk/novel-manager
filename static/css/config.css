@@ -2293,24 +2293,6 @@ body.dark-mode .save-bar-text {
 }
 
 /* 手机端：左右挤不开，恢复上下 */
-@media (max-width: 768px) {
-    .form-group:has(> label),
-    .form-group-inline .form-group {
-        grid-template-columns: minmax(0, 1fr);
-        row-gap: 4px;
-        align-items: start;
-    }
-
-    .form-group:has(> label) > label,
-    .form-group:has(> label) > .field-note,
-    .form-group:has(> label) > *:not(label):not(.field-note):not(.form-hint),
-    .form-group-inline .form-group > label {
-        grid-column: 1;
-        grid-row: auto;
-        padding-top: 0;
-    }
-}
-
 /* 通栏字段（书名高亮词这类内容编辑区）：
    标题和注释留在左列，内容区跨满两列，不再只占右列。 */
 .form-group.full-width:has(> label) > *:not(label):not(.field-note) {
@@ -2342,7 +2324,7 @@ body.dark-mode .save-bar-text {
     .form-group,
     .form-group:has(> label) {
         display: grid;
-        grid-template-columns: minmax(104px, 46%) auto;
+        grid-template-columns: minmax(0, 1fr) 140px;
         column-gap: 10px;
         row-gap: 3px;
         align-items: center;
