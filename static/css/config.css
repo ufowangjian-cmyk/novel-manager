@@ -1435,8 +1435,9 @@ body.dark-mode .set-bi:focus-visible {
 .form-group .hlw-chip {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
-    padding: 3px 5px 3px 11px;
+    padding: 3px 11px;   /* 左右对称：右边原来留的 5px 是给 × 的，现在没有 × 了 */
     border-radius: 20px;
     font-size: 12.5px;
     line-height: 1.75;
