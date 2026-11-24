@@ -18,7 +18,7 @@
 {% set font_list = FONTS.font_list %}
 
 {# 管理员的字体条目：按 config 当前值回填 selected / aria-pressed。
-follow_label 非空时，首项为「跟随正文」（空值 = 跟随正文）；
+follow_label 非空时，首项为空值选项（如「跟随默认」= 沿用正文字体）；
 bold_id / italic_id 显式给出对应配置键（正文 font_family → body_bold，无统一替换规则）；
 bold_default / italic_default 用于 config 尚未写入该键时回显真实的硬默认值，
 避免管理员未改动就被迫把 title_bold 等从 True 覆写成 False。 #}
@@ -343,26 +343,26 @@ italic_default=False) %}
                         {{ icon('type', 'sm') }} 字体设置
                     </h3>
                     <div class="form-hint" style="margin-bottom: 12px;">
-                        {{ icon('info', 'sm') }} 设定新用户默认的<b>字体与加粗/斜体</b>。各元素「跟随正文」表示沿用正文字体；此处未单独设置过的项，用户仍可在「我的阅读偏好」里覆盖。
+                        {{ icon('info', 'sm') }} 设定新用户默认的<b>字体与加粗/斜体</b>。各元素选「跟随默认」表示沿用正文字体；此处未单独设置过的项，用户仍可在「我的阅读偏好」里覆盖。
                     </div>
                     <div class="font-grid">
                         {{ admin_font_field('正文字体', 'font_family', 'system-ui', bold_id='body_bold',
                         italic_id='body_italic') }}
-                        {{ admin_font_field('标题字体', 'title_font_family', '', '跟随正文', bold_id='title_bold',
+                        {{ admin_font_field('标题字体', 'title_font_family', '', '跟随默认', bold_id='title_bold',
                         italic_id='title_italic', bold_default=True) }}
-                        {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随正文',
+                        {{ admin_font_field('双引号字体', 'double_quote_font_family', '', '跟随默认',
                         bold_id='double_quote_bold', italic_id='double_quote_italic') }}
-                        {{ admin_font_field('单引号字体', 'single_quote_font_family', '', '跟随正文',
+                        {{ admin_font_field('单引号字体', 'single_quote_font_family', '', '跟随默认',
                         bold_id='single_quote_bold', italic_id='single_quote_italic') }}
-                        {{ admin_font_field('圆括号字体', 'bracket_font_family', '', '跟随正文', bold_id='bracket_bold',
+                        {{ admin_font_field('圆括号字体', 'bracket_font_family', '', '跟随默认', bold_id='bracket_bold',
                         italic_id='bracket_italic') }}
-                        {{ admin_font_field('方头括号字体', 'square_bracket_font_family', '', '跟随正文',
+                        {{ admin_font_field('方头括号字体', 'square_bracket_font_family', '', '跟随默认',
                         bold_id='square_bracket_bold', italic_id='square_bracket_italic', bold_default=True) }}
-                        {{ admin_font_field('方括号字体', 'square_bracket_1_font_family', '', '跟随正文',
+                        {{ admin_font_field('方括号字体', 'square_bracket_1_font_family', '', '跟随默认',
                         bold_id='square_bracket_1_bold', italic_id='square_bracket_1_italic') }}
-                        {{ admin_font_field('空心括号字体', 'hollow_bracket_font_family', '', '跟随正文',
+                        {{ admin_font_field('空心括号字体', 'hollow_bracket_font_family', '', '跟随默认',
                         bold_id='hollow_bracket_bold', italic_id='hollow_bracket_italic', bold_default=True) }}
-                        {{ admin_font_field('书名号字体', 'book_font_family', '', '跟随正文', bold_id='book_bold',
+                        {{ admin_font_field('书名号字体', 'book_font_family', '', '跟随默认', bold_id='book_bold',
                         italic_id='book_italic', bold_default=True) }}
                     </div>{# /.font-grid #}
                 </div>
@@ -715,7 +715,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 标题字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_title_font_family" name="pref_title_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_title_bold"
@@ -728,7 +727,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 双引号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_double_quote_font_family" name="pref_double_quote_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_double_quote_bold"
@@ -741,7 +739,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 单引号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_single_quote_font_family" name="pref_single_quote_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_single_quote_bold"
@@ -754,7 +751,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 圆括号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_bracket_font_family" name="pref_bracket_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_bracket_bold"
@@ -767,7 +763,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 方头括号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_font_family" name="pref_square_bracket_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_square_bracket_bold"
@@ -780,7 +775,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 方括号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_square_bracket_1_font_family" name="pref_square_bracket_1_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_square_bracket_1_bold"
@@ -793,7 +787,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 空心括号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_hollow_bracket_font_family" name="pref_hollow_bracket_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_hollow_bracket_bold"
@@ -806,7 +799,6 @@ italic_default=False) %}
                         <label>{{ icon('type', 'sm') }} 书名号字体</label>
                         <div class="set-font-ctrl">
                             <select id="pref_book_font_family" name="pref_book_font_family">
-                                <option value="">跟随正文</option>
                                 {{ font_opts }}
                             </select>
                             <button type="button" class="set-bi" data-style="bold" id="pref_book_bold"
