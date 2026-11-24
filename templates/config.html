@@ -131,26 +131,23 @@ italic_default=False) %}
                 <div class="card-content">
                     <div class="memory-management">
                         <div class="memory-info" id="memoryInfo">
-                            <div class="memory-group">
-                                <div class="memory-group-title">{{ icon('database', 'sm') }} 常驻（清理不动）</div>
-                                <div class="memory-stats">
-                                    <div class="memory-stat-item">
-                                        <span class="stat-label">{{ icon('bar-chart-3', 'sm') }} 进程总占用</span>
-                                        <span class="stat-value" id="currentMemory">-- MB</span>
-                                    </div>
-                                    <div class="memory-stat-item">
-                                        <span class="stat-label">{{ icon('hard-drive', 'sm') }} 书库等常驻数据</span>
-                                        <span class="stat-value" id="residentMemory">-- MB</span>
-                                    </div>
+                            <div class="memory-overview">
+                                <div class="mem-cell">
+                                    <div class="mem-val" id="currentMemory">--</div>
+                                    <div class="mem-cap">总占用</div>
+                                </div>
+                                <div class="mem-cell mem-cell-warn">
+                                    <div class="mem-val" id="cacheTotal">--</div>
+                                    <div class="mem-cap">可清理</div>
+                                </div>
+                                <div class="mem-cell">
+                                    <div class="mem-val" id="residentMemory">--</div>
+                                    <div class="mem-cap">常驻</div>
                                 </div>
                             </div>
-                            <div class="memory-group">
-                                <div class="memory-group-title">{{ icon('trash-2', 'sm') }} 可清理缓存</div>
+                            <details class="memory-detail">
+                                <summary>缓存明细</summary>
                                 <div class="memory-stats">
-                                    <div class="memory-stat-item">
-                                        <span class="stat-label">{{ icon('pie-chart', 'sm') }} 缓存合计</span>
-                                        <span class="stat-value" id="cacheTotal">-- MB</span>
-                                    </div>
                                     <div class="memory-stat-item">
                                         <span class="stat-label">{{ icon('library', 'sm') }} 阅读缓存</span>
                                         <span class="stat-value" id="lineCacheCount">--</span>
@@ -172,7 +169,7 @@ italic_default=False) %}
                                         <span class="stat-value" id="workIdCacheCount">--</span>
                                     </div>
                                 </div>
-                            </div>
+                            </details>
                         </div>
 
                         <div class="memory-actions"

@@ -2542,3 +2542,138 @@ body.dark-mode .save-bar-text {
 body.dark-mode .memory-group + .memory-group {
     border-top-color: rgba(255, 255, 255, 0.15);
 }
+
+/* ============================================
+   内存管理：概览三格 + 折叠明细（2026-11-24 重设计）
+   原来 6 个卡片分两组，手机上要折成三四行，冗余。
+   ============================================ */
+.memory-overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mem-cell {
+    background: var(--bg-secondary, #f5f7f0);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    min-width: 0;
+}
+
+.mem-val {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary, #2d3a22);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mem-cap {
+    margin-top: 3px;
+    font-size: 11.5px;
+    color: var(--text-tertiary, #8a9a78);
+}
+
+/* 可清理那格用暖色，视觉上提示「这里是可以动的」 */
+.mem-cell-warn .mem-val {
+    color: var(--color-warning-alt, #c47a1a);
+}
+
+.memory-detail {
+    margin-bottom: 12px;
+}
+
+.memory-detail > summary {
+    cursor: pointer;
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--text-secondary, #6b7a5e);
+    padding: 6px 2px;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.memory-detail > summary::-webkit-details-marker {
+    display: none;
+}
+
+.memory-detail > summary::before {
+    content: '▸';
+    display: inline-block;
+    transition: transform 0.15s;
+    font-size: 10px;
+}
+
+.memory-detail[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.memory-detail .memory-stats {
+    margin-top: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+.memory-detail .memory-stat-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--bg-secondary, #f5f7f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.memory-detail .stat-label {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary, #6b7a5e);
+}
+
+.memory-detail .stat-value {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary, #2d3a22);
+    white-space: nowrap;
+}
+
+body.dark-mode .mem-cell,
+body.dark-mode .memory-detail .memory-stat-item {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-mode .mem-val,
+body.dark-mode .memory-detail .stat-value {
+    color: #e8efe0;
+}
+
+/* 手机：三格并排但收窄数字，明细一行一项 */
+@media (max-width: 768px) {
+    .memory-overview {
+        gap: 8px;
+    }
+
+    .mem-cell {
+        padding: 10px 4px;
+    }
+
+    .mem-val {
+        font-size: 15px;
+    }
+
+    .mem-cap {
+        font-size: 11px;
+    }
+
+    .memory-detail .memory-stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
