@@ -2247,7 +2247,7 @@ body.dark-mode .save-bar-text {
 
 .form-group:has(> label) {
     display: grid;
-    grid-template-columns: minmax(160px, 46%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;   /* 标题吃满剩余，控件按自身宽度 */
     column-gap: 14px;
     row-gap: 4px;
     align-items: center;
@@ -2281,8 +2281,8 @@ body.dark-mode .save-bar-text {
 /* 行内紧凑组也要左右：每项 320px 里左标题占 32%，右侧控件占余下 */
 .form-group-inline .form-group {
     display: grid;
-    grid-template-columns: minmax(150px, 46%) minmax(0, 1fr);
-    column-gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
     align-items: center;
 }
 
@@ -2319,9 +2319,14 @@ body.dark-mode .save-bar-text {
 /* 下拉不需要撑满右列：内容普遍只有 3-6 个字，
    拉满之后标题反而被挤到换行。文本输入框保持 100%（可能很长）。 */
 .form-group select {
-    width: 100%;
-    max-width: 168px;          /* 内容普遍 3-6 字，168px 足够；展开的原生列表里仍能看全 */
-    text-overflow: ellipsis;   /* 兜底：部分浏览器对 select 生效 */
+    width: 152px;              /* 固定窄宽，省下的空间全部让给标题 */
+    max-width: none;
+    text-overflow: ellipsis;
 }
 
-/* 超长的选项文字由浏览器截断显示，展开列表里完整可见 */
+/* 文本输入框也收一下（路径类仍可换行显示） */
+.form-group:has(> label) > input[type="text"],
+.form-group:has(> label) > input[type="password"] {
+    width: 260px;
+    max-width: 100%;
+}
