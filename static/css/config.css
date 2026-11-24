@@ -2321,13 +2321,18 @@ body.dark-mode .save-bar-text {
    字体项因为控件里还带 B / I 两个按钮，横排会挤，单独保持上下。
    ============================================ */
 @media (max-width: 768px) {
-    .form-group,
+    /* 只对「label + 控件」的简单字段用左右；复合结构（用户管理那种）保持纵向，
+       否则里面的按钮和列表会被塞进 140px 的第二列。 */
     .form-group:has(> label) {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 140px;
         column-gap: 10px;
         row-gap: 3px;
         align-items: center;
+    }
+
+    .form-group:not(:has(> label)) {
+        display: block;
     }
 
     .form-group-inline.compact .form-group {
