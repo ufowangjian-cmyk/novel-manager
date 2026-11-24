@@ -48,6 +48,7 @@ const FONT_NAME_MAP = {
     "'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif": '📱 寒蝉圆体',
     "'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif": '📱 得意黑',
     "'朱雀仿宋内置', 'Zhuque Fangsong', serif": '📱 朱雀仿宋',
+    "'猫啃硬笔楷书内置', 'MaokenYingBiKaiShuJ', serif": '📱 猫啃硬笔楷书',
     "'汉仪润圆-55简', '汉仪润圆-55', sans-serif": '汉仪润圆',
     "'Microsoft YaHei', sans-serif": '微软雅黑',
     "'Songti SC', 'SimSun', serif": '宋体',
