@@ -2501,23 +2501,3 @@ body.dark-mode .save-bar-text {
         font-size: 13px;
     }
 }
-
-/* ============================================
-   移动端：标题与下拉之间不留大段空白（2026-11-24）
-   原来标题列是 minmax(0,1fr)，标题文字只占一半、剩下全是空白，
-   下拉被推到卡片右侧，看着两者「离得很远」。
-   改为标题按内容宽度，下拉紧跟其后（最大 170px）。
-   ============================================ */
-@media (max-width: 768px) {
-    .form-group:has(> label),
-    .form-group-inline .form-group {
-        grid-template-columns: auto minmax(0, 1fr);
-        column-gap: 12px;
-    }
-
-    .form-group select {
-        width: 100%;
-        max-width: 170px;
-        justify-self: start;
-    }
-}
