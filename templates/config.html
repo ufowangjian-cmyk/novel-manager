@@ -990,8 +990,8 @@ italic_default=False) %}
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/common.js') }}?v={{ css_version }}"></script>
-<script src="{{ url_for('static', filename='js/config.js') }}?v={{ css_version }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/config.js') }}"></script>
 <script>
     // ===== 配置卡片展开状态记忆 =====
     // 默认全部展开；用户点过哪张就记住哪张，刷新后保持。

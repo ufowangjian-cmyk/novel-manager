@@ -1273,7 +1273,24 @@ async function saveAllConfig() {
         });
         const result = await response.json();
         if (result.success) {
-            safeNotify('配置已保存！点击"重载配置"生效', 'success');
+            // 「保存全部」也把当前用户的阅读偏好一起提交：
+            // 只保存全局配置的话，在「列表与显示」改的排序会被静默丢弃，
+            // 用户看到的就是「点了保存又弹回原值」。
+            let prefSaved = false;
+            try {
+                const prefPayload = collectMyPreferences();
+                if (Object.keys(prefPayload).length) {
+                    const pr = await fetch('/api/save_preferences', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(prefPayload)
+                    });
+                    prefSaved = (await pr.json()).success === true;
+                }
+            } catch (e) {
+                console.warn('偏好保存失败（不影响全局配置）:', e);
+            }
+            safeNotify(prefSaved ? '配置与阅读偏好都已保存' : '配置已保存！点击"重载配置"生效', 'success');
         } else {
             safeNotify('保存失败: ' + result.message, 'error');
         }
