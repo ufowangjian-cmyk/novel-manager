@@ -2501,3 +2501,23 @@ body.dark-mode .save-bar-text {
         font-size: 13px;
     }
 }
+
+/* ============================================
+   移动端纵向间距收紧（2026-11-24）
+   原来字段之间 margin-bottom: 16px、内联组 row-gap 18px，
+   手机上竖向留白偏大，一屏放不下几个字段。
+   ============================================ */
+@media (max-width: 768px) {
+    .form-group {
+        margin-bottom: 10px;
+        row-gap: 3px;
+    }
+
+    .form-group-inline.compact {
+        row-gap: 10px;
+    }
+
+    .form-group-inline.compact .form-group {
+        margin-bottom: 0;
+    }
+}
