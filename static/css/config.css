@@ -2603,7 +2603,14 @@ body.dark-mode .memory-detail .stat-value {
        下拉约 138px，6 字字体名（如「猫啃硬笔楷书」）能完整显示。
        只作用于 .font-grid 内的字体项，其他字段仍是 140px / 36px 原样。 */
     .font-grid > .form-group {
-        grid-template-columns: minmax(0, 1fr) 210px;
+        grid-template-columns: minmax(0, 1fr) 216px;
+    }
+
+    /* 通用 select 左右各 12px 内边距，窄下拉里白白吃掉 24px。
+       字体项的图标 + 长字体名需要更多文字空间，这里收到 6px。 */
+    .font-grid .set-font-ctrl select {
+        padding-left: 6px;
+        padding-right: 6px;
     }
 
     .font-grid .set-font-ctrl {
