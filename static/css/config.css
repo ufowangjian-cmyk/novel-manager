@@ -2309,3 +2309,9 @@ body.dark-mode .save-bar-text {
         padding-top: 0;
     }
 }
+
+/* 通栏字段（书名高亮词这类内容编辑区）：
+   标题和注释留在左列，内容区跨满两列，不再只占右列。 */
+.form-group.full-width:has(> label) > *:not(label):not(.field-note) {
+    grid-column: 1 / -1;
+}
