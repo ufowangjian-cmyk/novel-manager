@@ -2284,10 +2284,6 @@ body.dark-mode .save-bar-text {
     padding-top: 6px;
 }
 
-.form-group-inline .form-group > .field-note {
-    display: none;
-}
-
 /* 手机端：左右挤不开，恢复上下 */
 @media (max-width: 768px) {
     .form-group:has(> label),
