@@ -412,7 +412,7 @@
         document.documentElement.style.setProperty('--reader-text-indent', '2em');
         savePreference('indent_paragraph', true);
         applyReaderTheme(defaults.theme);
-        // 分元素字体一并恢复默认（标题回默认，其余回「跟随正文」）
+        // 分元素字体一并恢复默认（标题回默认，其余回「跟随默认」）
         const syncSel = (id, val) => { const s = document.getElementById(id); if (s) s.value = val; };
         FONT_SCOPES.forEach(scope => {
             const def = scope === 'title' ? TITLE_DEFAULT_FONT : '';

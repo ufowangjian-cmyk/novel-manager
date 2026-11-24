@@ -246,7 +246,7 @@
                     </div>
                 </div>
                 {# ---- 字体（分元素：正文/标题 + reader-core 全部高亮符号各自可配）---- #}
-                {% set font_opts %}{{ FONTS.options(with_emoji=False) }}{% endset %}
+                {% set font_opts %}{{ FONTS.options(with_follow=True, with_emoji=False) }}{% endset %}
                 <div class="set-row">
                     <div class="set-lab">正文字体</div>
                                         <div class="set-font-ctrl">
@@ -259,7 +259,6 @@
                     <div class="set-lab">标题字体</div>
                                         <div class="set-font-ctrl">
                         <select id="titleFontSelect" class="set-select" onchange="setScopeFont('title', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="title" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -270,7 +269,6 @@
                     <div class="set-lab">双引号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="doubleQuoteFontSelect" class="set-select" onchange="setScopeFont('double_quote', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="double_quote" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -281,7 +279,6 @@
                     <div class="set-lab">单引号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="singleQuoteFontSelect" class="set-select" onchange="setScopeFont('single_quote', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="single_quote" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -292,7 +289,6 @@
                     <div class="set-lab">圆括号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="bracketFontSelect" class="set-select" onchange="setScopeFont('bracket', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -303,7 +299,6 @@
                     <div class="set-lab">方头括号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="squareBracketFontSelect" class="set-select" onchange="setScopeFont('square_bracket', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="square_bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -314,7 +309,6 @@
                     <div class="set-lab">方括号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="squareBracket1FontSelect" class="set-select" onchange="setScopeFont('square_bracket_1', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="square_bracket_1" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -325,7 +319,6 @@
                     <div class="set-lab">空心括号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="hollowBracketFontSelect" class="set-select" onchange="setScopeFont('hollow_bracket', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="hollow_bracket" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
@@ -336,7 +329,6 @@
                     <div class="set-lab">书名号字体</div>
                                         <div class="set-font-ctrl">
                         <select id="bookFontSelect" class="set-select" onchange="setScopeFont('book', this.value)">
-                        <option value="">跟随正文</option>
                         {{ font_opts }}
                     </select>
                         <button type="button" class="set-bi" data-scope="book" data-style="bold" aria-pressed="false" onclick="toggleScopeStyle(this)">B</button>
