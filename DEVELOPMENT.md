@@ -777,6 +777,17 @@ curl -s 'https://api.github.com/repos/TrionesType/zhuque/releases?per_page=1' \
 curl -sL -H 'Accept: application/octet-stream' -o /tmp/zhuque.zip "$(cat /tmp/zq_url)"
 ```
 
+#### 新增内置字体要改哪几处（2026-11-24 起）
+
+| 位置 | 作用 | 是否必改 |
+|---|---|---|
+| `templates/_fonts.html` 的 `font_list` | 配置页（管理员+偏好）、阅读页的下拉选项 | **必改** |
+| `static/css/font.css` | `@font-face` 与 `unicode-range` 分包 | **必改** |
+| `static/js/common.js` 的 `window.BUILTIN_FONTS` | 首页字体预热清单（分包字体标 `chunked: true` 跳过 FontFace 预载） | **必改** |
+| `static/js/config.js` 的 `FONT_FAMILY_LABELS` | 配置页「已选字体」的显示名反查 | **必改** |
+
+前两处决定能不能用，后两处决定预热与显示名是否正确（漏了不会报错，只是不预热/显示原始字体栈）。
+
 #### 方式 D：猫啃硬笔楷书（OFL，2026-11-24 新增）
 
 上游 `maoken-fonts/MaokenYingBiKaiShuJ`，v0.20，SIL OFL 1.1（可自由嵌入与分发）。

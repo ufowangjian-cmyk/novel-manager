@@ -635,7 +635,7 @@ async function prevBackground() {
 // BUILTIN_FONTS：内置字体清单。key = font.css 里 @font-face 注册的 family 名，
 // url = woff2 地址（与 font.css 保持一致），size = 单文件体积（提示文案用）。
 // 原定义在 reader-ui.js（仅阅读页可用），现提升至此供全站预热共用；
-// reader-ui.js 改为引用本全局。新增内置字体时改这里 + font.css + 两个模板的字体下拉。
+// reader-ui.js 改为引用本全局。新增内置字体时改这里 + font.css（下拉选项由 templates/_fonts.html 统一生成）。
 window.BUILTIN_FONTS = {
     // 全部改为 unicode-range 分包（见 font.css）：没有单个 woff2 可预载，
     // 浏览器按页面实际出现的字自己取分片。chunked=true 表示跳过 FontFace 预加载。
@@ -645,7 +645,8 @@ window.BUILTIN_FONTS = {
     '未来圆内置': { chunked: true, label: '未来圆' },
     '寒蝉圆体内置': { chunked: true, label: '寒蝉圆体' },
     '得意黑内置': { chunked: true, label: '得意黑' },
-    '朱雀仿宋内置': { chunked: true, label: '朱雀仿宋' }
+    '朱雀仿宋内置': { chunked: true, label: '朱雀仿宋' },
+    '猫啃硬笔楷书内置': { chunked: true, label: '猫啃硬笔楷书' }
 };
 
 /**
