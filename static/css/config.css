@@ -2366,15 +2366,15 @@ body.dark-mode .save-bar-text {
 
     .font-grid > .form-group {
         display: grid;
-        grid-template-columns: 86px minmax(0, 1fr);
-        column-gap: 8px;
+        grid-template-columns: 100px minmax(0, 1fr);
+        column-gap: 6px;
         align-items: center;
     }
 
     .font-grid > .form-group > label {
         margin-bottom: 0;
         padding-top: 0;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         white-space: nowrap;
     }
 
