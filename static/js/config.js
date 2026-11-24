@@ -828,6 +828,9 @@ const FONT_PREF_KEYS = new Set([
     'hollow_bracket_font_family', 'book_font_family'
 ]);
 
+// 同样支持「跟随默认」= 清除个人覆盖的键（排序 / 日期格式）
+const CLEARABLE_PREF_KEYS = new Set(['default_sort_by', 'default_sort_order', 'date_format']);
+
 // 字体设置里的「加粗 / 斜体」切换按钮（阅读偏好页使用，与阅读页交互一致）
 function toggleConfigBi(btn) {
     const on = btn.getAttribute('aria-pressed') === 'true';
@@ -944,7 +947,9 @@ function collectMyPreferences() {
         const el = document.getElementById('pref_' + key);
         if (!el) return;
         const raw = el.value.trim();
-        if (raw === '') return;               // 留空 = 跟随默认，不下发
+        // 选「跟随默认」时是空串：必须下发空串，后端据此删除该键的个人覆盖。
+        // 以前这里直接 return，导致选了「跟随默认」保存后旧的个人设置仍然生效。
+        if (raw === '') { payload[key] = ''; return; }
         const num = parseFloat(raw);
         if (!isNaN(num)) payload[key] = num;
     });
@@ -956,10 +961,10 @@ function collectMyPreferences() {
         // 否则空值会被误当成「设为黑色」下发
         if (el.type === 'color' && !el.dataset.dirty) return;
         const raw = el.value;
-        // 字体下拉的「跟随正文 / 跟随默认」是空字符串。以前这里跳过空值，
-        // 导致个人覆盖永远删不掉：选了「跟随正文」保存，阅读页照旧用旧字体。
-        // 后端约定「传空串 = 删除该键的个人覆盖」，所以字体键要照发。
-        if (raw !== '' || FONT_PREF_KEYS.has(key)) payload[key] = raw;
+        // 「跟随默认」类字段（字体、排序、日期格式）的值是空字符串。
+        // 后端约定「传空串 = 删除该键的个人覆盖」，所以这些键即使为空也要照发，
+        // 否则选了「跟随默认」保存后，旧覆盖还在，下拉框会弹回上一次的值。
+        if (raw !== '' || FONT_PREF_KEYS.has(key) || CLEARABLE_PREF_KEYS.has(key)) payload[key] = raw;
     });
 
     PREF_FIELDS.bool.forEach(key => {
