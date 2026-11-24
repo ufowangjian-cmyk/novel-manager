@@ -2367,7 +2367,7 @@ body.dark-mode .save-bar-text {
     .font-grid > .form-group {
         display: grid;
         grid-template-columns: 100px minmax(0, 1fr);
-        column-gap: 6px;
+        column-gap: 14px;
         align-items: center;
     }
 
@@ -2385,7 +2385,8 @@ body.dark-mode .save-bar-text {
 
     .font-grid > .form-group .set-font-ctrl select {
         width: auto;
-        flex: 1 1 auto;
+        flex: 0 1 auto;      /* 不铺满，给标题留出呼吸空间 */
+        max-width: 128px;
         min-width: 0;
     }
 
