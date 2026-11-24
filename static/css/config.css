@@ -2379,4 +2379,11 @@ body.dark-mode .save-bar-text {
     .form-group.full-width > * {
         grid-column: auto;
     }
+
+    /* 自定义控件容器（字体选择器、高亮词编辑器）在移动端也铺满 */
+    .form-group .set-font-ctrl,
+    .form-group .hlw-editor {
+        width: 100%;
+        max-width: none;
+    }
 }
