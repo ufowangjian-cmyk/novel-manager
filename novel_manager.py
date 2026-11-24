@@ -5666,25 +5666,6 @@ def get_config_api():
     safe_config = {k: v for k, v in CONFIG.items() if k not in SENSITIVE_CONFIG_KEYS}
     return jsonify(safe_config)
 
-#==================== 保存排序偏好 =====================
-@app.route('/config/save_sort', methods=['POST'])
-def save_sort_preference():
-    try:
-        data = request.get_json() or {}
-        sort_by = data.get('sort_by', 'title')
-        sort_order = data.get('sort_order', 'asc')
-        if sort_by not in ('title', 'author', 'site', 'date', 'word_count'):
-            sort_by = 'title'
-        if sort_order not in ('asc', 'desc'):
-            sort_order = 'asc'
-        CONFIG['default_sort_by'] = sort_by
-        CONFIG['default_sort_order'] = sort_order
-        save_json_file(CONFIG_FILE, CONFIG)
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-
 def pick_random_novel(exclude_work_id=None, prefer_rich=True):
     """随机挑一本书用于「每日推荐」。
 

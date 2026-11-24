@@ -1394,6 +1394,24 @@ function initUserMenu() {
 }
 
 // ===== 「菜单」里的排序二级菜单 =====
+/* 抽屉里点排序：先把这个选择写进「我的阅读偏好」，再照常跳转。
+   用 keepalive 保证页面跳走时请求不会被中断。
+   失败静默——排序本身靠 URL 参数已经生效，存偏好只是让下次进来能记住。 */
+function saveSortPref(sortBy, order) {
+    if (!sortBy) return;
+    try {
+        fetch('/api/save_preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                default_sort_by: sortBy,
+                default_sort_order: order || 'asc'
+            }),
+            keepalive: true
+        }).catch(function () { /* 忽略：跳转中的网络中断 */ });
+    } catch (e) { /* 老浏览器无 keepalive 也不影响跳转 */ }
+}
+
 function initUserMenuSort() {
     const toggle = document.getElementById('userMenuSortToggle');
     const panel = document.getElementById('userMenuSortPanel');

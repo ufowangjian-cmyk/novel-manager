@@ -114,13 +114,15 @@
                     <button type="button" class="tab-btn user-menu-item" data-tab="random" role="menuitem">{{
                         icon('sparkles', 'sm') }}<span>每日推荐</span></button>
                     <div class="user-menu-divider"></div>
-                    {# 排序（二级菜单）：字段 + 正序/反序，点了就是普通链接跳转，
-                    带上 ?sort=&order= 让后端重排书架（不刷新看不到的东西也不会被动打开）。
+                    {# 排序（二级菜单）：字段 + 正序/反序。点链接会先异步调
+                    saveSortPref() 把这组排序写进当前用户的偏好（default_sort_by /
+                    default_sort_order），再照常带 ?sort=&order= 跳转。
+                    这样抽屉里选一次，下次进首页自动沿用，不用去配置页改。
                     ⚠️ 选排序**不要**去动首页区块的显隐/当前区块：曾经在跳转前顺手
                     setHidden(false) + activeTab='filter'，结果变成"改个排序就把
                     「筛选与搜索」区块弹出来"，剑哥反馈多余，已去掉。
-                    字段与取值必须落在后端白名单里（novel_manager.py 的 get_sort_key /
-                    /config/save_sort 只认 title/author/site/date/word_count 与 asc/desc）。
+                    字段与取值必须落在 /api/save_preferences 的白名单与 get_sort_key 里
+                    （只认 title/author/site/date/word_count 与 asc/desc）。
                     放在菜单里而不是页面表头，是为了手机端（不显示表头）也能排序。
                     注意父项不要写 onclick 之外的关闭逻辑：按钮点了只展开二级菜单，
                     靠 main.js 里 initUserMenuSort 的 stopPropagation 阻止菜单被收起。 #}
@@ -134,15 +136,18 @@
                         <div class="user-menu-submenu" id="userMenuSortPanel" role="menu" aria-label="排序方式">
                             <div class="user-menu-order-switch" role="group" aria-label="排序方向">
                                 <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value|urlencode }}&{% endfor %}sort={{ sort_by }}&order=asc"
+                                    onclick="saveSortPref('{{ sort_by }}', 'asc')"
                                     class="user-menu-order-btn {% if sort_order != 'desc' %}active{% endif %}"
                                     role="menuitem" title="正序">{{ icon('arrow-up', 'xs') }}<span>升</span></a>
                                 <a href="?{% for key, value in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ value|urlencode }}&{% endfor %}sort={{ sort_by }}&order=desc"
+                                    onclick="saveSortPref('{{ sort_by }}', 'desc')"
                                     class="user-menu-order-btn {% if sort_order == 'desc' %}active{% endif %}"
                                     role="menuitem" title="反序">{{ icon('arrow-down', 'xs') }}<span>降</span></a>
                             </div>
                             {% for value, label in [('title', '书名'), ('author', '作者'), ('site', '网站'), ('date', '日期'),
                             ('word_count', '字数')] %}
                             <a href="?{% for key, item in request.args.items() if key != 'sort' and key != 'order' %}{{ key }}={{ item }}&{% endfor %}sort={{ value }}&order={{ sort_order }}"
+                                onclick="saveSortPref('{{ value }}', '{{ sort_order }}')"
                                 class="user-menu-subitem {% if sort_by == value %}active{% endif %}" role="menuitem">
                                 <span class="user-menu-subitem-mark">{% if sort_by == value %}{{ icon('check', 'xs')
                                     }}{% endif %}</span>
