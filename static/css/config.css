@@ -2419,3 +2419,48 @@ body.dark-mode .save-bar-text {
 .form-group-inline.compact {
     gap: 45px;
 }
+
+/* ============================================
+   桌面端两列铺满、右列贴右（2026-11-24 二次调整）
+   原来 flex: 0 1 430px 不拉伸，1245px 里只用到 905px，右边空 340px。
+   改成 grid 两列平分 + 大间距，左右列各自贴边。
+   ============================================ */
+@media (min-width: 769px) {
+    .form-group-inline.compact {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 90px;
+        row-gap: 24px;
+        align-items: start;
+    }
+
+    .form-group-inline.compact .form-group {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 0;
+    }
+
+    /* 字体区也是两列铺满 */
+    .font-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 90px;
+        row-gap: 14px;
+    }
+
+    .font-grid .form-group {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* 字体项内的下拉 + B/I 贴右 */
+    .font-grid .set-font-ctrl {
+        justify-content: flex-end;
+    }
+
+    .font-grid .set-font-ctrl select {
+        flex: 0 1 auto;
+        max-width: 220px;
+        min-width: 0;
+    }
+}
