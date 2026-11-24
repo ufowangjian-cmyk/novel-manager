@@ -1,0 +1,21 @@
+{# 全站唯一的字体清单：配置页（管理员 + 偏好）、阅读页的字体下拉都从这里生成。
+   加新字体只需改下面的 font_list，并在 static/css/font.css 补 @font-face。 #}
+{% set font_list = [
+('system-ui', '系统默认'),
+("'霞鹜文楷内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif", '📱 霞鹜文楷'),
+("'思源黑体内置', 'Noto Sans SC', sans-serif", '📱 思源黑体'),
+("'思源宋体内置', 'Noto Serif SC', serif", '📱 思源宋体'),
+("'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif", '📱 未来圆'),
+("'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif", '📱 寒蝉圆体'),
+("'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif", '📱 得意黑'),
+("'朱雀仿宋内置', 'Zhuque Fangsong', serif", '📱 朱雀仿宋'),
+("'猫啃硬笔楷书内置', 'MaokenYingBiKaiShuJ', serif", '📱 猫啃硬笔楷书'),
+] %}
+
+{# 生成 <option> 片段。with_follow=True 时首项为「跟随默认」（空值） #}
+{% macro options(with_follow=False, with_emoji=True) %}
+{% if with_follow %}<option value="">跟随默认</option>{% endif %}
+{% for val, lab in font_list %}
+<option value="{{ val }}">{{ lab if with_emoji else lab | replace('📱 ', '') }}</option>
+{% endfor %}
+{% endmacro %}

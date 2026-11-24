@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% import '_fonts.html' as FONTS %}
 {% block title %}{{ title }} - {{ current_chapter.text if current_chapter else '阅读' }}{% endblock %}
 {% block viewport %}width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes{% endblock %}
 {% block body_class %}page-reader{% endblock %}
@@ -245,17 +246,7 @@
                     </div>
                 </div>
                 {# ---- 字体（分元素：正文/标题 + reader-core 全部高亮符号各自可配）---- #}
-                {% set font_opts %}
-                        <option value="system-ui">系统默认</option>
-                        <option value="'霞鹜文楷内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif">霞鹜文楷</option>
-                        <option value="'思源黑体内置', 'Noto Sans SC', sans-serif">思源黑体</option>
-                        <option value="'思源宋体内置', 'Noto Serif SC', serif">思源宋体</option>
-                        <option value="'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif">未来圆</option>
-                        <option value="'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif">寒蝉圆体</option>
-                        <option value="'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif">得意黑</option>
-                        <option value="'朱雀仿宋内置', 'Zhuque Fangsong', serif">朱雀仿宋</option>
-                        <option value="'猫啃硬笔楷书内置', 'MaokenYingBiKaiShuJ', serif">猫啃硬笔楷书</option>
-                {% endset %}
+                {% set font_opts %}{{ FONTS.options(with_emoji=False) }}{% endset %}
                 <div class="set-row">
                     <div class="set-lab">正文字体</div>
                                         <div class="set-font-ctrl">

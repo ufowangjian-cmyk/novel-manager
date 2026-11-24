@@ -14,17 +14,8 @@
 {% block content %}
 
 {# —— 字体设置（管理员「阅读默认值」专用）：与「我的阅读偏好」共用同一套字体清单 —— #}
-{% set font_list = [
-('system-ui', '系统默认'),
-("'霞鹜文楷内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif", '📱 霞鹜文楷'),
-("'思源黑体内置', 'Noto Sans SC', sans-serif", '📱 思源黑体'),
-("'思源宋体内置', 'Noto Serif SC', serif", '📱 思源宋体'),
-("'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif", '📱 未来圆'),
-("'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif", '📱 寒蝉圆体'),
-("'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif", '📱 得意黑'),
-("'朱雀仿宋内置', 'Zhuque Fangsong', serif", '📱 朱雀仿宋'),
-("'猫啃硬笔楷书内置', 'MaokenYingBiKaiShuJ', serif", '📱 猫啃硬笔楷书'),
-] %}
+{% import '_fonts.html' as FONTS %}
+{% set font_list = FONTS.font_list %}
 
 {# 管理员的字体条目：按 config 当前值回填 selected / aria-pressed。
 follow_label 非空时，首项为「跟随正文」（空值 = 跟随正文）；
@@ -703,18 +694,9 @@ italic_default=False) %}
                         「扫描配置」「标签自动化」全包了进去；
                         2) 管理员专属区块的闭合也跟着错位。
                         删掉这个多余的 form-group 即修复。 #}
-                        {% set font_opts %}
-                <option value="">跟随默认</option>
-                <option value="system-ui">系统默认</option>
-                <option value="'霞鹜文楷内置', 'LXGWWenKaiMono-Medium', '霞鹜文楷等宽 Medium', sans-serif">📱 霞鹜文楷</option>
-                <option value="'思源黑体内置', 'Noto Sans SC', sans-serif">📱 思源黑体</option>
-                <option value="'思源宋体内置', 'Noto Serif SC', serif">📱 思源宋体</option>
-                <option value="'未来圆内置', 'WEILAIYUANMedium', '未来圆SC Medium', sans-serif">📱 未来圆</option>
-                <option value="'寒蝉圆体内置', 'Chill Round Gothic ExtraLight', 'ChillRoundGothic', sans-serif">📱 寒蝉圆体</option>
-                <option value="'得意黑内置', 'Smiley Sans Oblique', 'Smiley Sans', sans-serif">📱 得意黑</option>
-                <option value="'朱雀仿宋内置', 'Zhuque Fangsong', serif">📱 朱雀仿宋</option>
-                <option value="'猫啃硬笔楷书内置', 'MaokenYingBiKaiShuJ', serif">📱 猫啃硬笔楷书</option>
-                {% endset %}
+                        {# 偏好区的 option 片段由上面的 font_list 生成，
+                           字体只需要在 font_list 里维护一处 #}
+                        {% set font_opts %}{{ FONTS.options(with_follow=True) }}{% endset %}
                 {# 下面 9 个字体条目（正文/标题/各类括号/书名号）用 .font-grid 包裹：
                 桌面端两列排布、移动端一列（见 config.css 的 .font-grid 规则）。
                 原先每项都撑满整行，桌面宽度下浪费大量横向空间。 #}
