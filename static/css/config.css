@@ -2721,27 +2721,29 @@ body.dark-mode .memory-detail .stat-value {
    桌面端两者作为一组与下拉对齐；手机端说明限制单行，避免撑高间距
    ============================================ */
 @media (min-width: 769px) {
+    /* 左列固定宽度：不同字体项标题字数不同（4~7 字），
+       用 auto 会让每行下拉起点参差不齐，看着像粘在标题上 */
     .font-grid > .form-group {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: 8.6em minmax(0, 1fr);
         grid-template-rows: auto auto;
         align-items: center;
     }
 
-    /* 标题与说明都左对齐，作为一组 */
+    /* 标题与说明右对齐，紧贴下拉，两者作为一组 */
     .font-grid .form-group > label {
         grid-row: 1;
         grid-column: 1;
-        justify-self: start;
+        justify-self: end;
         align-self: end;
-        text-align: left;
+        text-align: right;
     }
 
     .font-grid .form-group > .field-note {
         grid-row: 2;
         grid-column: 1;
-        justify-self: start;
+        justify-self: end;
         align-self: start;
-        text-align: left;
+        text-align: right;
         margin: 1px 0 0;
         font-size: 0.69rem;
         line-height: 1.3;
