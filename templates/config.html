@@ -72,7 +72,7 @@ italic_default=False) %}
         </h1>
         <div class="header-desc">
             {% if session.user_role == 'admin' %}
-            站点全局设置：内存与缓存、用户与阅读记录、阅读/列表默认值、扫描配置、标签自动化。修改后立即生效，只有扫描间隔这类后台任务需要重启容器。
+            站点全局设置：内存与缓存、用户与阅读记录、阅读/列表默认值、扫描配置、标签自动化。修改后立即生效；仅当把自动扫描从「未开启」改为开启时，需重启容器才会启动定时任务。
             {% else %}
             调整你自己看到的字体、行高、缩进与列表显示，保存后立即生效，不影响其他用户。
             {% endif %}
@@ -269,7 +269,7 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label>{{ icon('ruler', 'sm') }} 默认行高</label><span class="field-note">建议 1.5-2.0</span>
+                            <label>{{ icon('ruler', 'sm') }} 默认行高</label><span class="field-note">建议 1.6-2.0</span>
                             <select id="line_height" name="line_height">
     {% if config.line_height|float not in [1.6, 1.8, 2, 2.2] %}<option value="{{ config.line_height }}" selected>{{ config.line_height }}（当前）</option>{% endif %}
     <option value="1.6" {% if config.line_height|float == 1.6 %}selected{% endif %}>1.6</option>
@@ -414,7 +414,7 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label>{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
+                            <label>{{ icon('bar-chart-3', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-150</span>
                             <select id="per_page" name="per_page">
     {% if config.per_page|int not in [50, 100, 150] %}<option value="{{ config.per_page }}" selected>{{ config.per_page }} 本（当前）</option>{% endif %}
     <option value="50" {% if config.per_page|int == 50 %}selected{% endif %}>50 本</option>
@@ -424,7 +424,7 @@ italic_default=False) %}
                         </div>
 
                         <div class="form-group">
-                            <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
+                            <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-8000</span>
                             <select id="words_per_page" name="words_per_page">
     {% if config.words_per_page|int not in [3000, 5000, 8000, 10000] %}<option value="{{ config.words_per_page }}" selected>{{ config.words_per_page }} 字（当前）</option>{% endif %}
     <option value="3000" {% if config.words_per_page|int == 3000 %}selected{% endif %}>3000 字</option>
@@ -467,7 +467,7 @@ italic_default=False) %}
                         <input type="hidden" id="title_highlight_words" name="title_highlight_words"
                                value='{{ config.title_highlight_words | tojson | forceescape }}'>
                         <div class="form-hint">
-                            {{ icon('lightbulb', 'sm') }} 主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）。回车或逗号添加，点 × 删除；
+                            {{ icon('lightbulb', 'sm') }} 主页书名里命中这些词的片段会淡色高亮（斜体 + 灰色点线）。回车或逗号添加，点胶囊可修改或删除；
                             长词建议放前面（避免「番外篇」被「番外」先切开），全部删空 = 不高亮任何词
                         </div>
                     </div>
@@ -496,7 +496,7 @@ italic_default=False) %}
 
                         <div class="form-group">
                             <label>{{ icon('database', 'sm') }}
-                                最大文件大小</label><span class="field-note">单位 MB，超过则跳过）</span>
+                                最大文件大小</label><span class="field-note">单位 MB，超过则跳过</span>
                             <select id="max_file_size_mb" name="max_file_size_mb">
     {% if config.max_file_size_mb|int not in [20, 30, 50] %}<option value="{{ config.max_file_size_mb }}" selected>{{ config.max_file_size_mb }} MB（当前）</option>{% endif %}
     <option value="20" {% if config.max_file_size_mb|int == 20 %}selected{% endif %}>20 MB</option>
@@ -506,9 +506,9 @@ italic_default=False) %}
                         </div>
                     </div>
                     <div class="form-hint">
-                        {{ icon('lightbulb', 'sm') }} 扫描间隔单位：小时，0 表示不自动扫描
-                        <span class="example">示例: 24 (每天扫描一次)</span><br>
-                        {{ icon('zap', 'sm') }} 注：修改后，需重启容器生效！
+                        {{ icon('lightbulb', 'sm') }} 自动扫描的间隔，例如 24 小时＝每天扫一次
+                        <span class="example">改完约 30 秒内按新间隔计时</span><br>
+                        {{ icon('zap', 'sm') }} 注：若此前未开启自动扫描，需重启容器才会启动定时任务
                     </div>
                     <h3>
                         {{ icon('refresh-cw', 'sm') }} 启动扫描
@@ -620,7 +620,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label>{{ icon('ruler', 'sm') }} 行高</label><span class="field-note">建议 1.5-2.0</span>
+                        <label>{{ icon('ruler', 'sm') }} 行高</label><span class="field-note">建议 1.6-2.0</span>
                         <select id="pref_line_height" name="pref_line_height">
     <option value="">跟随默认</option>
     <option value="1.6">1.6</option>
@@ -886,7 +886,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label>{{ icon('library', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-200</span>
+                        <label>{{ icon('library', 'sm') }} 每页显示数量</label><span class="field-note">小说列表每页显示多少本，建议 50-150</span>
                         <select id="pref_per_page" name="pref_per_page">
     <option value="">跟随默认</option>
     <option value="50">50 本</option>
@@ -896,7 +896,7 @@ italic_default=False) %}
                     </div>
 
                     <div class="form-group">
-                        <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-10000</span>
+                        <label>{{ icon('book-open', 'sm') }} 每页显示字数</label><span class="field-note">阅读时每页显示多少字，建议 5000-8000</span>
                         <select id="pref_words_per_page" name="pref_words_per_page">
     <option value="">跟随默认</option>
     <option value="3000">3000 字</option>
