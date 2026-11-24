@@ -2197,3 +2197,30 @@ body.dark-mode .save-bar-text {
     display: flex;
     margin-bottom: 4px;
 }
+
+/* 修正：上面的 grid 是无差别套在所有 .form-group 上的，
+   但「管理所有用户」这类是「label + 按钮 + 列表容器」的复合结构，
+   硬套两列会把按钮和列表挤到同一行（2026-11-24）。
+   改为只有「label + 单个控件」的简单字段才用左右结构。 */
+.form-group {
+    display: block;
+}
+
+.form-group:has(> label):has(> input, > select, > textarea):not(:has(> button)):not(:has(> div)) {
+    display: grid;
+    grid-template-columns: minmax(104px, 38%) minmax(0, 1fr);
+    grid-template-areas:
+        "label control"
+        "note  control";
+    column-gap: 14px;
+    row-gap: 3px;
+    align-items: center;
+}
+
+/* 复合结构里注释仍要显示（跟标题一起在顶部） */
+.form-group:not(:has(> input, > select, > textarea)) > .field-note {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 0.72rem;
+    color: var(--text-tertiary, #8a9a78);
+}
