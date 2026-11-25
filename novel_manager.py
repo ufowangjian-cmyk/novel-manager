@@ -2184,7 +2184,46 @@ novel_data = []
 chapter_cache = OrderedDict()      # 改为 OrderedDict 支持 LRU
 tag_parse_cache = OrderedDict()    # 改为 OrderedDict 支持 LRU
 
-scan_progress = {
+class _ScanProgressDict(dict):
+    """scan_progress 的载体：在扫描子进程里，每次写入都同步一份快照到磁盘。
+
+    背景（2026-11-25）：扫描挪进了子进程（见 _scan_process_entry），
+    子进程与父进程不再共享内存，进度靠 data/scan_progress.json 传递。
+    _scan_core 里有 40+ 处直接 scan_progress[...] = ... 的写入，逐处改成
+    显式写文件不现实，所以把「写入即落盘」藏进这个子类。
+    父进程不写快照（NM_SCAN_CHILD 未设置时直接跳过），避免覆盖子进程的进度。
+    update() 也要覆盖：dict.update 在 CPython 里不走 __setitem__。
+    """
+    _SNAPSHOT_FILE = os.path.join(DATA_DIR, 'scan_progress.json')
+    _last_write = 0.0
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._snapshot()
+
+    def update(self, *args, **kwargs):
+        super().update(*args, **kwargs)
+        self._snapshot()
+
+    def _snapshot(self, force=False):
+        # 只有扫描子进程才落盘；父进程/本机直接跑时保持纯内存
+        if os.environ.get('NM_SCAN_CHILD') != '1':
+            return
+        now = time.time()
+        if not force and now - _ScanProgressDict._last_write < 0.3:
+            return  # 节流：UI 每 0.4s 轮询一次，0.3s 的快照延迟无感知
+        _ScanProgressDict._last_write = now
+        try:
+            payload = dict(self)
+            payload['pid'] = os.getpid()   # 父进程用来确认快照出自哪个子进程
+            tmp = self._SNAPSHOT_FILE + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, ensure_ascii=False)
+            os.replace(tmp, self._SNAPSHOT_FILE)   # 原子替换，读不到半截 JSON
+        except OSError:
+            pass
+
+scan_progress = _ScanProgressDict({
     'total': 0,
     'current': 0,
     'status': 'idle',
@@ -2194,7 +2233,7 @@ scan_progress = {
     # 百分比由接口按阶段加权，避免 total 切换导致的跳变
     'phase': '',
     'incremental': False,
-}
+})
 
 cache = {
     'filter_options': None,
@@ -2218,6 +2257,9 @@ line_cache = OrderedDict()
 # 库里的 revision 一变说明有人写过缓存，需要重新加载
 _last_cache_rev = 0
 _scan_active = False
+# 当前扫描子进程的 PID（_run_scan_child 赋值，结束清空）；
+# 进度接口靠它确认快照文件属于本次扫描
+_live_scan_pid = None
 
 def invalidate_filter_cache():
     """标签/作者/站点发生变化后调用，让下拉筛选重新统计"""
@@ -4513,8 +4555,62 @@ def check_cache_update():
         load_cache()
 
 # ==================== 扫描函数 ====================
+def _load_progress_snapshot(min_time=None):
+    """读取扫描子进程留下的进度快照；没有或过期返回 None"""
+    try:
+        path = _ScanProgressDict._SNAPSHOT_FILE
+        if min_time is not None and (not os.path.exists(path)
+                                     or os.path.getmtime(path) < min_time):
+            return None
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+def _scan_process_entry(full_scan):
+    """子进程扫描入口（multiprocessing spawn）。
+
+    为什么扫描要挪出服务进程（2026-11-25 实测）：
+      一次只解析 2 本小书（合计 0.7MB）的增量扫描，会让服务进程 RSS
+      从 69.8MB 永久涨到 108.6MB —— 扫描期的大块临时分配（整本读入的
+      正文、save_cache 的 diff 序列化）free 之后被存活对象隔开，
+      malloc_trim 只能归还 arena 顶部的连续页，中间的空洞还不回去，
+      于是 RSS 只升不降（碎片棘轮）。把整个扫描放进子进程后，
+      这些开销随子进程退出被操作系统整块收回，服务进程 RSS 不再抬台阶。
+
+    子进程与父进程通过两个文件协作：
+      - data/scan_progress.json：进度快照（_ScanProgressDict 自动写入）
+      - SQLite revision：save_cache 写库后 +1，父进程拿到结果后 reload
+    """
+    try:
+        with file_lock(SCAN_LOCK_FILE, blocking=False):
+            print("🔒 子进程获取扫描锁成功，开始扫描...")
+            _scan_core(full_scan)
+            scan_progress._snapshot(force=True)
+            print("🔓 子进程释放扫描锁")
+    except BlockingIOError:
+        # 另一个进程正在扫描：静默退出，绝不覆盖别人的进度快照
+        print("⚠️ 子进程发现另一个扫描正在进行，退出")
+    except Exception as e:
+        logger.error(f"扫描子进程异常: {e}")
+        traceback.print_exc()
+        scan_progress['status'] = 'error'
+        scan_progress['message'] = f'扫描出错：{e}'
+        scan_progress._snapshot(force=True)
+
 def scan_novel_files_background(full_scan=False):
-    """扫描入口：跨进程锁保证同一时刻只有一个扫描任务"""
+    """扫描入口：把整个扫描放进子进程，实现内存隔离。
+
+    对调用方保持原有的同步语义：本函数返回时扫描已结束、进度已是终态、
+    novel_data 已 reload（/api/start_scan 在独立线程里调用本函数，
+    定时扫描与启动检查也各自在后台线程调用，行为与旧实现一致）。
+
+    跨进程并发由两层防线挡住：
+      1) 本进程已有扫描在跑（_scan_active）→ 直接跳过；
+      2) 子进程抢 SCAN_LOCK_FILE 文件锁失败 → 静默退出（不覆盖别人的进度）。
+
+    NM_SCAN_INPROC=1 时退回旧的进程内模式（测试/应急开关）。
+    """
     global _scan_active
 
     if not os.path.exists(NOVEL_DIR):
@@ -4522,26 +4618,106 @@ def scan_novel_files_background(full_scan=False):
         scan_progress['message'] = f'目录不存在：{NOVEL_DIR}'
         return
 
-    logger.info(f"开始扫描 - full_scan={full_scan}, 当前小说数={len(novel_data)}")
-
-    try:
-        with file_lock(SCAN_LOCK_FILE, blocking=False):
-            print("🔒 获取扫描锁成功，开始扫描...")
-            _scan_active = True
-            try:
-                _scan_core(full_scan)
-            finally:
-                _scan_active = False
-                print("🔓 释放扫描锁")
-    except BlockingIOError:
-        print("⚠️ 另一个进程正在扫描，跳过本次扫描")
+    if _scan_active:
         scan_progress['status'] = 'idle'
         scan_progress['message'] = '另一个扫描任务正在进行中'
+        return
+
+    logger.info(f"开始扫描 - full_scan={full_scan}, 当前小说数={len(novel_data)}")
+
+    started_at = time.time()
+    # 预置进度：让前端在子进程完成导入和缓存加载前就看到「正在扫描」
+    scan_progress['status'] = 'scanning'
+    scan_progress['current'] = 0
+    scan_progress['phase'] = 'scan_dir'
+    scan_progress['incremental'] = not full_scan
+    scan_progress['message'] = '正在准备扫描...'
+    scan_progress['start_time'] = started_at
+    _scan_active = True
+
+    try:
+        if os.environ.get('NM_SCAN_INPROC') == '1':
+            # 进程内兜底模式：行为与 2026-11-25 之前的实现完全一致
+            try:
+                with file_lock(SCAN_LOCK_FILE, blocking=False):
+                    print("🔒 获取扫描锁成功，开始扫描...")
+                    _scan_core(full_scan)
+                    print("🔓 释放扫描锁")
+            except BlockingIOError:
+                print("⚠️ 另一个进程正在扫描，跳过本次扫描")
+                scan_progress['status'] = 'idle'
+                scan_progress['message'] = '另一个扫描任务正在进行中'
+        else:
+            _run_scan_child(full_scan, started_at)
     except Exception as e:
         logger.error(f"扫描任务异常: {e}")
         traceback.print_exc()
         scan_progress['status'] = 'error'
         scan_progress['message'] = f'扫描出错：{e}'
+        if should_reload_cache():
+            load_cache()
+    finally:
+        _scan_active = False
+
+def _run_scan_child(full_scan, started_at):
+    """拉起扫描子进程并等它结束，随后收养进度、reload 缓存"""
+    global _live_scan_pid
+    import multiprocessing as _mp
+
+    proc = None
+    _live_scan_pid = None
+    try:
+        ctx = _mp.get_context('spawn')
+        # 标记要在 p.start() 前放进环境变量：spawn 子进程复制父进程 env，
+        # 子进程导入模块时 bootstrap() 靠它跳过后台线程与启动自动扫描。
+        os.environ['NM_SCAN_CHILD'] = '1'
+        try:
+            proc = ctx.Process(target=_scan_process_entry, args=(full_scan,),
+                               name='novel-scan', daemon=False)
+            proc.start()
+            _live_scan_pid = proc.pid
+        finally:
+            # 父进程不保留这个标记，否则父进程自己的进度写入也会被误落盘
+            del os.environ['NM_SCAN_CHILD']
+
+        proc.join()
+    except (ImportError, OSError, ValueError) as e:
+        # multiprocessing 不可用（极端环境）：退回进程内模式，不让扫描直接失败
+        logger.warning(f"子进程扫描不可用（{e}），退回进程内扫描")
+        try:
+            with file_lock(SCAN_LOCK_FILE, blocking=False):
+                _scan_core(full_scan)
+        except BlockingIOError:
+            scan_progress['status'] = 'idle'
+            scan_progress['message'] = '另一个扫描任务正在进行中'
+        return
+
+    snapshot = _load_progress_snapshot(min_time=started_at - 5)
+    try:
+        if snapshot and snapshot.get('pid') == proc.pid:
+            # 收养子进程的终态快照（completed/error 及当时的计数）
+            for k in ('status', 'message', 'total', 'current',
+                      'phase', 'incremental', 'start_time'):
+                if k in snapshot:
+                    scan_progress[k] = snapshot[k]
+            print("🔓 释放扫描锁")
+        elif snapshot and snapshot.get('status') == 'scanning':
+            # 快照属于另一个正在跑的扫描：不抢它的状态，本进程标记为空闲
+            print("⚠️ 另一个进程正在扫描，跳过本次扫描")
+            scan_progress['status'] = 'idle'
+            scan_progress['message'] = '另一个扫描任务正在进行中'
+        else:
+            logger.error("扫描子进程未留下进度快照（可能启动即崩溃）")
+            scan_progress['status'] = 'error'
+            scan_progress['message'] = '扫描子进程异常退出（详见容器日志）'
+
+        # 子进程把新缓存写进了 SQLite（revision +1），父进程在这里拉取最新数据。
+        # 这是子进程模式的另一半收益：扫描产生的临时对象全部留在子进程里，
+        # 父进程只付出一次 load_cache 的干净分配。
+        if should_reload_cache():
+            load_cache()
+    finally:
+        _live_scan_pid = None
 
 def _scan_core(full_scan=False):
     """实际扫描逻辑（调用方必须已持有扫描锁）"""
@@ -4938,6 +5114,8 @@ def _scan_core(full_scan=False):
             scan_progress['message'] = f"全量扫描完成！{', '.join(message_parts)}"
 
         scan_progress['status'] = 'completed'
+        # 终态必须立刻落盘（绕过节流）：父进程 join 返回后靠这份快照收尾
+        scan_progress._snapshot(force=True)
         cache['filter_options'] = None
         # 进度计数收尾打印：用于核对 current 是否走到 total（排查进度条不到头的问题）
         print(f"📊 进度计数收尾: {scan_progress['current']}/{scan_progress['total']} "
@@ -4978,6 +5156,7 @@ def _scan_core(full_scan=False):
     except Exception as e:
         scan_progress['status'] = 'error'
         scan_progress['message'] = f'扫描出错：{str(e)}'
+        scan_progress._snapshot(force=True)
         print(f"❌ 扫描失败：{e}")
         traceback.print_exc()
         # 扫描出错：清掉进行中标记，并留下可展示的中断原因
@@ -5059,45 +5238,62 @@ def scheduled_scan_loop():
             time.sleep(60)
 
 # ==================== 路由 ====================
-@app.route('/api/scan_progress')
-def get_scan_progress():
-    if scan_progress['status'] == 'scanning':
-        # 分阶段加权：增量的「检查书目」占 0-55%，「解析」占 55-100%；
-        # 全量扫描没有检查阶段，直接 0-100%。这样 total 切换时百分比不会倒退。
-        _cur = scan_progress['current']
-        _tot = scan_progress['total']
-        if scan_progress.get('phase') == 'scan_dir':
+def _progress_api_payload(d):
+    """把一份进度 dict（父进程内存态或子进程快照）拼成接口响应。
+
+    分阶段加权：增量的「检查书目」占 0-55%，「解析」占 55-100%；
+    全量扫描没有检查阶段，直接 0-100%。这样 total 切换时百分比不会倒退。
+    """
+    if d.get('status') == 'scanning':
+        _cur = d.get('current') or 0
+        _tot = d.get('total') or 0
+        if d.get('phase') == 'scan_dir':
             percentage = int(_cur / _tot * 55) if _tot else 0
-        elif scan_progress.get('incremental'):
+        elif d.get('incremental'):
             percentage = 55 + int(_cur / _tot * 45) if _tot else 55
         else:
             percentage = int(_cur / _tot * 100) if _tot else 0
-        elapsed = time.time() - scan_progress['start_time'] if scan_progress['start_time'] else 0
+        start = d.get('start_time')
+        elapsed = time.time() - start if start else 0
 
-        if scan_progress['current'] > 0:
-            speed = scan_progress['current'] / elapsed if elapsed > 0 else 0
-            remaining = (scan_progress['total'] - scan_progress['current']) / speed if speed > 0 else 0
+        if _cur > 0:
+            speed = _cur / elapsed if elapsed > 0 else 0
+            remaining = (_tot - _cur) / speed if speed > 0 else 0
         else:
             remaining = 0
 
-        return jsonify({
-            'status': scan_progress['status'],
-            'current': scan_progress['current'],
-            'total': scan_progress['total'],
+        return {
+            'status': 'scanning',
+            'current': _cur,
+            'total': _tot,
             'percentage': percentage,
-            'message': scan_progress['message'],
+            'message': d.get('message') or '',
             'elapsed': int(elapsed),
             'remaining': int(remaining)
-        })
+        }
+    return {
+        'status': d.get('status'),
+        'message': d.get('message') or '',
+        'total': d.get('total') or 0,
+        'current': d.get('current') or 0,
+        # 完成时明确给出 100%，前端不必自己推断
+        'percentage': 100 if d.get('status') == 'completed' else 0
+    }
+
+@app.route('/api/scan_progress')
+def get_scan_progress():
+    d = scan_progress
+    if d['status'] == 'scanning':
+        # 子进程扫描模式：实时进度在子进程的快照文件里。
+        # 只认「属于当前子进程且 10 秒内有心跳」的快照，读不到就用
+        # 父进程预置的状态兜底（至少显示「正在准备扫描...」）。
+        if _scan_active and _live_scan_pid is not None:
+            snap = _load_progress_snapshot(min_time=time.time() - 10)
+            if snap and snap.get('pid') == _live_scan_pid:
+                d = snap
+        return jsonify(_progress_api_payload(d))
     else:
-        return jsonify({
-            'status': scan_progress['status'],
-            'message': scan_progress['message'],
-            'total': scan_progress['total'],
-            'current': scan_progress['current'],
-            # 完成时明确给出 100%，前端不必自己推断
-            'percentage': 100 if scan_progress['status'] == 'completed' else 0
-        })
+        return jsonify(_progress_api_payload(d))
 
 #==================== API 路由 =====================
 @app.route('/api/start_scan')
@@ -8871,6 +9067,16 @@ _started_threads = False
 def bootstrap():
     """启动后台线程 + 加载缓存（模块导入时执行一次）"""
     global _started_threads
+
+    # 扫描子进程（spawn 会重新导入本模块触发 bootstrap）：
+    # 只加载缓存做扫描基线，绝不启动后台线程或自动扫描 —— 否则子进程里
+    # 会再起清理循环、甚至递归再开一个扫描子进程。
+    if os.environ.get('NM_SCAN_CHILD') == '1':
+        if load_cache():
+            print(f"✅ 扫描子进程：缓存加载成功（{len(novel_data)} 本）")
+        else:
+            print("⚠️ 扫描子进程：缓存加载失败（将按全量扫描处理）")
+        return
 
     if not _started_threads:
         start_background_threads()

@@ -31,4 +31,6 @@ EXPOSE 5000
 # PID 1 由 compose 的 init: true 提供（docker-init），这里直接跑 gunicorn。
 # 绑定 [::] 双栈，与 docker-compose.yml 的 command 保持一致
 # （只写 0.0.0.0 会让 Docker 发布的 IPv6 转发连不进容器）。
+# 注意：不要在这里加 --max-requests（见 docker-compose.yml 里 command 附近的
+# 注释——扫描进度轮询会撞上 worker 回收，把后台扫描硬生生打断）。
 CMD ["gunicorn", "-w", "1", "--threads", "4", "-b", "[::]:5000", "--timeout", "120", "novel_manager:app"]
