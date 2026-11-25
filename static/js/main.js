@@ -1162,10 +1162,16 @@ const RecentReads = (function () {
             setTimeout(() => {
                 const grid = wrapper.parentElement;
                 wrapper.remove();
-                // 组内清空后整组移除，避免留下空标题
-                if (grid && grid.classList.contains('recent-grid') && !grid.children.length) {
+                if (grid && grid.classList.contains('recent-grid')) {
                     const section = grid.closest('.recent-group');
-                    if (section) section.remove();
+                    if (section) {
+                        // 就地删除不打整个列表重渲染，组标题的计数徽章要手动刷新；
+                        // 组内清空后整组移除，避免留下空标题
+                        const left = grid.querySelectorAll('.recent-card-wrapper').length;
+                        const badge = section.querySelector('.recent-group-count');
+                        if (badge) badge.textContent = left;
+                        if (!left) section.remove();
+                    }
                 }
             }, 180);
         }
@@ -1173,15 +1179,16 @@ const RecentReads = (function () {
         state.records = state.records.filter((r) => r.work_id !== workId);
     }
 
-    // 删除后服务端会回传「前 12 条 + 总数 + has_more」。
-    // 这里整体重建列表：已加载的窗口回到首页那批，之后仍可用「加载更多」
-    // 通过 offset = state.records.length 继续拉取，分页不会错位。
-    function setRecordsFromServer(data) {
-        state.total = data.recent_total;
-        state.records = data.records || [];
-        state.hasMore = !!data.has_more;
-        updateStats(data.stats);
-        renderGroups(state.records, { reset: true });
+    // 删除一条记录后的就地更新：卡片动画移除 + 计数/统计刷新。
+    // 不整列表重建 —— 之前用 setRecordsFromServer 拿服务端回传的「前 12 条」
+    // 整列表重渲染，会把展开态（加载更多出来的部分）打回折叠（2026-11-25）。
+    // 分页语义：服务端 has_more 按「库里剩余 > 12」算；客户端是否还有
+    // 未加载的页要结合当前窗口判断 —— 已加载条数追平总数就没有下一页了。
+    function updateAfterDelete(data, workId, filePath) {
+        removeCard(workId, filePath);
+        if (data.recent_total !== undefined) state.total = data.recent_total;
+        if (data.stats) updateStats(data.stats);
+        state.hasMore = !!data.has_more && state.records.length < state.total;
         refreshChrome();
     }
 
@@ -1271,7 +1278,7 @@ const RecentReads = (function () {
         refreshChrome();
     }
 
-    return { init, removeCard, setRecordsFromServer, state };
+    return { init, removeCard, updateAfterDelete, state };
 })();
 
 // ===== 主页书名栏：标记「已读完」/ 取消 =====
@@ -1368,9 +1375,9 @@ function deleteSingleRecord(btn) {
         .then(data => {
             if (data.success) {
                 showNotification('已删除阅读记录', 'success');
-                // 服务端已返回删除后的最新状态，前端就地更新，不再整页刷新
+                // 就地更新：卡片动画移除 + 计数刷新，保留已加载的展开窗口
                 if (typeof RecentReads !== 'undefined' && data.recent_total !== undefined) {
-                    RecentReads.setRecordsFromServer(data);
+                    RecentReads.updateAfterDelete(data, workId, filePath);
                 } else if (typeof RecentReads !== 'undefined') {
                     RecentReads.removeCard(workId);
                 } else {
