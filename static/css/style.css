@@ -1723,14 +1723,77 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
         gap: 8px 10px;
     }
 
-    /* 单列：卡片占满可用宽度，不会被多列挤出屏幕 */
+    /* 手机端：2 列紧凑卡（平板 768 宽会自然排 3-4 列）。
+       原来单列占满屏宽，一张卡占大半屏，翻找记录要滑很久；
+       紧凑化后每屏能看 6-8 条。160px 下限保证 <340px 的极窄屏
+       退化成 1 列也不会溢出（minmax(0,…) 由卡片自身兜底）。 */
     .recent-grid {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+        gap: 10px;
+    }
+
+    .recent-card {
+        padding: 8px 10px;
+        gap: 5px;
+        border-left-width: 3px;
+        border-radius: 10px;
     }
 
     .recent-card-title {
-        /* 窄屏上标题字号略降，长书名两行内更容易放下 */
-        font-size: 0.95rem;
+        /* 窄卡上标题 0.78rem，两行 clamp 不变（桌面端规则已带） */
+        font-size: 0.78rem;
+        line-height: 1.3;
+    }
+
+    /* 160px 宽的卡放不下「作者 + 章节」两段，作者让位：
+       找记录主要靠标题，章节保留，详情页里看作者 */
+    .recent-author {
+        display: none;
+    }
+
+    .recent-card-info {
+        gap: 4px;
+        font-size: 0.72rem;
+    }
+
+    .recent-progress {
+        gap: 6px;
+    }
+
+    .recent-progress-track {
+        height: 4px;
+    }
+
+    .recent-progress-text {
+        font-size: 0.62rem;
+        min-width: 30px;
+    }
+
+    .recent-card-time {
+        font-size: 0.62rem;
+    }
+
+    .recent-missing-badge {
+        font-size: 0.6rem;
+    }
+
+    /* 触屏按钮缩到 22px：两张 22px 按钮 + 间距 ≈ 50px，
+       给标题留的避让从 66px 收到 52px，窄卡上标题能多放两个字 */
+    .recent-restart-btn,
+    .recent-delete-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+    }
+
+    .recent-card-actions {
+        top: 4px;
+        right: 4px;
+        gap: 3px;
+    }
+
+    .recent-card-head {
+        padding-right: 52px;
     }
 }
 
