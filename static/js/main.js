@@ -928,6 +928,7 @@ const RecentReads = (function () {
         shown: 0,         // 已渲染条数
         total: 0,
         hasMore: false,
+        initialShown: 12, // 收起时折回的条数（来自 recentReadsTab 的 data-initial-shown）
         keyword: '',
         sort: 'time',
         loading: false
@@ -1072,7 +1073,19 @@ const RecentReads = (function () {
         const countLabel = el('recentCountLabel');
         if (countLabel) countLabel.textContent = `共 ${state.total} 条`;
 
-        if (loadWrap) loadWrap.hidden = !state.hasMore;
+        // 展开态（已加载超过初始条数）时按钮变「收起记录」，
+        // 即使 hasMore=false 也要能收回去
+        if (loadWrap) loadWrap.hidden = !(state.hasMore || state.records.length > state.initialShown);
+        updateLoadMoreBtn();
+    }
+
+    // 按钮双态：未超过初始条数 → 「加载更多记录」；已展开 → 「收起记录」
+    function updateLoadMoreBtn() {
+        const btn = el('recentLoadMoreBtn');
+        if (!btn) return;
+        btn.innerHTML = state.records.length > state.initialShown
+            ? icon('arrow-up', 'sm') + '收起记录'
+            : icon('arrow-down', 'sm') + '加载更多记录';
     }
 
     function updateStats(stats) {
@@ -1126,10 +1139,9 @@ const RecentReads = (function () {
             })
             .finally(() => {
                 state.loading = false;
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '' + icon('arrow-down', 'sm') + '加载更多记录';
-                }
+                if (btn) btn.disabled = false;
+                // 按钮文案交给 refreshChrome 按当前状态定（加载后可能已变「收起记录」）
+                refreshChrome();
             });
     }
 
@@ -1205,7 +1217,18 @@ const RecentReads = (function () {
         }
 
         if (more) {
-            more.addEventListener('click', () => fetchRecords({ append: true }));
+            more.addEventListener('click', () => {
+                // 双态按钮：已展开（超过初始条数）→ 收起折回初始条数；
+                // 否则 → 加载下一页
+                if (state.records.length > state.initialShown) {
+                    state.records = state.records.slice(0, state.initialShown);
+                    // 折回后如果服务端已没有更多（hasMore=false），按钮随 refreshChrome 隐藏
+                    renderGroups(state.records, { reset: true });
+                    refreshChrome();
+                    return;
+                }
+                fetchRecords({ append: true });
+            });
         }
     }
 
@@ -1213,6 +1236,7 @@ const RecentReads = (function () {
         const root = el('recentReadsTab');
         if (!root) return;
         bind();
+        state.initialShown = parseInt(root.dataset.initialShown || '12', 10) || 12;
         // 首屏由服务端渲染，这里只把状态对齐，避免多余请求
         const cards = root.querySelectorAll('.recent-card-wrapper');
         state.shown = cards.length;
