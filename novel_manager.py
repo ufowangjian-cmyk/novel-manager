@@ -2241,6 +2241,15 @@ cache = {
     'data_hash': None
 }
 
+def _in_scan_child():
+    """是否运行在扫描子进程里。
+
+    子进程的内存随进程退出被操作系统整体收回，一切「自我修剪」
+    （gc / malloc_trim / 缓存清理）都只是给马上要消失的进程做美容，
+    纯属浪费时间 —— 相关逻辑都应跳过（见 _scan_core）。
+    """
+    return os.environ.get('NM_SCAN_CHILD') == '1'
+
 # 阅读页行内容缓存（按总预算的 LRU，避免把大文件常驻内存）
 #
 # 以前是「最多 1 本 + 单本 ≤5MB」：超过 5MB 的书完全进不了缓存，
@@ -4495,13 +4504,9 @@ def save_cache(chapters_map=None):
             if 'file_path' in novel_copy:
                 novel_copy['file_path'] = os.path.basename(novel_copy['file_path'])
 
-            image_folder = get_image_folder_for_novel(novel_copy.get('file_path', ''))
-            if image_folder:
-                novel_copy['has_images'] = True
-                novel_copy['image_folder'] = image_folder
-            else:
-                novel_copy['has_images'] = False
-                novel_copy['image_folder'] = None
+            # has_images / image_folder 不在这里重算：_scan_core 的三个分支
+            # （未变化 / 改名 / 新解析）都已写入，且 get_image_folder_for_novel
+            # 是每书 3 次 stat 的 NAS 网络往返 —— 5212 本每次扫描白付一遍。
 
             if 'intro' not in novel_copy:
                 novel_copy['intro'] = '无简介'
@@ -4700,7 +4705,6 @@ def _run_scan_child(full_scan, started_at):
                       'phase', 'incremental', 'start_time'):
                 if k in snapshot:
                     scan_progress[k] = snapshot[k]
-            print("🔓 释放扫描锁")
         elif snapshot and snapshot.get('status') == 'scanning':
             # 快照属于另一个正在跑的扫描：不抢它的状态，本进程标记为空闲
             print("⚠️ 另一个进程正在扫描，跳过本次扫描")
@@ -4808,14 +4812,14 @@ def _scan_core(full_scan=False):
 
             _check_total = len(all_files)
             _checked = 0
-            # 全量扫描要连着读几千本，每本都会整本读入 + 分行；
-            # 只在收尾 trim 一次的话，中途 RSS 会一路台阶式上涨（多线程 arena 更容易留在原地）。
-            # 每 100 本归还一次（madvise 很便宜），把峰值压住。
+            # 进程内模式下，全量扫描每 100 本 gc + trim 一次，压住中途 RSS 峰值；
+            # 子进程模式跳过 —— 子进程内存随退出整体归还，gc/trim 纯属耗时
+            # （全量扫描 5212 本要白付 50+ 次 gc）。
             _trim_counter = 0
 
             for filename, file_path in all_files.items():
                 _trim_counter += 1
-                if _trim_counter % 100 == 0:
+                if _trim_counter % 100 == 0 and not _in_scan_child():
                     gc.collect()
                     trim_memory(quiet=True)
                 _checked += 1
@@ -5179,30 +5183,33 @@ def _scan_core(full_scan=False):
                 save_scan_stats({'scan_in_progress': None})
             except Exception:
                 pass
-        # 扫描后温和清理：保留 50 本，避免用户立刻点进详情又要重解析
-        aggressive_cache_cleanup(keep_tag=200, keep_chapter=50, keep_image=200)
-        # line_cache 存的是扫描期解析出的正文行，通常是大头；
-        # 不清的话扫描完 RSS 会长期停在峰值，看起来像内存泄漏
-        line_cache.clear()
-        gc.collect()
-        # glibc 默认不把已 free 的内存还给 OS，必须显式 trim，容器里 RSS 才会降
-        trim_memory()
+        # 扫描后温和清理：仅进程内模式需要（保留 50 本，避免用户立刻点进
+        # 详情又要重解析）。子进程模式的内存随进程退出整体归还，
+        # 清理 / trim / 延迟归还线程都是给马上要消失的进程做美容，直接跳过。
+        if not _in_scan_child():
+            aggressive_cache_cleanup(keep_tag=200, keep_chapter=50, keep_image=200)
+            # line_cache 存的是扫描期解析出的正文行，通常是大头；
+            # 不清的话扫描完 RSS 会长期停在峰值，看起来像内存泄漏
+            line_cache.clear()
+            gc.collect()
+            # glibc 默认不把已 free 的内存还给 OS，必须显式 trim，容器里 RSS 才会降
+            trim_memory()
 
-        # 扫描线程刚释放的大对象可能落在其他 gunicorn 线程的 malloc arena 里，
-        # 一次 malloc_trim 只归还调用方所在 arena 顶部连续空闲页。等其余线程
-        # 把手上的请求/临时对象也释放完，再收一轮，RSS 能再降一截。
-        # 放后台一次性线程：不拖慢扫描完成提示，不常驻，不影响主流程。
-        def _deferred_post_scan_trim():
-            try:
-                time.sleep(3)
-                gc.collect()
-                trim_memory(quiet=True)
-                logger.info("扫描后二次内存归还完成（延迟 3s）")
-            except Exception as e:
-                logger.warning(f"扫描后二次内存归还不成功（不影响扫描）：{e}")
+            # 扫描线程刚释放的大对象可能落在其他 gunicorn 线程的 malloc arena 里，
+            # 一次 malloc_trim 只归还调用方所在 arena 顶部连续空闲页。等其余线程
+            # 把手上的请求/临时对象也释放完，再收一轮，RSS 能再降一截。
+            # 放后台一次性线程：不拖慢扫描完成提示，不常驻，不影响主流程。
+            def _deferred_post_scan_trim():
+                try:
+                    time.sleep(3)
+                    gc.collect()
+                    trim_memory(quiet=True)
+                    logger.info("扫描后二次内存归还完成（延迟 3s）")
+                except Exception as e:
+                    logger.warning(f"扫描后二次内存归还不成功（不影响扫描）：{e}")
 
-        threading.Thread(target=_deferred_post_scan_trim, daemon=True,
-                         name='post-scan-trim').start()
+            threading.Thread(target=_deferred_post_scan_trim, daemon=True,
+                             name='post-scan-trim').start()
 
 #==================== 定时扫描循环 =====================
 def scheduled_scan_loop():
