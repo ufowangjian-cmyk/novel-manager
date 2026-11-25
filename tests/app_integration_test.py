@@ -49,8 +49,6 @@ def check(name, condition, detail=''):
 
 def main():
     db_path = os.path.join(DATA_DIR, 'novel_cache.db')
-    json_path = os.path.join(DATA_DIR, 'novel_cache.json')
-    bak_path = json_path + '.bak'
     cold_start = not os.path.exists(db_path)
 
     print(f'\n=== 冷启动={cold_start} ===')
@@ -60,16 +58,13 @@ def main():
     print(f'    import+bootstrap 耗时 {boot_elapsed:.2f}s   RSS≈{_rss():.0f}MB   '
           f'书籍 {len(nm.novel_data)} 本')
 
-    # ------------------------------------------------------------ 迁移状态
-    print('\n[1] 启动与迁移')
+    # ------------------------------------------------------------ 启动
+    # （旧 JSON 迁移已随 2026-11-25 移除迁移代码退役，不再有 .bak 对账）
+    print('\n[1] 启动')
     check('缓存库已生成', os.path.exists(db_path), db_path)
-    check('旧 JSON 已改名 .bak', os.path.exists(bak_path) and not os.path.exists(json_path))
     if cold_start:
-        entries = 0
-        with open(bak_path, encoding='utf-8-sig') as handle:
-            entries = len(json.load(handle).get('novel_data', []))
-        check(f'加载条数 == 旧 JSON 条数（{len(nm.novel_data)}/{entries}）',
-              len(nm.novel_data) == entries)
+        check('冷启动后库中有数据（空库会触发启动自动扫描建库）',
+              len(nm.novel_data) > 0, str(len(nm.novel_data)))
         check('import+bootstrap < 5s', boot_elapsed < 5.0, f'{boot_elapsed:.2f}s')
     else:
         check('热启动直接读库', len(nm.novel_data) > 5000, str(len(nm.novel_data)))

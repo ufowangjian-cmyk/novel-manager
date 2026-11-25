@@ -187,7 +187,6 @@
 
      tar czf ~/novel-data-$(date +%Y%m%d).tar.gz \
          --exclude='data/novel_cache.db*' \
-         --exclude='data/novel_cache.json*' \
          data/
 
  ⚠️ novel_cache.db 是 SQLite 库，运行中直接 tar 可能拷到未提交的事务

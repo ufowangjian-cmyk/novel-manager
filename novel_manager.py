@@ -96,10 +96,8 @@ if not os.path.exists(DATA_DIR):
 
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 TAG_RULES_FILE = os.path.join(DATA_DIR, 'tag_rules.json')
-# 书籍缓存已迁移到 SQLite（见 storage/cache_store.py）：
-#   CACHE_FILE     仅作为「迁移源」存在，迁移成功后会被改名成 .bak，不再读写
-#   CACHE_DB_FILE  真正的缓存存储
-CACHE_FILE = os.path.join(DATA_DIR, 'novel_cache.json')
+# 书籍缓存在 SQLite（见 storage/cache_store.py）。
+# 旧版 novel_cache.json 及其迁移代码已于 2026-11-25 移除（迁移期结束）。
 CACHE_DB_FILE = os.path.join(DATA_DIR, 'novel_cache.db')
 SECRET_KEY_FILE = os.path.join(DATA_DIR, 'secret_key')
 SCAN_LOCK_FILE = os.path.join(DATA_DIR, 'scan.lock')
@@ -4429,12 +4427,10 @@ def load_cache():
     global novel_data, _last_cache_rev
     # 注意：不再需要 chapter_cache、image_cache
 
-    # 冷启动自动迁移：库不存在 + 旧 JSON 还在 → 导入后把 JSON 改名 .bak。
-    # 热启动直接返回 existing，不重复导入（migrate 内部幂等）。
+    # 建库建表（幂等）。旧 JSON 迁移已移除：迁移期结束（2026-11-25），
+    # 现在空库 = 首次部署，交给启动自动扫描/手动扫描建库。
     try:
-        imported, state = cache_store.ensure_ready(CACHE_FILE, CACHE_DB_FILE)
-        if imported:
-            print(f"✅ 已将 {imported} 本小说从 novel_cache.json 迁移到 SQLite")
+        state = cache_store.ensure_ready(CACHE_DB_FILE)
     except Exception as e:
         print(f"⚠️ 缓存库初始化失败：{e}")
         traceback.print_exc()

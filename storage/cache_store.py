@@ -640,109 +640,18 @@ def _write_chapters(conn, chapters_map):
     return written
 
 
-# ---------------------------------------------------------------------------
-# 从 JSON 迁移（幂等）
-# ---------------------------------------------------------------------------
-def migrate_from_json(json_path, db_path):
-    """把旧版 novel_cache.json 导入 SQLite。
+def ensure_ready(db_path):
+    """应用启动时调用：确保库存在（建库建表，幂等）。
 
-    幂等：库已存在且 books 非空 → 直接返回 0，不重复导入。
-    全量导入走单事务，失败整体回滚。
-    成功后把 JSON 重命名为 `<json>.bak`（已存在则保留，不覆盖、不删除）。
-    返回导入条数。
-    """
-    json_path = os.path.abspath(json_path)
-    db_path = os.path.abspath(db_path)
-
-    init_db(db_path)
-    conn = _get_conn(db_path)
-
-    already = count_books(db_path)
-    if already > 0:
-        return 0
-
-    if not os.path.exists(json_path):
-        return 0
-
-    with open(json_path, 'r', encoding='utf-8-sig') as handle:
-        data = json.load(handle)
-
-    if isinstance(data, dict):
-        books = data.get('novel_data') or []
-    elif isinstance(data, list):
-        books = data
-    else:
-        books = []
-
-    rows = []
-    for book in books:
-        if not isinstance(book, dict):
-            continue
-        row = _book_to_row(book)
-        if not row[0]:
-            continue
-        rows.append(row)
-
-    if not rows:
-        return 0
-
-    with _write_lock:
-        try:
-            conn.execute('BEGIN IMMEDIATE')
-            conn.executemany(_UPSERT_BOOK, rows)
-            _bump_revision(conn)
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-
-    _rename_to_bak(json_path)
-    return len(rows)
-
-
-def _rename_to_bak(json_path):
-    """迁移成功后把源 JSON 留成只读备份。"""
-    if not os.path.exists(json_path):
-        return None
-    bak_path = json_path + '.bak'
-    if os.path.exists(bak_path):
-        return bak_path
-    try:
-        os.replace(json_path, bak_path)
-        return bak_path
-    except OSError:
-        return None
-
-
-def count_json_entries(json_path):
-    """数一下旧 JSON 里有多少条目（自测对账用，不写库）。"""
-    if not os.path.exists(json_path):
-        return 0
-    with open(json_path, 'r', encoding='utf-8-sig') as handle:
-        data = json.load(handle)
-    if isinstance(data, dict):
-        return len(data.get('novel_data') or [])
-    if isinstance(data, list):
-        return len(data)
-    return 0
-
-
-def ensure_ready(json_path, db_path):
-    """应用启动时调用：建库 + 需要时自动从 JSON 迁移。
-
-    返回 (imported_count, state)，state ∈ {'migrated', 'existing', 'empty'}。
+    旧版 novel_cache.json 的迁移逻辑已移除（2026-11-25，迁移期早已结束、
+    线上无 JSON 残留）。state ∈ {'existing', 'empty'}：库里有书为
+    'existing'，空库（首次部署，交给调用方走首次扫描）为 'empty'。
     """
     db_path = os.path.abspath(db_path)
-    existed = os.path.exists(db_path)
     init_db(db_path)
 
     if count_books(db_path) > 0:
-        return 0, 'existing'
+        return 'existing'
 
-    if os.path.exists(json_path):
-        imported = migrate_from_json(json_path, db_path)
-        if imported > 0:
-            return imported, 'migrated'
-
-    # 库不存在、JSON 也不存在（或 JSON 是空的）→ 交给调用方走首次扫描
-    return 0, 'empty' if not existed or count_books(db_path) == 0 else 'existing'
+    # 空库 → 交给调用方走首次扫描
+    return 'empty'

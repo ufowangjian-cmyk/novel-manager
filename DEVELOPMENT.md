@@ -80,17 +80,18 @@ compose 声明了 IPv6 网络，`ports: "5000:5000"` 会同时发布 IPv4 和 IP
 
 备份 `data/` 时可以直接排除 `novel_cache.db*`——它是扫描即可重建的派生数据。
 
-> **关于 `novel_cache.json.bak`**：迁移时会把旧 JSON 改名保留，但它不参与运行。
-> 本机这份已于 2026-10-27 清理（另存有 zip 备份）。因此现在 `data/` 里没有旧 JSON，
-> 缓存只剩 `novel_cache.db` 一份；万一库丢了，删掉它重扫一遍即可，不需要旧 JSON。
+> **关于 `novel_cache.json.bak`**：历史遗留说明——迁移时的改名备份不参与运行。
+> 本机这份已于 2026-10-27 清理，2026-11-25 迁移代码移除后不会再产生。
+> 因此现在 `data/` 里没有旧 JSON，缓存只剩 `novel_cache.db` 一份；
+> 万一库丢了，删掉它重扫一遍即可，不需要旧 JSON。
 
 ---
 
 ## 存储层（SQLite）
 
 书籍缓存在 `data/novel_cache.db`。**所有 SQL 只允许出现在 `storage/cache_store.py`**，
-主程序通过它读写，不直接碰数据库（`novel_manager.py` 里除了 `CACHE_FILE` 这个迁移源
-路径，没有任何地方再引用 `novel_cache.json`）。
+主程序通过它读写，不直接碰数据库（`novel_manager.py` 里没有任何地方引用
+`novel_cache.json`——2026-11-25 迁移代码移除后，这个文件名只出现在历史叙述里）。
 
 ### 为什么不用 JSON 了
 
@@ -159,46 +160,23 @@ publish_date/link/intro/preview/has_images/image_folder`）整体存 JSON，不�
 | 函数 | 用途 |
 |---|---|
 | `init_db(db_path)` | 建库建表，幂等 |
-| `ensure_ready(json_path, db_path)` | 启动时调用：建库 + 需要时自动迁移，返回 `(imported, state)` |
+| `ensure_ready(db_path)` | 启动时调用：建库，返回 `state`（`existing` / `empty`） |
 | `list_books()` / `load_all()` | 全部书籍，顺序与迁移前 JSON 一致 |
 | `get_book(path)` | 单本，没有返回 `None` |
 | `upsert_book(book, chapters)` | 写单本 + 章节，单事务 |
 | `delete_book(path)` | 删单本，章节级联 |
 | `sync_all(books)` | **增量同步**（写路径主力）：diff 后只写变化行，返回 `inserted/updated/deleted/unchanged` |
-| `migrate_from_json(json, db)` | 迁移，幂等，成功后源 JSON 改名 `.bak` |
 | `get_revision()` | 供热重载判断 |
 | `stats()` | 排查用概览 |
 
-### 迁移与回滚
+### 迁移与回滚（历史）
 
-**迁移**（正常情况下不需要手动做，启动时自动完成）：
+> 2026-11-25：旧 JSON → SQLite 的迁移代码（`migrate_from_json` / `migrate_cache.py` /
+> 自测 `sqlite_selftest.py`）已整体移除——迁移期结束，线上无 JSON 残留，
+> 不再需要这条路径。万一库丢了，删掉 `novel_cache.db` 重扫一遍即可重建。
 
-```bash
-docker exec novel-manager python /app/migrate_cache.py --check   # 体检，不写库
-docker exec novel-manager python /app/migrate_cache.py           # 手动迁移
-```
-
-- 幂等：库非空直接返回 0，不会重复导入
-- 全量导入走单事务，失败整体回滚
-- 成功后 `novel_cache.json` 改名 `novel_cache.json.bak`（该备份本机已于 2026-10-27 清理）
-
-**回滚**（三步，都在宿主机上做）：
-
-```bash
-cd /path/to/novel-manager                  # 换成你的项目目录
-git checkout pre-sqlite-migration          # 1. 代码回到迁移前
-cd data
-mv novel_cache.json.bak novel_cache.json   # 2. 旧 JSON 改回来（本机已清理，需从 zip 备份取出）
-rm -f novel_cache.db novel_cache.db-journal  # 3. 删掉库
-docker restart novel-manager
-```
-
-`pre-sqlite-migration` 是迁移前打的 tag，`git show pre-sqlite-migration:novel_manager.py`
-可以单独取出旧版主程序。这条路径演练过一次：旧主程序能正常读回整库，路由表与迁移前
-逐字节一致，说明回滚可用。
-
-> 本机的 `novel_cache.json.bak` 已清理，第 2 步的旧 JSON 要从 zip 备份里取；
-> 或者干脆跳过第 2 步——旧代码在没有 JSON 时会重新扫描生成缓存（慢一点，但结果一样）。
+原来的迁移流程与回滚三步走（含 `migrate_cache.py` 脚本）已随迁移代码一起删除；
+需要考古的话，git 里有 `pre-sqlite-migration` tag 和这段文档的历史版本。
 
 ### 查询计划与索引取舍
 
@@ -1020,8 +998,8 @@ Python 模块名不能含连字符。
 | 改了 requirements.txt | `docker compose build && docker compose up -d` |
 | 改了 compose | `docker compose up -d` |
 | 看日志 | `docker logs novel-manager --tail 100` |
-| 数据备份 | 打包 `data/`，建议排除 `novel_cache.db*` 与 `novel_cache.json*` |
-| 改完存储层要重跑自测 | `docker exec novel-manager python /app/tests/sqlite_selftest.py` |
+| 数据备份 | 打包 `data/`，建议排除 `novel_cache.db*`（扫描即可重建的派生数据） |
+| 改完存储层要重跑自测 | 容器内跑 `tests/app_integration_test.py`（先跑 `tests/prepare_apptest.sh` 备副本） |
 
 **注意事项**
 
