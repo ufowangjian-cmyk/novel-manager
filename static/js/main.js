@@ -1073,19 +1073,20 @@ const RecentReads = (function () {
         const countLabel = el('recentCountLabel');
         if (countLabel) countLabel.textContent = `共 ${state.total} 条`;
 
-        // 展开态（已加载超过初始条数）时按钮变「收起记录」，
-        // 即使 hasMore=false 也要能收回去
+        // 展开态（已加载超过初始条数）时出现「收起记录」按钮，与「加载更多」并存：
+        // 收起随时折回初始条数；加载更多继续翻页，两者不互斥。
         if (loadWrap) loadWrap.hidden = !(state.hasMore || state.records.length > state.initialShown);
         updateLoadMoreBtn();
     }
 
-    // 按钮双态：未超过初始条数 → 「加载更多记录」；已展开 → 「收起记录」
+    // 管理两个按钮的显隐与文案：
+    //   加载更多：有下一页才显示
+    //   收起记录：已加载超过初始条数（initialShown）才显示
     function updateLoadMoreBtn() {
-        const btn = el('recentLoadMoreBtn');
-        if (!btn) return;
-        btn.innerHTML = state.records.length > state.initialShown
-            ? icon('arrow-up', 'sm') + '收起记录'
-            : icon('arrow-down', 'sm') + '加载更多记录';
+        const more = el('recentLoadMoreBtn');
+        if (more) more.hidden = !state.hasMore;
+        const collapse = el('recentCollapseBtn');
+        if (collapse) collapse.hidden = state.records.length <= state.initialShown;
     }
 
     function updateStats(stats) {
@@ -1139,8 +1140,11 @@ const RecentReads = (function () {
             })
             .finally(() => {
                 state.loading = false;
-                if (btn) btn.disabled = false;
-                // 按钮文案交给 refreshChrome 按当前状态定（加载后可能已变「收起记录」）
+                if (btn) {
+                    btn.disabled = false;
+                    // 加载中把文案换掉了，这里恢复（显隐交给 refreshChrome）
+                    btn.innerHTML = icon('arrow-down', 'sm') + '加载更多记录';
+                }
                 refreshChrome();
             });
     }
@@ -1217,17 +1221,16 @@ const RecentReads = (function () {
         }
 
         if (more) {
-            more.addEventListener('click', () => {
-                // 双态按钮：已展开（超过初始条数）→ 收起折回初始条数；
-                // 否则 → 加载下一页
-                if (state.records.length > state.initialShown) {
-                    state.records = state.records.slice(0, state.initialShown);
-                    // 折回后如果服务端已没有更多（hasMore=false），按钮随 refreshChrome 隐藏
-                    renderGroups(state.records, { reset: true });
-                    refreshChrome();
-                    return;
-                }
-                fetchRecords({ append: true });
+            more.addEventListener('click', () => fetchRecords({ append: true }));
+        }
+
+        const collapse = el('recentCollapseBtn');
+        if (collapse) {
+            collapse.addEventListener('click', () => {
+                // 折回初始条数（服务端按时间倒序，前 N 条就是首屏那批）
+                state.records = state.records.slice(0, state.initialShown);
+                renderGroups(state.records, { reset: true });
+                refreshChrome();
             });
         }
     }
