@@ -1240,6 +1240,9 @@ const RecentReads = (function () {
         if (!root) return;
         bind();
         state.initialShown = parseInt(root.dataset.initialShown || '12', 10) || 12;
+        // hasMore 以服务端渲染时给的数据属性为准（不要从加载区的 hidden 反推——
+        // 那是渲染时的静态状态，收起/展开操作会把它改掉）
+        state.hasMore = root.dataset.hasMore === '1';
         // 首屏由服务端渲染，这里只把状态对齐，避免多余请求
         const cards = root.querySelectorAll('.recent-card-wrapper');
         state.shown = cards.length;

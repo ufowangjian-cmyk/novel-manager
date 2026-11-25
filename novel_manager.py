@@ -6466,10 +6466,14 @@ def index():
         authors=authors,
         tags=tags,
         sites=sites,
-        recent_records=recent_records,
+        # 首屏只渲染前 12 条（与 data-initial-shown / JS 的 initialShown 一致），
+        # 其余由「加载更多」分页拉取。之前全量渲染 + 加载区永远 hidden，
+        # JS 把 hasMore 误读成 false，收起后按钮区整个消失（2026-11-25）。
+        recent_records=recent_records[:12],
         recent_total=len(recent_records),
+        recent_has_more=len(recent_records) > 12,
         recent_stats=compute_recent_stats(recent_records),
-        recent_groups=group_recent_records(recent_records),
+        recent_groups=group_recent_records(recent_records[:12]),
         # 每次刷新页面随机推荐一本；「换一本」按钮再走 /api/random_novel
         random_novel=pick_random_novel(),
         total_count=len(novel_data),

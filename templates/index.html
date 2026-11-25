@@ -301,7 +301,8 @@
 
             <!-- 选项卡内容 - 最近阅读 -->
             <div class="tab-content" id="tab-recent">
-                <div class="recent-reads-tab" id="recentReadsTab" data-initial-shown="12">
+                <div class="recent-reads-tab" id="recentReadsTab" data-initial-shown="12"
+                     data-has-more="{{ '1' if recent_has_more else '0' }}">
 
                     <!-- 概览统计 -->
                     <div class="recent-stats-bar" id="recentStatsBar" {% if not recent_records %}hidden{% endif %}>
@@ -376,7 +377,7 @@
                     </div>
 
                     <!-- 加载更多 / 收起（两个独立按钮，展开后并存） -->
-                    <div class="recent-load-more-wrap" id="recentLoadMoreWrap" hidden>
+                    <div class="recent-load-more-wrap" id="recentLoadMoreWrap" {% if not recent_has_more %}hidden{% endif %}>
                         <button type="button" class="recent-load-more-btn" id="recentCollapseBtn" hidden>
                             {{ icon('arrow-up', 'sm') }} 收起记录
                         </button>
