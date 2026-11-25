@@ -7407,6 +7407,45 @@ def api_mark_read():
         return jsonify({'success': False, 'message': str(e)})
 
 
+#===================== 搜索建议 API =====================
+@app.route('/api/search/suggest')
+def api_search_suggest():
+    """首页全文搜索的联想补全：从书名 / 作者 / 网站 / 标签里找包含输入片段的值。
+
+    与桌面版保持一致；数据取自进程内的 novel_data（扫描后已同步），
+    不查库也不读文件，几千本量级纯内存遍历足够快。
+    """
+    q = (request.args.get('q') or '').strip().lower()
+    limit = request.args.get('limit', 10, type=int)
+    limit = max(1, min(limit or 10, 50))
+    if not q:
+        return jsonify({'suggestions': []})
+
+    values = []
+    seen = set()
+    for novel in novel_data:
+        candidates = [
+            novel.get('title', ''),
+            novel.get('author', ''),
+            novel.get('site', ''),
+        ]
+        tags = str(novel.get('tags') or '')
+        if tags and tags != '无':
+            candidates.extend(t.strip() for t in tags.split(',') if t.strip())
+
+        for value in candidates:
+            value = str(value or '').strip()
+            if not value or value in seen:
+                continue
+            if q in value.lower():
+                seen.add(value)
+                values.append(value)
+
+    # 开头命中的排前面，其余按字典序
+    values.sort(key=lambda x: (not x.lower().startswith(q), x.lower()))
+    return jsonify({'suggestions': values[:limit]})
+
+
 #==================== 获取缓存统计信息 API =====================
 @app.route('/api/cache/stats')
 def get_cache_stats():

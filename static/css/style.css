@@ -3846,18 +3846,72 @@ body.dark-mode .skeleton-cell {
 
 /* ============================================
    17. 搜索建议下拉框样式
+   原来这里只有三条 .active / .highlight 残留，既没有基础样式也没有对应 DOM，
+   是桌面版样式搬迁时留下的死规则。现在首页搜索框接上联想补全，
+   用 tokens.css 的设计令牌写完整浅色 / 深色两套。
    ============================================ */
+.suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 8px 25px var(--opacity-black-15);
+}
+
 .suggestions-dropdown.active {
     display: block;
 }
 
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--color-text-dark);
+    font-size: 0.95em;
+    transition: background 0.15s;
+}
+
+.suggestion-item:hover,
 .suggestion-item.active {
-    background: var(--bg-card-hover);
+    background: var(--color-bg-hover);
 }
 
 .suggestion-item .highlight {
-    color: var(--color-primary);
+    color: var(--color-primary-link);
     font-weight: 600;
+}
+
+/* 深色模式 */
+body.dark-mode .suggestions-dropdown {
+    background: var(--dark-bg-secondary);
+    border-color: var(--dark-border-primary);
+    box-shadow: 0 8px 25px var(--dark-opacity-black-30);
+}
+
+body.dark-mode .suggestion-item {
+    color: var(--dark-text-primary);
+}
+
+body.dark-mode .suggestion-item:hover,
+body.dark-mode .suggestion-item.active {
+    background: rgba(90, 143, 76, 0.3);
+}
+
+body.dark-mode .suggestion-item .highlight {
+    color: var(--dark-primary-lighter);
+}
+
+/* 手机端留更多空间给虚拟键盘 */
+@media (max-width: 768px) {
+    .suggestions-dropdown {
+        max-height: 180px;
+    }
 }
 
 .stale-badge,

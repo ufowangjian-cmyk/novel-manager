@@ -1592,3 +1592,139 @@ if (document.readyState === 'loading') {
     bindScanButtons();
     attachToRunningScan();
 }
+
+// ===== 首页全文搜索：联想补全 =====
+// 与桌面版同一套交互（防抖 → 拉取 → 高亮 → 键盘/点击选中 → 自动提交），
+// 额外处理 NAS 版特有的两点：
+//   1. Esc 只关联想，不冒泡给头部搜索那套快捷键
+//   2. 快速输入时旧请求可能后到，用序号丢弃过期响应
+(function () {
+    function initSearchSuggestions() {
+        const input = document.getElementById('searchInput');
+        const box = document.getElementById('searchSuggestions');
+        const form = document.getElementById('searchForm');
+        if (!input || !box || !form) return;
+
+        let suggestions = [];
+        let currentHighlight = -1;
+        let requestSeq = 0;
+
+        function debounce(fn, delay) {
+            let timer = null;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        function escapeHtml(text) {
+            return String(text ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function render(items, query) {
+            const safeQuery = String(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(safeQuery, 'gi');
+            box.innerHTML = items.map(item => {
+                const raw = String(item ?? '');
+                let html = '';
+                let lastIndex = 0;
+                raw.replace(regex, (match, offset) => {
+                    html += escapeHtml(raw.slice(lastIndex, offset));
+                    html += `<span class="highlight">${escapeHtml(match)}</span>`;
+                    lastIndex = offset + match.length;
+                    return match;
+                });
+                html += escapeHtml(raw.slice(lastIndex));
+                return `<div class="suggestion-item" data-value="${escapeHtml(raw)}">${html}</div>`;
+            }).join('');
+        }
+
+        async function fetchSuggestions(prefix) {
+            if (!prefix) {
+                box.classList.remove('active');
+                return;
+            }
+            const seq = ++requestSeq;
+            try {
+                const response = await fetch(`/api/search/suggest?q=${encodeURIComponent(prefix)}&limit=10`);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+                if (seq !== requestSeq) return;   // 已有更新的请求，丢掉旧结果
+                if (data.suggestions && data.suggestions.length > 0) {
+                    suggestions = data.suggestions;
+                    render(suggestions, prefix);
+                    box.classList.add('active');
+                    currentHighlight = -1;
+                } else {
+                    box.classList.remove('active');
+                }
+            } catch (e) {
+                // 未登录时接口会重定向到登录页，response.json() 会失败；静默隐藏即可
+                if (seq === requestSeq) box.classList.remove('active');
+            }
+        }
+
+        function selectSuggestion(value) {
+            input.value = value;
+            box.classList.remove('active');
+            form.submit();
+        }
+
+        function handleKeydown(e) {
+            const items = box.querySelectorAll('.suggestion-item');
+            switch (e.key) {
+                case 'ArrowDown':
+                    if (!items.length) return;
+                    e.preventDefault();
+                    currentHighlight = (currentHighlight + 1) % items.length;
+                    items.forEach((el, i) => el.classList.toggle('active', i === currentHighlight));
+                    break;
+                case 'ArrowUp':
+                    if (!items.length) return;
+                    e.preventDefault();
+                    currentHighlight = (currentHighlight - 1 + items.length) % items.length;
+                    items.forEach((el, i) => el.classList.toggle('active', i === currentHighlight));
+                    break;
+                case 'Enter':
+                    if (currentHighlight >= 0 && items[currentHighlight]) {
+                        e.preventDefault();
+                        selectSuggestion(items[currentHighlight].dataset.value);
+                    }
+                    break;
+                case 'Escape':
+                    if (box.classList.contains('active')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        box.classList.remove('active');
+                        currentHighlight = -1;
+                    }
+                    break;
+            }
+        }
+
+        input.addEventListener('input', debounce(function (e) {
+            const value = e.target.value.trim();
+            if (value.length >= 1) fetchSuggestions(value);
+            else box.classList.remove('active');
+        }, 300));
+
+        input.addEventListener('keydown', handleKeydown);
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.search-item')) box.classList.remove('active');
+        });
+
+        box.addEventListener('click', function (e) {
+            const item = e.target.closest('.suggestion-item');
+            if (item) selectSuggestion(item.dataset.value);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSearchSuggestions);
+    } else {
+        initSearchSuggestions();
+    }
+})();
