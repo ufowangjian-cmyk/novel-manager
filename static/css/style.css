@@ -1425,8 +1425,15 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
     text-decoration: none;
     transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
     border-left: 4px solid var(--color-primary-dark);
-    display: flex;
-    flex-direction: column;
+    /* Grid 排版：日期（foot）提到「作者/章节」行右对齐，底行省掉。
+       DOM 顺序不动（head/info/progress/foot），服务端模板与
+       main.js 客户端模板都无需改；手机端断点里有同样的 areas 覆盖。 */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "head  head"
+        "info  time"
+        "progress progress";
     gap: 6px;
     /* 卡片内容不换行时不应撑破网格列 */
     overflow-wrap: anywhere;
@@ -1442,6 +1449,7 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
     display: flex;
     align-items: flex-start;
     min-width: 0;
+    grid-area: head;
     /* 给右上角的操作按钮让位，避免长标题压到按钮下面 */
     padding-right: 26px;
 }
@@ -1474,11 +1482,15 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
 
 .recent-card-info {
     display: flex;
-    flex-wrap: wrap;
+    /* nowrap + 各自 ellipsis：作者/章节挤在一行内省略，配合右侧日期
+       构成单行信息条（之前允许换行，卡片会被长章节撑高） */
+    flex-wrap: nowrap;
     gap: 4px 10px;
     font-size: 0.74rem;
     color: var(--color-primary-dark);
     min-width: 0;
+    grid-area: info;
+    align-self: center;
 }
 
 .recent-author,
@@ -1500,6 +1512,7 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
     gap: 8px;
     margin-top: auto;
     min-width: 0;
+    grid-area: progress;
 }
 
 .recent-progress-track {
@@ -1552,11 +1565,14 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
 }
 
 /* --- 卡片底部 --- */
+/* Grid 模式下 foot 位于「作者/章节」行右列：日期右对齐，
+   「文件丢失」徽章落在日期左侧 */
 .recent-card-foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 4px;
+    grid-area: time;
 }
 
 .recent-card-time {
