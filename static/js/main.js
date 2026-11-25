@@ -1593,16 +1593,15 @@ if (document.readyState === 'loading') {
     attachToRunningScan();
 }
 
-// ===== 首页全文搜索：联想补全 =====
-// 与桌面版同一套交互（防抖 → 拉取 → 高亮 → 键盘/点击选中 → 自动提交），
-// 额外处理 NAS 版特有的两点：
-//   1. Esc 只关联想，不冒泡给头部搜索那套快捷键
+// ===== 搜索联想补全（两个入口共用一套逻辑）=====
+// NAS 版首页有两个搜索框：头部快速搜索（桌面常驻 / 窄屏点图标展开）和
+// 菜单「筛选搜索」标签页里的高级表单。两者接同一套交互：
+// 防抖 → 拉取 → 高亮 → 键盘 / 点击选中 → 自动提交。
+// 额外处理两点：
+//   1. Esc 只关联想，不冒泡给头部搜索的「Esc 收起」监听
 //   2. 快速输入时旧请求可能后到，用序号丢弃过期响应
 (function () {
-    function initSearchSuggestions() {
-        const input = document.getElementById('searchInput');
-        const box = document.getElementById('searchSuggestions');
-        const form = document.getElementById('searchForm');
+    function attachSuggestions(input, box, form) {
         if (!input || !box || !form) return;
 
         let suggestions = [];
@@ -1713,7 +1712,7 @@ if (document.readyState === 'loading') {
         input.addEventListener('keydown', handleKeydown);
 
         document.addEventListener('click', function (e) {
-            if (!e.target.closest('.search-item')) box.classList.remove('active');
+            if (!input.contains(e.target) && !box.contains(e.target)) box.classList.remove('active');
         });
 
         box.addEventListener('click', function (e) {
@@ -1722,9 +1721,22 @@ if (document.readyState === 'loading') {
         });
     }
 
+    function initAll() {
+        // 头部快速搜索：用户日常真正用的入口
+        attachSuggestions(
+            document.getElementById('headerSearchInput'),
+            document.getElementById('headerSearchSuggestions'),
+            document.getElementById('headerSearch'));
+        // 菜单「筛选搜索」标签页里的高级表单，展开后同样给联想
+        attachSuggestions(
+            document.getElementById('searchInput'),
+            document.getElementById('searchSuggestions'),
+            document.getElementById('searchForm'));
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSearchSuggestions);
+        document.addEventListener('DOMContentLoaded', initAll);
     } else {
-        initSearchSuggestions();
+        initAll();
     }
 })();

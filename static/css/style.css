@@ -4769,6 +4769,8 @@ body.dark-mode .user-menu-subitem.active {
     order: 2;
     align-self: flex-start;
     flex: 0 1 auto;
+    /* 联想下拉以整枚胶囊为定位基准；不加的话会跑去相对 .header 定位 */
+    position: relative;
     /* 下限 216px 是实测值：再窄 placeholder 就被截成「书名 / 作者 / ·」。
        按 12(左内边距)+15(图标)+8(间隔)+约110(占位文字)+8+62(搜索按钮)+5 算的 */
     width: clamp(216px, 25vw, 280px);
