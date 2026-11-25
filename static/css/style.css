@@ -1732,10 +1732,24 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
     }
 
     .recent-card {
+        /* 手机端改 Grid 排版：把底部的日期提到「章节」行右对齐，
+           底行整个省掉，每张卡再省一行高度。
+           DOM 顺序不动（head/info/progress/foot），只重排视觉位置 ——
+           服务端 _recent_card.html 与 main.js 客户端模板都无需改。 */
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "head  head"
+            "info  time"
+            "progress progress";
         padding: 8px 10px;
         gap: 5px;
         border-left-width: 3px;
         border-radius: 10px;
+    }
+
+    .recent-card-head {
+        grid-area: head;
     }
 
     .recent-card-title {
@@ -1750,13 +1764,24 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
         display: none;
     }
 
+    /* 章节占左列，日期占右列（auto 宽），长章节在剩余空间内省略 */
     .recent-card-info {
+        grid-area: info;
+        align-self: center;
         gap: 4px;
         font-size: 0.72rem;
     }
 
     .recent-progress {
+        grid-area: progress;
         gap: 6px;
+    }
+
+    /* foot 整个提到「章节」行右列；「文件丢失」徽章也跟着落在日期左边 */
+    .recent-card-foot {
+        grid-area: time;
+        justify-content: flex-end;
+        gap: 4px;
     }
 
     .recent-progress-track {
