@@ -5009,6 +5009,22 @@ def _scan_core(full_scan=False):
         # glibc 默认不把已 free 的内存还给 OS，必须显式 trim，容器里 RSS 才会降
         trim_memory()
 
+        # 扫描线程刚释放的大对象可能落在其他 gunicorn 线程的 malloc arena 里，
+        # 一次 malloc_trim 只归还调用方所在 arena 顶部连续空闲页。等其余线程
+        # 把手上的请求/临时对象也释放完，再收一轮，RSS 能再降一截。
+        # 放后台一次性线程：不拖慢扫描完成提示，不常驻，不影响主流程。
+        def _deferred_post_scan_trim():
+            try:
+                time.sleep(3)
+                gc.collect()
+                trim_memory(quiet=True)
+                logger.info("扫描后二次内存归还完成（延迟 3s）")
+            except Exception as e:
+                logger.warning(f"扫描后二次内存归还不成功（不影响扫描）：{e}")
+
+        threading.Thread(target=_deferred_post_scan_trim, daemon=True,
+                         name='post-scan-trim').start()
+
 #==================== 定时扫描循环 =====================
 def scheduled_scan_loop():
     """定时扫描循环 - 每30秒检查一次，配置改了也能较快生效"""
