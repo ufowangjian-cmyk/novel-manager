@@ -1564,7 +1564,9 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         max-height: 244px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;   /* 滚动到边界时不带着整页一起滚 */
+        /* 不能写 contain：它会掐断滚动链，列表滚到底后继续滑整页没反应。
+           留 auto 与 .intro-content 行为一致（2026-11-26 剑哥反馈） */
+        overscroll-behavior: auto;
         scrollbar-width: thin;
         scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
     }
@@ -1578,7 +1580,7 @@ body.dark-mode .detail-grid > .detail-card:first-child {
     .similar-list {
         max-height: 300px;
         overflow-y: auto;
-        overscroll-behavior: contain;
+        overscroll-behavior: auto;   /* 滚到底继续滚轮要能带着页面滚，与简介一致 */
         scrollbar-width: thin;
         scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
         padding-right: 2px;
