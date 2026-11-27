@@ -41,7 +41,6 @@
     function setEnabled(value) {
         enabled = !!value;
         localStorage.setItem('haptic_enabled', enabled ? '1' : '0');
-        console.log(`📳 震动反馈: ${enabled ? '开启' : '关闭'}`);
     }
 
     function isEnabled() {
@@ -56,7 +55,6 @@
         }
 
         if (!isSupported()) {
-            console.log('ℹ️ 当前设备不支持震动');
         }
     }
 
@@ -67,5 +65,4 @@
     window.isHapticSupported = isSupported;
     window.initHaptic = initHaptic;
 
-    console.log('✅ haptic.js 已加载');
 })();

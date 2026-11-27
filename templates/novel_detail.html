@@ -266,7 +266,6 @@
             const introDiv = document.querySelector('.intro-content');
             if (introDiv) {
                 const introCard = document.getElementById('introCard');
-                const isPreview = introCard && introCard.dataset.mode === 'preview';
 
                 let processed = introDiv.innerHTML;
 
@@ -321,7 +320,6 @@
                 }
             }
 
-            console.log('📄 详情页初始化完成');
         });
 
         // ===== 标记「已读 / 未读」=====

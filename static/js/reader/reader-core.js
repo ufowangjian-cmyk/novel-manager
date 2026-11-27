@@ -29,8 +29,6 @@
             ]);
             emojiMap = await emojiRes.json();
             imageMap = await imageRes.json();
-            console.log(`✅ 加载 emoji 映射: ${Object.keys(emojiMap).length} 个`);
-            console.log(`✅ 加载图片表情映射: ${Object.keys(imageMap).length} 个`);
         } catch (err) {
             console.error('加载表情映射失败:', err);
             emojiMap = {};
@@ -257,7 +255,6 @@
         try {
             // 🔥 修复：先把 &amp; 替换为 &
             const decodedUrl = url.replace(/&amp;/g, '&');
-            console.log('🔍 解码后 URL:', decodedUrl);
             
             const parsed = new URL(decodedUrl);
             let domain = parsed.hostname.replace(/^www\./, '');
@@ -362,7 +359,6 @@
     // 异步初始化本地配图
     async function initLocalImagesAsync(filePath) {
         return new Promise(async (resolve) => {
-            console.log('🔍 initLocalImagesAsync 被调用，filePath:', filePath);
 
             // filePath 由后端 url_for 编码一次（中文原样编码成 %XX）。
             // 老链接里可能是被编码过两次的 %25XX，所以这里解码一次；
@@ -424,9 +420,7 @@
 
                 if (data.exists) {
                     currentNovelImagePath = data.path;
-                    console.log('✅ 找到配图文件夹:', currentNovelImagePath);
                 } else {
-                    console.log('⚠️ 未找到配图文件夹');
                 }
             } catch (err) {
                 console.error('❌ 检查配图文件夹失败:', err);
@@ -633,7 +627,6 @@
 
     // 创建本地视频元素
     function createLocalVideoElement(folderPath, videoName, params) {
-        const videoId = 'local_video_' + Math.random().toString(36).substr(2, 9);
         const videoUrl = `/api/local_video?folder=${encodeURIComponent(folderPath)}&name=${encodeURIComponent(videoName)}`;
 
         const posterCandidates = [
@@ -756,7 +749,6 @@
 
     // 创建本地音频元素
     function createLocalAudioElement(folderPath, audioName, params) {
-        const audioId = 'local_audio_' + Math.random().toString(36).substr(2, 9);
         const audioUrl = `/api/local_audio?folder=${encodeURIComponent(folderPath)}&name=${encodeURIComponent(audioName)}`;
 
         const widthStyle = params.width ? `max-width: ${params.width}px;` : '';
@@ -887,8 +879,6 @@
 
         if (!readingContent || lines.length === 0) return;
 
-        console.log(`📝 开始处理 ${lines.length} 行...`);
-        console.log('🔍 currentNovelImagePath =', currentNovelImagePath);
 
         const startTime = Date.now();
         const container = document.createElement('div');
@@ -971,7 +961,6 @@
         });
 
         readingContent.innerHTML = container.innerHTML;
-        console.log(`✅ 转换完成 (${convertedCount}行有变化), 耗时: ${Date.now() - startTime}ms`);
 
         // 清理图片行多余的空白节点
         setTimeout(() => {
@@ -1184,7 +1173,6 @@
         });
 
         if (groups.length) {
-            console.log(`🖼️ 合并 ${groups.length} 组连续配图为画廊`);
         }
         return groups.length;
     }
@@ -1208,5 +1196,4 @@
     window.convertAllTextEmoji = convertAllTextEmoji;
     window.convertEndingMark = convertEndingMark;
     window.getCurrentImagePath = () => currentNovelImagePath;
-    console.log('✅ reader-core.js 已加载（完整版）');
 })();

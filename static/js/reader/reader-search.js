@@ -328,5 +328,4 @@
     window.initReaderSearch = initReaderSearch;
     window.applySearchHighlight = applySearchHighlight;
 
-    console.log('✅ reader-search.js 已加载');
 })();

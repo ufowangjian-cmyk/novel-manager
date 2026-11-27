@@ -237,10 +237,8 @@ function syncScanButtons() {
 }
 
 function startScan(fullScan = false) {
-    console.log('startScan 被调用, fullScan=', fullScan, 'scanning=', scanning);
 
     if (scanning) {
-        console.log('已有扫描任务进行中，忽略');
         showNotification('扫描任务已在运行中', 'warning');
         return;
     }
@@ -262,7 +260,6 @@ function startScan(fullScan = false) {
     if (progressMessage) progressMessage.textContent = '正在启动扫描...';
 
     const url = fullScan ? '/api/start_scan?full=true' : '/api/start_scan';
-    console.log('请求URL:', url);
 
     fetch(url, {
         method: 'GET',
@@ -270,7 +267,6 @@ function startScan(fullScan = false) {
     })
         .then(res => res.json())
         .then(data => {
-            console.log('扫描启动响应:', data);
             if (data.status === 'started' || data.status === 'already_scanning') {
                 if (progressInterval) clearInterval(progressInterval);
                 progressInterval = setInterval(checkProgress, 400);
@@ -356,7 +352,6 @@ function checkProgress() {
     })
         .then(res => res.json())
         .then(data => {
-            console.log('进度响应:', data);
             updateProgressUI(data);
 
             if (data.status === 'completed') {
@@ -407,7 +402,6 @@ function attachToRunningScan() {
         .then(res => res.json())
         .then(data => {
             if (data.status !== 'scanning' || scanning) return;
-            console.log('检测到后台扫描进行中，接上进度轮询');
             scanning = true;
             const scanBtn = document.getElementById('scanBtn');
             const scanFullBtn = document.getElementById('scanFullBtn');
@@ -803,10 +797,16 @@ const RandomNovel = (function () {
         const tags = tagList.slice(0, 8).map(t =>
             `<a href="?tag=${encodeURIComponent(t)}" class="tag-badge">${escapeHtml(t)}</a>`
         ).join('');
-        // 两个计数徽章：桌面按 8 个算，移动端按 5 个算，由 CSS 切换显示
+        // 桌面：超 8 个显示计数徽章；移动端：超 5 个显示「+N」气泡按钮
+        // （结构与服务端 _random_card.html 保持一致：tags-scroll 单行横滑 + popover 气泡）
         const moreTags =
             (tagList.length > 8 ? `<span class="tag-badge tag-more tag-more-desktop">+${tagList.length - 8}</span>` : '') +
-            (tagList.length > 5 ? `<span class="tag-badge tag-more tag-more-mobile">+${tagList.length - 5}</span>` : '');
+            (tagList.length > 5
+                ? `<button type="button" class="tag-badge tag-more tag-more-mobile" popovertarget="rtagpop-${escapeHtml(n.work_id)}">+${tagList.length - 5}</button>`
+                  + `<div popover id="rtagpop-${escapeHtml(n.work_id)}" class="tags-popover">`
+                  + tagList.map(t => `<a href="?tag=${encodeURIComponent(t)}" class="tag-badge">${escapeHtml(t)}</a>`).join('')
+                  + `</div>`
+                : '');
 
         const intro = n.intro
             ? `<div class="random-intro-label">${icon('book-open', 'sm')} 简介 / 试读</div>
@@ -833,8 +833,8 @@ const RandomNovel = (function () {
                     <a href="${escapeHtml(n.detail_url)}">${escapeHtml(n.title)}</a>
                 </h4>
                 <div class="random-meta">${meta.join('')}</div>
-                ${tags ? `<div class="random-tags">${tags}${moreTags}</div>` : ''}
             </div>
+            ${tags ? `<div class="random-tags"><div class="tags-scroll">${tags}</div>${moreTags}</div>` : ''}
             <div class="random-intro-wrap">${intro}</div>
             <div class="random-card-actions">
                 <a href="${escapeHtml(n.detail_url)}" class="btn btn-secondary">${icon('file', 'sm')} 查看详情</a>
@@ -1603,7 +1603,6 @@ function bindScanButtons() {
 
         newScanBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('增量扫描按钮被点击');
             startScan(false);
         });
     }
@@ -1614,7 +1613,6 @@ function bindScanButtons() {
 
         newScanFullBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('全量扫描按钮被点击');
             startScan(true);
         });
     }

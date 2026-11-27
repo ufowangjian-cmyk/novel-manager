@@ -911,8 +911,7 @@ body.dark-mode .speech-controls {
    内部的居中文字会继承 2em 缩进而整体偏右。以后新增这类组件请加进这里。 */
 .local-image-error,
 .image-fallback-placeholder,
-.error-hint,
-.image-error-hint {
+.error-hint {
   text-indent: 0;
 }
 
@@ -1070,21 +1069,6 @@ body.dark-mode .separator[data-type="line"]::before {
   overflow-wrap: break-word;
 }
 
-.reading-content.font-size-20 {
-  font-size: 20px;
-}
-
-.reading-content.font-size-24 {
-  font-size: 24px;
-}
-
-.reading-content.font-size-28 {
-  font-size: 28px;
-}
-
-.reading-content.font-size-32 {
-  font-size: 32px;
-}
 
 /* 6.4 朗读高亮 */
 .content-line.speech-highlight {
@@ -1575,26 +1559,6 @@ body.dark-mode .local-image-missing {
   border-radius: 10px;
 }
 
-/* 图片加载失败占位图标（Lucide SVG）：
-   font-size 对固定尺寸的 SVG 无效，改用 .ic--xl + 尺寸覆盖 */
-.fallback-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.6;
-}
-
-.fallback-icon .ic {
-  width: 40px;
-  height: 40px;
-  stroke-width: 1.5;
-}
-
-.fallback-text {
-  font-size: 0.95rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
 
 .fallback-link {
   margin-top: 4px;
@@ -1622,9 +1586,6 @@ body.dark-mode .image-fallback-placeholder:hover {
   background: var(--color-bg-quaternary);
 }
 
-body.dark-mode .fallback-text {
-  color: var(--color-text-secondary);
-}
 
 /* 7.4 完结标记 */
 .ending-wrapper {
@@ -2125,11 +2086,6 @@ body.dark-mode .pretty-link:hover {
   color: var(--color-text-primary);
 }
 
-.toc-drawer-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
 .toc-drawer-footer {
   display: flex;
@@ -2612,21 +2568,6 @@ body.dark-mode .content-line mark.search-hit,
     font-size: 20px;
   }
 
-  .reading-content.font-size-20 {
-    font-size: 18px;
-  }
-
-  .reading-content.font-size-24 {
-    font-size: 20px;
-  }
-
-  .reading-content.font-size-28 {
-    font-size: 24px;
-  }
-
-  .reading-content.font-size-32 {
-    font-size: 28px;
-  }
 
   .content-line:not(.chapter-title-level1):not(.chapter-title-level2):not(.chapter-title-level3):not(.separator) {
     /* 交给变量控制，否则首行缩进开关在手机上切了没反应（与桌面/base 规则一致） */
@@ -2778,13 +2719,6 @@ body.dark-mode .content-line mark.search-hit,
     border-radius: 8px;
   }
 
-  .fallback-icon {
-    font-size: 1.8rem;
-  }
-
-  .fallback-text {
-    font-size: 0.85rem;
-  }
 
   .fallback-link {
     font-size: 0.75rem;
@@ -3004,13 +2938,6 @@ body.dark-mode .content-line mark.search-hit,
     min-height: 60px;
   }
 
-  .fallback-icon {
-    font-size: 1.5rem;
-  }
-
-  .fallback-text {
-    font-size: 0.75rem;
-  }
 
   /* 视频 */
   .local-video-figure {
@@ -3170,10 +3097,6 @@ body.dark-mode .content-line mark.search-hit,
 .set-bi[data-style="italic"] { font-style:italic; font-weight:400; }
 .set-bi.on { background:var(--reader-accent, #3a7afe); color:#fff; border-color:transparent; }
 
-/* ===== 配置页 加粗/斜体 复选行 ===== */
-.bi-row { display:flex; gap:16px; margin-top:8px; }
-.bi-check { display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--reader-text, #333); cursor:pointer; }
-.bi-check input { width:16px; height:16px; cursor:pointer; }
 
 /* ==================== 相似书籍（阅读页末页） ====================
    只在全书最后一页出现，跟着阅读主题（纸黄/护眼/夜间）走：

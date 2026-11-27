@@ -674,13 +674,6 @@ body.dark-mode .intro-content .highlight-square-bracket {
 }.intro-content .image-fallback-placeholder:hover {
     background: var(--color-green-light);
     border-color: var(--color-green-dark);
-}.intro-content .fallback-icon {
-    font-size: 2rem;
-    opacity: 0.6;
-}.intro-content .fallback-text {
-    font-size: 0.9rem;
-    color: var(--detail-text-secondary);
-    font-weight: 500;
 }.intro-content .fallback-link {
     margin-top: 2px;
     padding: 4px 14px;
@@ -721,8 +714,6 @@ body.dark-mode .intro-content .highlight-square-bracket {
 }body.dark-mode .intro-content .image-fallback-placeholder:hover {
     background: var(--color-green-darkest-bg);
     border-color: var(--color-green-deeper);
-}body.dark-mode .intro-content .fallback-text {
-    color: var(--color-text-light);
 }body.dark-mode .intro-content .fallback-link {
     background: var(--color-green-deeper);
 }body.dark-mode .intro-content .fallback-link:hover {
@@ -739,10 +730,6 @@ body.dark-mode .intro-content .highlight-square-bracket {
         padding: 16px 12px;
         min-height: 60px;
         border-radius: 8px;
-    }.intro-content .fallback-icon {
-        font-size: 1.5rem;
-    }.intro-content .fallback-text {
-        font-size: 0.8rem;
     }.intro-content .fallback-link {
         font-size: 0.7rem;
         padding: 3px 10px;
@@ -751,10 +738,6 @@ body.dark-mode .intro-content .highlight-square-bracket {
     }}@media (max-width: 480px) {.intro-content .image-fallback-placeholder {
         padding: 12px 10px;
         min-height: 50px;
-    }.intro-content .fallback-icon {
-        font-size: 1.2rem;
-    }.intro-content .fallback-text {
-        font-size: 0.7rem;
     }.intro-content .inline-image {
         max-height: 150px;
     }}/* 加载动画 */@keyframes loading-shimmer {0% {
@@ -884,12 +867,7 @@ body.dark-mode .separator[data-type="flower"] {
     color: var(--color-text-light);
     border-top-color: var(--color-green-dark-bg);
     opacity: 0.6;
-}/* 「返回」按钮琥珀橙样式已统一迁移至 style.css(.btn-nav.btn-back-home)，详情/配置/标签页共用，此处不再重复定义 */}/* 大号占位：font-size 对 SVG 无效，显式给尺寸并保证在 flex 内居中 */.fallback-icon .ic {
-    width: 32px;
-    height: 32px;
-    vertical-align: middle;
-}
-
+}/* 「返回」按钮琥珀橙样式已统一迁移至 style.css(.btn-nav.btn-back-home)，详情/配置/标签页共用，此处不再重复定义 */
 /* ==================== 相似书籍（详情页） ==================== */
 .similar-list {
     display: flex;
@@ -1584,5 +1562,15 @@ body.dark-mode .detail-grid > .detail-card:first-child {
         scrollbar-width: thin;
         scrollbar-color: rgba(114, 139, 71, 0.45) transparent;
         padding-right: 2px;
+    }
+}
+
+/* ===== 页面底部留白（2026-11-27）=====
+   手机浏览器滚到最底时，悬浮的地址栏/工具栏容易盖住章节列表最后几章，
+   给章节树补一段底部内边距：48px ≈ 两章高度，滚到底时最后一章仍完整可见；
+   再叠 env(safe-area-inset-bottom) 兼容全面屏手势条。只影响详情页。 */
+@media (max-width: 768px) {
+    .chapters-tree {
+        padding-bottom: calc(48px + env(safe-area-inset-bottom));
     }
 }

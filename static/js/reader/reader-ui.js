@@ -113,18 +113,10 @@
         return p;
     }
 
-    // 当前生效字体是否已在本地可用（用于页面载入时提示"字体正在下载"）
-    function builtinFontReady(fontStack) {
-        const family = pickBuiltinFamily(fontStack);
-        if (!family) return true;
-        if (typeof document.fonts === 'undefined') return true;
-        try { return document.fonts.check(`16px "${family}"`); } catch (e) { return true; }
-    }
     // ==================== 字号 ====================
     // 字号区间与步长（点 A- / A+ 时每次 ±2px）
     const FONT_MIN = 14;
     const FONT_MAX = 40;
-    const FONT_STEP = 2;
     function getCurrentFontSize() {
         const content = document.querySelector('.reading-content');
         if (content) {
@@ -451,16 +443,8 @@
     // 这个标志只在 mouseup / blur 时复位。
     let holdPointerLock = false;
 
-    // 桌面端判定：有精确指针 + 能 hover 才是桌面。
-    // 比 innerWidth <= 768 准 —— 触屏笔记本不该被当成移动端。
-    function isDesktopPointer() {
-        return !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
-    }
     // 与沉浸模式共用同一份可交互元素白名单：图片/链接/按钮上不启动拖拽
     const DRAG_EXCLUDE_SELECTOR = 'a, img, video, audio, button, input, select, textarea, label, .emoji, [data-img-id], .image-wrapper, .local-video-figure, .image-gallery';
-    function isDragScrollOn() {
-        return dragScrollEnabled;
-    }
     function initDragScroll() {
         const wrapper = document.getElementById('contentWrapper');
         if (!wrapper) return;
@@ -1226,5 +1210,4 @@
     window.toggleDragScroll = toggleDragScroll;
     window.toggleTextSelect = toggleTextSelect;
     window.isTextSelectOn = isTextSelectOn;
-    console.log('✅ reader-ui.js 已加载');
 })();

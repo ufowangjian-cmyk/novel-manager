@@ -251,7 +251,6 @@
         // 查找所有图片
         const images = container.querySelectorAll('.local-image, .inline-image, img[data-viewer]');
         if (images.length === 0) {
-            console.log('📷 没有找到可查看的图片');
             return null;
         }
 
@@ -303,7 +302,6 @@
             // 图片加载完成后回调
             viewed: function(event) {
                 if (typeof vibrate === 'function') vibrate('light');
-                console.log(`👁️ 查看图片 #${event.detail.index + 1}/${imageCount}`);
                 updatePageLabel(event.detail.index);
                 updateZoomPct();
                 // 播到最后一张时库会自动停（loop:false），顺手把图标同步回来
@@ -311,7 +309,6 @@
             },
             // 显示时回调
             shown: function() {
-                console.log('📖 图片查看器已打开');
                 document.body.classList.add('viewer-open');
                 layoutToolbar();
                 updateZoomPct();
@@ -319,7 +316,6 @@
             },
             // 隐藏时回调
             hidden: function() {
-                console.log('📖 图片查看器已关闭');
                 document.body.classList.remove('viewer-open');
                 syncPlayState(false);
             },
@@ -329,7 +325,6 @@
             },
             // 旋转回调
             rotated: function(event) {
-                console.log(`🔄 旋转: ${event.detail.degree}°`);
                 updateZoomPct();
             },
             // 幻灯片：播放中把图标切成「暂停」，页码跟着轮播走（playing 的 detail 里带 index）
@@ -368,7 +363,6 @@
             // 键盘快捷键增强
             enhanceKeyboardShortcuts();
 
-            console.log(`✅ Viewer.js 已启动，共 ${imageCount} 张图片`);
             return viewerInstance;
             
         } catch (error) {
@@ -461,17 +455,6 @@
         window._viewerObserver = observer;
     }
 
-    function updateImageCounter(index) {
-        const counter = document.getElementById('viewer-counter');
-        if (counter) {
-            counter.textContent = `${index + 1} / ${imageCount}`;
-            counter.classList.add('show');
-            clearTimeout(counter._timeout);
-            counter._timeout = setTimeout(() => {
-                counter.classList.remove('show');
-            }, 2000);
-        }
-    }
 
     // ===== 下载按钮 =====
     function addDownloadButton() {
@@ -839,7 +822,6 @@
         if (tapGateCleanup) { tapGateCleanup(); tapGateCleanup = null; }
 
         document.body.classList.remove('viewer-open');
-        console.log('🗑️ Viewer.js 已销毁');
     }
 
     // ===== 获取实例 =====
@@ -945,8 +927,5 @@
     window.flipVertical = flipVertical;
     window.togglePlay = togglePlay;
 
-    console.log('✅ reader-viewer.js (增强版) 已加载');
-    console.log('📖 快捷键: [F]全屏 [R]重置 [1]100% [Space]播放 [O]旋转');
-    console.log('📖 点击图片查看器左侧/右侧翻页');
 
 })();

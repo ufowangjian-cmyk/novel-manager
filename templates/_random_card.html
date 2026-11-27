@@ -9,7 +9,10 @@
      progress / tags / intro / file_path / work_id / cover_url
 
    布局（grid 两列）：
-     第 1 行：封面(col 1) | 标题/信息/标签(col 2)
+     第 1 行：封面(col 1) | 标题/信息(col 2)
+     标签：独立区块 —— 桌面固定在右列（col 2，紧随信息区）；
+           移动端 grid-column: 1 / -1 横跨整行，落在封面下方
+           （元数据+标签内容多时会把封面撑出一大块空白，见 style.css 移动端段）
      第 2 行：简介区（横跨两列，上沿有虚线分隔）
      第 3 行：按钮（横跨两列）
    封面元素必须始终存在 —— 缺了它 grid 会把标题区挤进 108px 那一列。
@@ -51,22 +54,29 @@
             <span class="random-meta-item">{{ icon('calendar', 'sm') }} {{ novel.publish_date }}</span>
             {% endif %}
         </div>
+    </div>
 
-        {% if novel.tags %}
-        <div class="random-tags">
+    {% if novel.tags %}
+    <div class="random-tags">
+        {# 移动端：单行横滑 + 「+N」气泡（复用小说列表那套 tags-scroll / tags-popover）；
+           桌面：.tags-scroll 被 display:contents 透明化，仍是 flex-wrap 布局。
+           气泡 id 用 work_id —— 本模板不在 for 循环里，没有 loop.index 可用。 #}
+        <div class="tags-scroll">
             {% for tag in novel.tags[:8] %}
             <a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>
             {% endfor %}
-            {# 两个计数徽章：桌面按 8 个算，移动端按 5 个算，由 CSS 切换显示 #}
-            {% if novel.tags|length > 8 %}
-            <span class="tag-badge tag-more tag-more-desktop">+{{ novel.tags|length - 8 }}</span>
-            {% endif %}
-            {% if novel.tags|length > 5 %}
-            <span class="tag-badge tag-more tag-more-mobile">+{{ novel.tags|length - 5 }}</span>
-            {% endif %}
+        </div>
+        {% if novel.tags|length > 8 %}
+        <span class="tag-badge tag-more tag-more-desktop">+{{ novel.tags|length - 8 }}</span>
+        {% endif %}
+        {% if novel.tags|length > 5 %}
+        <button type="button" class="tag-badge tag-more tag-more-mobile" popovertarget="rtagpop-{{ novel.work_id }}">+{{ novel.tags|length - 5 }}</button>
+        <div popover id="rtagpop-{{ novel.work_id }}" class="tags-popover">
+            {% for tag in novel.tags %}<a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>{% endfor %}
         </div>
         {% endif %}
     </div>
+    {% endif %}
 
     <div class="random-intro-wrap">
         {% if novel.intro %}

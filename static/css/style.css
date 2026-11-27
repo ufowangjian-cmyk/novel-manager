@@ -162,21 +162,6 @@ body {
     white-space: nowrap;
 }
 
-.user-menu-btn-arrow {
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-    transition: transform 0.2s ease;
-}
-
-.user-menu-btn-arrow .ic {
-    width: 14px;
-    height: 14px;
-}
-
-.user-menu-btn[aria-expanded="true"] .user-menu-btn-arrow {
-    transform: rotate(180deg);
-}
 
 /* 下拉面板：头部叠在背景图上，面板必须用实色保证可读 */
 .user-menu-dropdown {
@@ -393,13 +378,6 @@ body.dark-mode .stats-scan-btn:hover {
     }
 }
 
-.dir-info {
-    color: rgba(255, 255, 255, 0.9);
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 
 .sep {
     color: rgba(255, 255, 255, 0.5);
@@ -802,7 +780,10 @@ td:nth-child(6) a {
     text-decoration: none;
 }
 
-/* 移动端卡片（默认显示，桌面端隐藏） */
+/* 移动端列表（默认显示，桌面端隐藏）
+   参考成熟小说站书架/榜单的扁平排版：整行铺满，去掉白底、圆角、阴影、
+   左侧竖条和卡片间距，只用 1px 细分隔线区隔每条记录（上/下各一条）。
+   行内仍是「书名行 / 信息行 / 标签行」三行，与上一版一致。 */
 .mobile-card-list {
     display: block;
 }
@@ -814,15 +795,24 @@ td:nth-child(6) a {
 }
 
 .novel-card {
-    background: var(--color-bg-white);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 8px var(--opacity-black-10);
-    border-left: 4px solid var(--color-primary-dark);
+    background: transparent;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--color-border-primary);
 }
 
+/* 列表顶部补一条线，让每条记录上下都被细线夹住；与行线同宽同色 */
+.mobile-card-list .novel-card:first-child {
+    border-top: 1px solid var(--color-border-primary);
+}
+
+/* 标题行：书名 + 作者同一行；书名可收缩省略，作者胶囊固定不缩。
+   标题、作者、徽章整体都放这一行，视觉上把两行信息压成一行。 */
 .novel-card-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
     font-size: 1.1em;
     font-weight: 600;
     margin-bottom: 8px;
@@ -833,28 +823,102 @@ td:nth-child(6) a {
     text-decoration: none;
 }
 
-.novel-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-size: 0.85em;
+/* 书名链接可收缩省略；作者胶囊由自己的 max-width 封顶，不跟着一起被压缩 */
+.novel-card-title > a {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+.novel-card-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    min-width: 0;
+    margin-bottom: 8px;
+    font-size: 0.85em;
+    color: var(--color-text-gray);
+}
+
+/* 日期优先收缩省略；字数与进度固定，保证信息不丢 */
 .novel-card-date {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+    overflow: hidden;
 }
 
+.novel-card-date-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* meta 行里的发表网站：与日期同样可收缩省略（网站名长的书不把行撑爆） */
+.novel-card-site {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.novel-card-date .ic,
+.novel-card-count,
+.novel-card-meta .progress-badge {
+    flex-shrink: 0;
+}
+
+/* meta 行里的进度徽章去掉自身 margin，交给父级 gap 统一控制间距 */
+.novel-card-meta .progress-badge {
+    margin: 0;
+}
+
+/* meta 行分隔符：日期/字数/进度都是数字，中点分开才好辨认；
+   颜色继承 meta 行的文字色，靠透明度压淡做辅助节奏 */
+.novel-card-meta .meta-sep {
+    flex-shrink: 0;
+    opacity: 0.55;
+}
+
+/* 媒体图标与阅读状态从标题行移进 meta 行后：清掉它们为标题行设计的
+   左外边距（.media-badge 5px / .reading-status-* 6px），间距统一交给父级 gap；
+   图标与状态按钮自身不参与收缩，窄屏时仍由日期先省略让位 */
+.novel-card-meta .media-badge,
+.novel-card-meta .reading-status-btn,
+.novel-card-meta .reading-status-chip {
+    margin-left: 0;
+    flex-shrink: 0;
+}
+
+/* 移动端卡片现在只渲染主名（模板里不再生成马甲链接），这里顺便给名字封顶：
+   最多占标题行 38%，超出部分省略，把宽度尽量让给书名。
+   display:block + overflow/text-overflow/white-space 让 flex item 内部也能出省略号，
+   min-width:0 保证它不会被内容撑破 max-width。去掉 author-links class 是为了
+   避开它自带的 inline-flex / flex-wrap（flex 容器上 text-overflow 不生效）。 */
 .novel-card-author {
+    /* 右对齐：排到标题行最末，再用 auto 外边距吃掉书名与作者之间的空隙，
+       不再紧贴书名。徽章（stale/missing/media）留在书名一侧，不跟着跑到右边。 */
+    order: 1;
+    margin-left: auto;
     /* 底色跟标题（--color-primary-dark #728B47）拉开层次：
        比标题浅一档，里面的文字统一用白色，实底上更跳、更突出。
        之前用的 #4A6B2A 比标题深，大色块反而压过书名。 */
     background: #7E9652;   /* 比标题色 #728B47 只浅一档，色相相同 */
-    padding: 2px 10px;
+    padding: 1px 8px;
     border-radius: 20px;
+    font-size: 0.85em;
     font-weight: 500;
+    flex-shrink: 0;
+    display: block;
+    min-width: 0;
+    max-width: 38%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* 里面默认是深绿文字（.author-link），实底上发黑、压不住底色；
@@ -864,13 +928,6 @@ td:nth-child(6) a {
     border-bottom-color: rgba(255, 255, 255, 0.45);
 }
 
-/* 马甲本来就靠透明度区分从属关系（.author-alias-link 自带 opacity .8，
-   白字再叠一层就够淡了，不要再压 color 的 alpha） */
-.novel-card-author .author-alias-link {
-    color: #fff;
-    opacity: 0.82;
-}
-
 .novel-card-tags {
     display: flex;
     flex-wrap: wrap;
@@ -878,20 +935,10 @@ td:nth-child(6) a {
     margin-bottom: 8px;
 }
 
-.novel-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85em;
-    border-top: 1px solid var(--color-border-primary);
-    padding-top: 8px;
-}
-
 @media (max-width: 768px) {
+    /* 扁平列表行：只留上下呼吸空间，不要圆角 / 卡片间距 */
     .novel-card {
-        padding: 8px 10px;
-        margin-bottom: 6px;
-        border-radius: 8px;
+        padding: 11px 2px;
     }
 
     .novel-card-title {
@@ -907,28 +954,103 @@ td:nth-child(6) a {
 
     .novel-card-tags {
         margin-bottom: 4px;
+        /* 标签强制一行：超出部分左右滑动（触屏手势），不再换行挤压卡片高度 */
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    /* 滚动容器只包标签本身；+N 按钮留在行尾不被滚走。
+       通用类：小说列表卡片（.novel-card-tags）与每日推荐（.random-tags）共用 */
+    .tags-scroll {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 5px;
+        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        /* 右端 20px 渐隐：提示后面还有内容可滑 */
+        mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 20px), transparent 100%);
+    }
+
+    .tags-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tags-scroll .tag-badge {
+        flex-shrink: 0;
+        margin: 0;
+    }
+
+    /* +N 改成气泡触发按钮：复用标签胶囊外观，重置 button 的 UA 字体 */
+    button.tag-more {
+        flex-shrink: 0;
+        margin: 0;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    /* 全部标签气泡（原生 popover，top layer 渲染，不受 overflow 裁剪）。
+       位置由 JS 在打开时按 +N 按钮坐标计算（见 index.html 的 click 监听）；
+       position:fixed + inset:auto 是让 JS 坐标能生效的前提 */
+    .tags-popover {
+        position: fixed;
+        inset: auto;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border-primary);
+        border-radius: 12px;
+        background: var(--color-bg-white);
+        color: var(--color-text-dark);
+        box-shadow: 0 8px 24px var(--opacity-black-10);
+        max-width: min(340px, calc(100vw - 32px));
+        /* 标签特别多时气泡内部滚动，不撑破视口；
+           内部滚动不触发 window scroll，不会被上面的「滑动即关」误杀 */
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+    }
+
+    .tags-popover:popover-open {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    body.dark-mode .tags-popover {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
     }
 
     /* 移动端卡片里的标签：原来是绿色实底白字，一屏小标签比书名还抢眼。
        改成「透明底 + 浅色细边 + 中性绿文字」，把视觉重量让给标题。
-       选择器限定在 .novel-card-tags 内，桌面表格的 .tag-badge 不受影响。 */
-    .novel-card-tags .tag-badge {
+       每日推荐的 .random-tags 同步复用这套配色。 */
+    .novel-card-tags .tag-badge,
+    .random-tags .tag-badge {
         background: transparent;
         color: var(--color-primary-dark);
         border: 1px solid var(--color-border-primary);
         opacity: 0.72;
     }
 
-    body.dark-mode .novel-card-tags .tag-badge {
+    body.dark-mode .novel-card-tags .tag-badge,
+    body.dark-mode .random-tags .tag-badge {
         background: transparent;
         color: #9aa88f;
         border-color: rgba(255, 255, 255, 0.16);
         opacity: 1;
     }
 
-    .novel-card-footer {
-        padding-top: 2px;
-        font-size: 0.75em;
+    /* 每日推荐标签行：与小说列表一致的单行横滑。
+       ⚠️ 用两级选择器压特异性——.random-tags 的基础规则（flex-wrap:wrap）
+       在源码顺序上位于本媒体查询之后，同特异性会被它覆盖回去。 */
+    .random-card .random-tags {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    /* 移动端卡片不提供「标记已读」入口：一次也没用过，
+       桌面表格保留 hover 显示的同款按钮（选择器限定在 .mobile-card-list 内）。 */
+    .mobile-card-list .reading-status-btn.is-none {
+        display: none;
     }
 
     .tag-badge {
@@ -1106,19 +1228,7 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
 /* ============================================
    7. 选项卡 & 折叠功能（桌面端+移动端统一）
    ============================================ */
-.tabs-header-wrapper {
-    margin-bottom: 20px;
-}
 
-.tabs-nav {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--color-primary-light);
-    border-radius: 15px 15px 0 0;
-    padding: 5px 5px 0 5px;
-    box-shadow: 0 -2px 10px var(--opacity-black-10);
-}
 
 .tab-btn {
     padding: 12px 24px;
@@ -1144,35 +1254,6 @@ body.dark-mode .tags-wrapper a.tag-badge:focus-visible {
     border-bottom: 3px solid var(--color-primary-dark);
 }
 
-/* 折叠按钮 - 靠右对齐 */
-.tabs-nav .tabs-collapse-btn {
-    margin-left: auto;
-    background: transparent;
-    border: none;
-    color: var(--color-text-dark);
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0;
-    border-radius: 12px;
-    transition: transform 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-.tabs-nav .tabs-collapse-btn:hover {
-    background: var(--opacity-black-10);
-    color: var(--color-primary-dark);
-}
-
-/* 折叠状态 - 箭头向下旋转 */
-.tabs-nav .tabs-collapse-btn.collapsed {
-    transform: rotate(180deg);
-}
 
 /* 选项卡内容包装器 */
 .tabs-content-wrapper {
@@ -2112,12 +2193,25 @@ body.dark-mode .random-refresh-btn:disabled {
     padding: 18px;
     /* 两列网格：封面(108px) + 信息。minmax(0, 1fr) 而非 1fr —— 后者的最小宽度
        是内容宽度，超长标题/标签会把网格撑破。
-       简介区和按钮用 grid-column: 1 / -1 横跨整行，落在封面下方。 */
+       标签已从 main 里移出成为独立区块（_random_card.html / main.js 同步改过）：
+       main 用 display:contents 让标题/元数据/标签直接参与网格，
+       桌面 areas 让封面跨「标题/元数据/标签」三行、右列依次堆叠，
+       行间不用 row-gap（靠 title/meta 自身的 margin），与旧版观感一致；
+       简介和按钮横跨整行，落在封面下方。 */
     display: grid;
     grid-template-columns: 108px minmax(0, 1fr);
+    grid-template-areas:
+        "cover title" "cover meta" "cover tags"
+        "intro intro"
+        "actions actions";
     column-gap: 16px;
-    row-gap: 16px;
+    row-gap: 0;
     align-items: start;
+}
+
+/* 标题/元数据/标签直接参与上面的网格布局；main 本身不再占格子 */
+.random-card-main {
+    display: contents;
 }
 
 .random-card.swapping {
@@ -2126,6 +2220,7 @@ body.dark-mode .random-refresh-btn:disabled {
 }
 
 .random-title {
+    grid-area: title;
     margin: 0 0 10px 0;
     font-size: 1.15rem;
     line-height: 1.4;
@@ -2142,6 +2237,7 @@ body.dark-mode .random-refresh-btn:disabled {
 }
 
 .random-meta {
+    grid-area: meta;
     display: flex;
     flex-wrap: wrap;
     gap: 6px 16px;
@@ -2187,17 +2283,25 @@ body.dark-mode .random-refresh-btn:disabled {
 }
 
 .random-tags {
+    grid-area: tags;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
+/* 桌面：tags-scroll 只是结构层（移动端单行横滑用），透明化让标签
+   直接参与上面的 flex-wrap 布局，观感与移出 main 之前一致 */
+.random-tags .tags-scroll {
+    display: contents;
+}
+
 /* --- 简介 / 试读 --- */
 .random-intro-wrap {
+    grid-area: intro;
     border-top: 1px dashed var(--color-border-primary);
     padding-top: 12px;
-    /* 横跨两列：虚线从头贯穿到尾，简介也在封面下方铺满整行 */
-    grid-column: 1 / -1;
+    /* 桌面 row-gap 归零后行间距由这里补回，与旧版一致 */
+    margin-top: 16px;
 }
 
 .random-intro-label {
@@ -2239,15 +2343,17 @@ body.dark-mode .random-refresh-btn:disabled {
 }
 
 .random-card-actions {
+    grid-area: actions;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    grid-column: 1 / -1;
+    margin-top: 16px;
 }
 
 /* 「每日推荐」封面：固定 3:4 比例，无图时用书名首字占位。
    这个元素必须始终渲染 —— 它是 grid 的第一列。 */
 .random-cover {
+    grid-area: cover;
     width: 108px;
     aspect-ratio: 3 / 4;
     border-radius: 8px;
@@ -2317,12 +2423,43 @@ body.dark-mode .random-refresh-btn:disabled {
 
     .random-card {
         grid-template-columns: 84px minmax(0, 1fr);
+        /* 标签独立成整行（areas 第二段跨两列）：内容多时是标签+元数据把行高
+           撑爆、封面下面留大块空白。移出来后右侧只剩标题+元数据，与封面接近。 */
+        grid-template-areas:
+            "cover title" "cover meta"
+            "tags tags"
+            "intro intro"
+            "actions actions";
         gap: 12px;
         padding: 12px;
     }
 
     .random-cover {
         width: 84px;
+        /* 封面自适应拉伸：标签移到整行后，行高仍略高于封面时（元数据折多行），
+           让封面补齐剩余高度，不再在封面下方露一块底色。
+           img 本身就是 object-fit: cover，拉伸时裁剪填充不失真；
+           aspect-ratio 放开交给行高决定，min 保住 3:4 底线，max 160px
+           防止元数据特别多时封面变成细长条（此时剩余空白已很小）。 */
+        align-self: stretch;
+        aspect-ratio: auto;
+        min-height: 112px;
+        max-height: 160px;
+    }
+
+    /* 无图占位封（渐变 + 首字 + 占位底图）不参与拉伸：
+       拉伸是给真图裁剪填充用的，占位背景会被拉变形。
+       保持原始 3:4 落在行顶，代价只是无图书封面下方可能有一点空白。 */
+    .random-cover.random-cover-empty {
+        align-self: start;
+        aspect-ratio: 3 / 4;
+        max-height: none;
+    }
+
+    /* 桌面为 row-gap:0 补的 margin-top，移动端有 gap:12 就不再需要 */
+    .random-intro-wrap,
+    .random-card-actions {
+        margin-top: 0;
     }
 
     .random-cover-initial {
@@ -2331,7 +2468,7 @@ body.dark-mode .random-refresh-btn:disabled {
 
     /* 移动端标签只留前 5 个，剩下的用「+N」表示。
        选择器限定为 a.tag-badge，计数徽章是 <span> 不受影响。 */
-    .random-tags > a.tag-badge:nth-child(n+6) {
+    .random-tags .tags-scroll a.tag-badge:nth-child(n+6) {
         display: none;
     }
 
@@ -3072,9 +3209,6 @@ body.dark-mode .author-link {
     border-bottom-color: var(--dark-btn-secondary-border);
 }
 
-body.dark-mode .tabs-nav {
-    background: var(--dark-bg-secondary);
-}
 
 body.dark-mode .tab-btn {
     color: var(--dark-text-secondary);
@@ -3091,14 +3225,6 @@ body.dark-mode .tab-btn.active {
     border-bottom-color: var(--dark-primary);
 }
 
-body.dark-mode .tabs-nav .tabs-collapse-btn {
-    color: var(--dark-text-secondary);
-}
-
-body.dark-mode .tabs-nav .tabs-collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--dark-primary-lighter);
-}
 
 body.dark-mode .tabs-header-wrapper .tabs-content-wrapper {
     background: var(--dark-bg-secondary);
@@ -3189,8 +3315,15 @@ body.dark-mode .pagination-jump button:hover {
     background: var(--color-btn-active);
 }
 
+/* 扁平列表：深色下不要独立底色，分隔线改用暗色边框令牌
+   （--color-border-primary 是浅色，深色模式未覆盖，会显得过亮） */
 body.dark-mode .mobile-card-list .novel-card {
-    background: var(--dark-bg-secondary);
+    background: transparent;
+    border-bottom-color: var(--dark-border-primary);
+}
+
+body.dark-mode .mobile-card-list .novel-card:first-child {
+    border-top-color: var(--dark-border-primary);
 }
 
 body.dark-mode .user-menu-dropdown {
@@ -3271,14 +3404,6 @@ body.dark-mode .novel-card-author .author-link {
     border-bottom-color: rgba(255, 255, 255, 0.5);
 }
 
-body.dark-mode .novel-card-author .author-alias-link {
-    color: rgba(255, 255, 255, 0.85);
-}
-
-body.dark-mode .novel-card-footer {
-    border-top-color: var(--dark-border-primary);
-}
-
 body.dark-mode .novel-card-title a {
     color: var(--dark-text-primary);
     font-weight: 500;
@@ -3288,10 +3413,6 @@ body.dark-mode .novel-card-meta {
     color: var(--dark-text-secondary);
 }
 
-body.dark-mode .novel-card-footer {
-    color: var(--dark-text-secondary);
-    border-top-color: var(--dark-border-primary);
-}
 
 /* ============================================
    14. 移动端覆盖（所有移动端样式集中在这里）
@@ -3421,9 +3542,6 @@ body.dark-mode .novel-card-footer {
         font-size: 0.75em;
     }
 
-    .dir-info {
-        max-width: 46vw;
-    }
 
     .sep {
         display: none;
@@ -3515,17 +3633,7 @@ body.dark-mode .novel-card-footer {
     }
 
     /* 选项卡 - 移动端特殊处理 */
-    .tabs-header-wrapper {
-        margin: 0 8px 12px 8px;
-    }
 
-    .tabs-nav {
-        gap: 4px;
-        padding: 6px 6px 0 6px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        flex-wrap: nowrap;
-    }
 
     .tab-btn {
         flex: 1 1 auto;
@@ -3536,11 +3644,6 @@ body.dark-mode .novel-card-footer {
         white-space: nowrap;
     }
 
-    /* 移动端隐藏折叠按钮：四个标签已经够挤，按钮再占 24px 会压缩文字。
-       折叠能力本身保留——点击当前已选中的标签依然可以收起/展开面板。 */
-    .tabs-nav .tabs-collapse-btn {
-        display: none !important;
-    }
 
     /* 选项卡内容 */
     .tab-content {
@@ -4214,14 +4317,6 @@ body.dark-mode .suggestion-item .highlight {
     flex-basis: 100%;
 }
 
-.header-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: center;
-    flex-basis: 100%;
-    justify-content: flex-start;
-}
 
 /* 兼容旧的 .config-btn（保留，标记为废弃） */
 /* ============================================
@@ -4278,8 +4373,7 @@ body.dark-mode .btn-warning:hover {
     }
 
     /* 头部按钮组保持水平 */
-    .header .button-group,
-    .header-actions {
+    .header .button-group {
         display: flex !important;
         flex-direction: row !important;
         justify-content: center !important;
@@ -5172,6 +5266,46 @@ th {
     }
 
     .stats-badge > * {
+        flex-shrink: 0;
+    }
+}
+
+/* ---- 超窄屏统计行防溢出（≤380px）----
+   根因：.stats-row 是 .header 的直接 flex 项（窄屏 header-left 为 display:contents），
+   默认 min-width:auto 会取内部 min-content；而上面那条兜底让胶囊 nowrap + 子元素
+   不收缩，min-content 约 321px。头部可用宽度只有「视口 - 60px」（外层 20 + 内边距 40），
+   视口 ≤380px 时放不下，整行硬撑出去，把 layout viewport 撑宽、页面能横向滚动。
+   三处一起收：a) 行与胶囊允许收缩，彻底消除溢出；b) 压缩留白/字号、隐藏装饰图标，
+   让「内存 xx MB / 共 xxxx 本小说」仍尽量完整显示；c) count-info 可省略，兜住
+   总数位数变多等极端数据。搜索按钮保持不缩，仍在右侧竖列上。 */
+@media (max-width: 380px) {
+    .stats-row {
+        min-width: 0;
+        gap: 6px;
+    }
+
+    .stats-badge {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        gap: 5px;
+        padding: 0 8px;
+        font-size: 0.65em;
+    }
+
+    .stats-badge .count-info {
+        min-width: 0;
+        flex-shrink: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* 图标是装饰：超窄屏让位给文字，信息本身不丢 */
+    .stats-badge .count-info .ic {
+        display: none;
+    }
+
+    .stats-badge .stats-scan-btn {
         flex-shrink: 0;
     }
 }

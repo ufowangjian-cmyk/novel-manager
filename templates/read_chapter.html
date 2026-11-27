@@ -521,24 +521,8 @@
     <script src="{{ url_for('static', filename='js/viewer.min.js') }}"></script>
     <script>
         // ===== 传递全局变量 =====
-        const TOTAL_LINES = parseInt(document.getElementById('app-data').dataset.totalLines) || 0;
-        // ===== 跳转到指定行 =====
-        function jumpToLine() {
-            const input = document.getElementById('jumpLine');
-            let line = parseInt(input.value);
-            if (isNaN(line) || line < 1) {
-                alert('请输入有效的行号');
-                return;
-            }
-            if (line > TOTAL_LINES) {
-                line = TOTAL_LINES;
-            }
-            if (typeof closeSetDrawer === 'function') closeSetDrawer();
-            window.location.href = '?line=' + line;
-        }
         // ===== 页面加载初始化 =====
         document.addEventListener('DOMContentLoaded', async function () {
-            console.log('📖 阅读页初始化开始...');
             // 1. 主题（common.js）
             // 原来判断的是 loadAndApplyTheme —— 这个函数从来没存在过，
             // 整个 if 块不执行，阅读页因此从未注册系统主题监听（2026-11-15 修）。
@@ -603,7 +587,6 @@
                         convertedCount++;
                     }
                 });
-                console.log(`✅ 转换完成，${convertedCount} 行有变化`);
 
                 // ===== 5.5 连续配图合并为画廊（reader-core.js）=====
                 // 必须在第 7 步 initViewerJS() 之前：Viewer 按 DOM 顺序收集图片，
@@ -677,7 +660,6 @@
             if (typeof initDragScroll === 'function') {
                 initDragScroll();
             }
-            console.log('✅ 阅读页初始化完成');
         });
     </script>
 {% endblock %}

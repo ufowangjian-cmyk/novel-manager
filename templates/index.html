@@ -747,43 +747,61 @@
                         href="{{ url_for('novel_detail', file_path=novel_url_token(novel['file_path'], novel.work_id), page=pagination.page, search=search_text, author=search_author, tag=search_tag, site=search_site, sort=sort_by, order=sort_order) }}">
                         {{ novel.title }}
                     </a>
-                    {# 同桌面表格：徽章放在 <a> 外面，否则会被书名高亮脚本覆盖 #}
+                    {# 移动端只显示主名：马甲多时会挤占书名的空间。
+                       注意别加 title 属性——main.js 的书名格式化脚本会拿 title 重建文本 #}
+                    <span class="novel-card-author"><a
+                            href="?author={{ novel.author_main|urlencode }}"
+                            class="author-link">{{ novel.author_main }}</a></span>
+                    {# stale/missing 徽章留在标题行（同桌面表格：徽章放在 <a> 外面，
+                       否则会被书名高亮脚本覆盖）；媒体图标和阅读状态已移到 meta 行 #}
                     {% if novel.stale %}<span class="stale-badge" title="文件已更新">{{ icon('alert-triangle', 'sm')
                         }}️</span>{% endif %}
                     {% if novel.missing %}<span class="missing-badge" title="文件已丢失">{{ icon('circle-x', 'sm')
                         }}</span>{% endif %}
-                    {% if novel.has_images %}<span class="media-badge media-badge--image" title="含配图">{{ icon('image', 'sm') }}</span>{% endif %}
-                    {% if '视频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--video" title="含视频">{{ icon('film', 'sm') }}</span>{% endif %}
-                    {% if '音频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--audio" title="含音频">{{ icon('music', 'sm') }}</span>{% endif %}
-                    {% include "_reading_status.html" %}
                 </div>
                 <div class="novel-card-meta">
-                    <span class="novel-card-author author-links">{% for link in novel.author_links %}<a
-                            href="?author={{ link.name|urlencode }}"
-                            class="author-link{% if link.is_alias %} author-alias-link{% endif %}">{{ link.name }}</a>{%
-                        endfor %}</span>
-                    <span class="novel-card-date">{{ icon('calendar', 'sm') }} {{ novel.publish_date or '未知'
-                        }}</span></span>
-                </div>
-                <div class="novel-card-tags">
-                    {% if novel.tags != '无' %}
-                    {% set tags_list = novel.tags.split(',') %}
-                    {% if tags_list|length > max_tags_display %}
-                    <span title="完整标签：{{ novel.tags }}">{% for tag in tags_list[:max_tags_display] %}<span class="tag-badge">{{ tag }}</span>{% endfor %}<span class="tag-badge tag-more">+{{ tags_list|length - max_tags_display }}</span></span>
-                    {% else %}
-                    {% for tag in tags_list %}<span class="tag-badge">{{ tag }}</span>{% endfor %}
+                    <span class="novel-card-date">{{ icon('calendar', 'sm') }} <span
+                            class="novel-card-date-text">{{ novel.publish_date or '未知' }}</span></span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
+                    {# 发表网站：纯文本展示（不做成链接，与标签同理防误触）；
+                       大小写美化与桌面表格同款，超长省略由 CSS 处理 #}
+                    {% set display_site = novel.site %}
+                    {% if novel.site|lower in ['sis001', 'eyny', 's8', 'sexinsex'] %}
+                    {% set display_site = novel.site|upper if novel.site.isupper() else novel.site|capitalize %}
                     {% endif %}
-                    {% endif %}
-                </div>
-                <div class="novel-card-footer">
-                    <span>
+                    <span class="novel-card-site">{{ display_site }}</span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
+                    <span class="novel-card-count">
                         {% if novel.word_count >= 10000 %}
                         {{ '{:.1f}'.format(novel.word_count / 10000) }}万字
                         {% else %}
                         {{ novel.word_count }}字
                         {% endif %}
                     </span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
                     <span class="progress-badge">{{ novel.progress }}</span>
+                    {% if novel.has_images %}<span class="media-badge media-badge--image" title="含配图">{{ icon('image', 'sm') }}</span>{% endif %}
+                    {% if '视频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--video" title="含视频">{{ icon('film', 'sm') }}</span>{% endif %}
+                    {% if '音频' in (novel.tags or '').split(',') %}<span class="media-badge media-badge--audio" title="含音频">{{ icon('music', 'sm') }}</span>{% endif %}
+                    {% include "_reading_status.html" %}
+                </div>
+                <div class="novel-card-tags">
+                    {% if novel.tags != '无' %}
+                    {% set tags_list = novel.tags.split(',') %}
+                    {# 标签强制一行，超出部分横向滑动（触屏手势），滚动条隐藏 #}
+                    <div class="tags-scroll">
+                        {% for tag in tags_list[:max_tags_display] %}<span class="tag-badge">{{ tag }}</span>{% endfor %}
+                    </div>
+                    {% if tags_list|length > max_tags_display %}
+                    {# 「+N」是移动端唯一的标签入口：点击弹气泡显示全部标签（气泡内可点筛选）。
+                       用原生 popover：渲染在 top layer，不会被标签行的横向滚动裁掉；
+                       位置用 CSS anchor 定位贴在按钮下方，不支持的浏览器降级为视口居中。 #}
+                    <button type="button" class="tag-badge tag-more" popovertarget="tagpop-{{ loop.index }}">+{{ tags_list|length - max_tags_display }}</button>
+                    <div popover id="tagpop-{{ loop.index }}" class="tags-popover">
+                        {% for tag in tags_list %}<a href="?tag={{ tag|urlencode }}" class="tag-badge">{{ tag }}</a>{% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -1004,16 +1022,33 @@ main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
                 });
             }
 
-            // 移动端卡片标签点击跳转
-            document.querySelector('.mobile-card-list')?.addEventListener('click', function (e) {
-                const tag = e.target.closest('.tag-badge');
-                if (tag && !tag.classList.contains('tag-more')) {
-                    e.preventDefault();
-                    const tagText = tag.textContent;
-                    if (tagText && !tagText.startsWith('+')) {
-                        window.location.href = `?tag=${encodeURIComponent(tagText)}`;
-                    }
-                }
+            // 移动端卡片标签不再可点（容易误触）：标签纯展示，
+            // 想按标签筛选就走「+N」气泡或桌面表格；这段旧的点击跳转已删。
+
+            // 滑动页面时自动关闭气泡：原生 popover 只响应「点外部」关闭，
+            // 手机上滚一下列表就该把气泡收掉，避免它一直悬在原地挡视线。
+            // passive 不阻塞滚动；气泡自身的内部滚动不会触发 window scroll，不会误关。
+            // .tags-popover 是通用类：小说列表卡片和每日推荐都在覆盖范围内。
+            window.addEventListener('scroll', function () {
+                document.querySelectorAll('.tags-popover:popover-open')
+                    .forEach(function (p) { p.hidePopover(); });
+            }, { passive: true });
+
+            // 全部标签气泡：点「+N」后按按钮的视口坐标定位（fixed）。
+            // 用 click 捕获 + rAF，而不是 popover 的 toggle 事件——
+            // 各家内核对 toggle 的触发时机实现不一，click 方案行为最一致。
+            // 不限定容器：小说列表卡片和每日推荐的「+N」气泡共用这套定位。
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('[popovertarget]');
+                if (!btn) return;
+                requestAnimationFrame(function () {
+                    const pop = document.getElementById(btn.getAttribute('popovertarget'));
+                    if (!pop || !pop.matches(':popover-open')) return;
+                    const r = btn.getBoundingClientRect();
+                    pop.style.top = (r.bottom + 6) + 'px';
+                    const w = pop.offsetWidth;
+                    pop.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';
+                });
             });
 
             // 移动端跳转 - 下拉选择直接跳转

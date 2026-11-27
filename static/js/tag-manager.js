@@ -412,25 +412,6 @@ async function addDerivedRule() {
 }
 
 
-// 编辑关键词
-async function editKeyword(index) {
-    const keyword = prompt('请输入新的关键词:');
-    if (!keyword) return;
-    
-    const response = await fetch('/api/tag/keyword/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ index, keyword })
-    });
-    
-    const result = await response.json();
-    if (result.success) {
-        showNotification('关键词已修改', 'success');
-        loadTagRules();
-    } else {
-        showNotification(result.message, 'error');
-    }
-}
 
 
 // 删除别名（原地编辑版本，接收 mainTag）
@@ -489,54 +470,8 @@ async function deleteDerivedRule(index, skipConfirm) {
     }
 }
 
-// 收集当前关键词（从DOM）
-function collectKeywords() {
-    const items = document.querySelectorAll('#keywordListContainer .tag-item');
-    const keywords = [];
-    items.forEach(item => {
-        const nameSpan = item.querySelector('.tag-name');
-        if (nameSpan) {
-            keywords.push(nameSpan.textContent);
-        }
-    });
-    return keywords;
-}
 
-// 收集当前别名（从DOM）
-function collectAliases() {
-    const items = document.querySelectorAll('#aliasListContainer .alias-item');
-    const aliases = {};
-    items.forEach(item => {
-        const mainTag = item.dataset.main;
-        const aliasStr = item.dataset.aliases;
-        if (mainTag && aliasStr) {
-            const list = aliasStr.split(/[ ,，]+/).filter(s => s.trim());
-            aliases[mainTag] = list;
-        }
-    });
-    return aliases;
-}
 
-// 收集当前派生规则（从DOM）
-function collectImplications() {
-    const items = document.querySelectorAll('#ruleListContainer .rule-item');
-    const implications = {};
-    items.forEach(item => {
-        const sourceSpan = item.querySelector('.rule-source');
-        const derivedSpan = item.querySelector('.rule-derived');
-        if (sourceSpan && derivedSpan) {
-            const source = sourceSpan.textContent;
-            const derived = derivedSpan.textContent;
-            if (!implications[source]) {
-                implications[source] = [];
-            }
-            if (!implications[source].includes(derived)) {
-                implications[source].push(derived);
-            }
-        }
-    });
-    return implications;
-}
 
 // 重载标签规则
 async function reloadTagRules() {

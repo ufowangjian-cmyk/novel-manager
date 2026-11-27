@@ -53,17 +53,6 @@
             l.href = '/static/css/font.css?v={{ css_version }}';
             document.head.appendChild(l);
         }
-        function isMobileUA() {
-            var ua = navigator.userAgent || '';
-            if (/Mobi|Android|iPhone|iPod|iPad|Windows Phone|IEMobile|BlackBerry|Opera Mini/i.test(ua)) {
-                return true;
-            }
-            try {
-                // iPadOS 13+ 默认发桌面版 UA（含 Macintosh），用触摸点数兜底
-                if (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)) return true;
-            } catch (e) { /* ignore */ }
-            return false;
-        }
         // 不再因「移动端 UA」一刀切跳过：移动 WiFi / 4g-5g 也是正常网络，
         // 理应渐进式加载字体（font.css 仅 1KB 定义，真正的字体文件只在你
         // 在下拉里选了某个内置字体时才按需下载）。低网保护只保留下方

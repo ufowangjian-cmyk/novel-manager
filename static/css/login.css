@@ -120,21 +120,6 @@
   text-align: center;
   font-size: 12px;
   color: var(--login-text-light);
-}.user-list h3 {
-  font-size: 14px;
-  color: var(--login-text-secondary);
-  margin-bottom: 10px;
-}.user-role {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background: var(--login-role-bg-light);
-}.user-role.admin {
-  background: var(--login-role-admin-bg);
-  color: var(--login-role-text);
-}.user-role.user {
-  background: var(--login-role-user-bg);
-  color: var(--login-role-text);
 }/* 登录页标题图标样式 */.title-with-icon {
   display: flex;
   align-items: center;

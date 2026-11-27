@@ -133,10 +133,7 @@
     border-radius: 20px;
     font-size: 12px;
     font-weight: 500;
-}/* 操作按钮 */.tag-edit,
-.tag-delete,
-.alias-delete,
-.rule-delete {
+}/* 操作按钮 */.alias-delete {
     background: none;
     border: none;
     cursor: pointer;
@@ -144,20 +141,11 @@
     padding: 2px 6px;
     border-radius: 4px;
     transition: all 0.2s;
-}.tag-edit {
-    color: var(--color-warm);
-}.tag-edit:hover {
-    background: var(--color-warm-opacity-10);
-}.tag-delete,
-.alias-delete,
-.rule-delete {
     color: var(--color-danger);
-}.tag-delete:hover,
-.alias-delete:hover,
-.rule-delete:hover {
+}.alias-delete:hover {
     background: rgba(184, 106, 90, 0.12);
 }/* ---------- 识别关键词：紧凑胶囊（对齐配置页「书名高亮词」的观感） ----------
-   只有关键词列表用 .tag-item / .tag-items / .tag-name / .tag-delete，
+   只有关键词列表用 .tag-item / .tag-items / .tag-name，
    别名走 .alias-*、派生规则走 .rule-*，互不影响，所以这里可以放心收紧。 */.tag-items {
     gap: 6px;
 }.tag-item {
@@ -171,23 +159,6 @@
 }.tag-name {
     font-size: 12.5px;
     line-height: 1.7;
-}/* 删除按钮做成小圆点，不再占一个大方块 */.tag-delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    border-radius: 50%;
-    background: rgba(184, 106, 90, 0.14);
-    color: var(--color-danger);
-    opacity: 0.8;
-}.tag-delete:hover {
-    background: rgba(184, 106, 90, 0.26);
-    opacity: 1;
-}.tag-delete .ic {
-    width: 12px;
-    height: 12px;
 }
 .empty-hint {
     text-align: center;

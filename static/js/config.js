@@ -1,6 +1,5 @@
 // ========== 从 meta 标签读取所有后端数据 ==========
 const APP_DATA = document.getElementById('app-data').dataset;
-const USER_ROLE = APP_DATA.userRole;
 // 用户标识改为不可猜的 key（不再是明文密码）
 const USER_KEY = APP_DATA.userKey;
 const IS_ADMIN = APP_DATA.isAdmin === 'true';
@@ -290,11 +289,6 @@ async function clearUserRecords(btn) {
     }
 }
 
-function refreshUserRecords() {
-    loadUserRecords();
-    loadUserList();
-    safeNotify('正在刷新用户数据...', 'info');
-}
 // ========== 清除所有用户记录 ==========
 async function clearAllUserRecords() {
  if (!confirm('确定要清除所有用户的阅读记录吗？此操作不可恢复！')) {
@@ -1623,16 +1617,11 @@ async function forceCleanupMemory(deep = false) {
 
         const result = data.result || {};
         const memoryMb = result.memory_mb !== undefined ? result.memory_mb : '未知';
-        const released = (result.tag || 0) + (result.chapter || 0)
-            + (result.image || 0) + (result.check || 0) + (result.line || 0)
-            + (result.work_id_file || 0) + (result.work_id_set || 0);
 
         // 清理是「保留式」的：tag/chapter/image/work_id 会各留一批热缓存不清零，
         // 所以这里必须把「删了多少」和「还剩多少」都讲清楚，否则用户会以为没生效。
         // deep 模式 keep 全为 0，数字应当归零。
         const rem = result.remaining || {};
-        const kept = (rem.tag || 0) + (rem.chapter || 0) + (rem.image || 0)
-            + (rem.work_id_file || 0) + (rem.work_id_set || 0);
 
         if (resultEl) {
             const isDeep = !!result.deep;
@@ -1640,7 +1629,6 @@ async function forceCleanupMemory(deep = false) {
             const lineMb = result.line_mb || 0;
             // 热缓存（标签/章节/图片/指纹）本次实际删了多少——这才是计数芯片会不会动的关键
             const hotRemoved = (result.tag || 0) + (result.chapter || 0)
-                + (result.image || 0) + (result.work_id_file || 0) + (result.work_id_set || 0);
             // 阅读缓存（line_cache）才是真正能释放的大头，优先讲清楚它
             let html = `${icon('circle-check', 'sm')} ${isDeep ? '彻底清理完成' : '释放内存完成'}`;
             if (lineCount > 0 || lineMb > 0) {

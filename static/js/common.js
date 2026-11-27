@@ -20,20 +20,6 @@ function getSystemTheme() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-async function getEffectiveTheme() {
-    try {
-        const response = await fetch('/config/get');
-        const config = await response.json();
-        let theme = config.theme || 'dark';
-        if (theme === 'auto') {
-            theme = getSystemTheme();
-        }
-        return theme;
-    } catch (err) {
-        console.error('获取主题配置失败:', err);
-        return getSystemTheme();
-    }
-}
 
 function applyThemeToPage(theme, isAuto) {
     const root = document.documentElement;
@@ -596,7 +582,6 @@ async function setRandomHeaderBg(options = {}) {
             layers.activeLayer = 1;
             // 首图直显：缓存命中时不应再被 1.2s 淡入拖慢感知
             await fadeInBackground(layers, randomImage, layers.layer1, true);
-            console.log(`已应用背景图片: ${randomImage}`);
 
             // 后台串行预热其余图片：下次刷新时几乎全在缓存里，切换瞬显。
             // 不并发、不阻塞首屏，也不做任何自动切换。
@@ -606,7 +591,6 @@ async function setRandomHeaderBg(options = {}) {
                 bgPreloaded = preloadInBackground(bgCachedImages);
             }
         } else {
-            console.log('未找到header背景图片');
             header.style.background = 'var(--color-primary-dark)';
         }
     } catch (error) {
@@ -749,17 +733,14 @@ if ('serviceWorker' in navigator) {
             scope: '/'
         })
         .then((registration) => {
-            console.log('✅ Service Worker 已注册:', registration.scope);
 
             // 检查更新
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
-                console.log('🔄 检测到新版本 Service Worker');
 
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         // 新版本已安装，等待用户刷新
-                        console.log('✅ 新版本已就绪，下次刷新生效');
                     }
                 });
             });

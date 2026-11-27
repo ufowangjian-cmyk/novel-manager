@@ -8,7 +8,6 @@
     'use strict';
 
     async function initReader() {
-        console.log('📖 初始化阅读器...');
 
         // 1. 检测设备类型
         const isMobile = window.innerWidth <= 768;
@@ -60,9 +59,7 @@
             initKeyboardShortcuts();
         }
 
-        console.log('✅ 阅读器初始化完成');
     }
 
     window.initReader = initReader;
-    console.log('✅ reader-init.js 已加载');
 })();

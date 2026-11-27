@@ -111,15 +111,6 @@
     accent-color: var(--color-primary);
 }
 
-.form-group .checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    margin-bottom: 0;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
 .form-hint {
     font-size: 12px;
     color: var(--text-tertiary);
@@ -162,14 +153,6 @@
 /* ============================================
    7. 用户记录管理
    ============================================ */
-.user-records-container {
-    background: var(--bg-secondary);
-    border-radius: 12px;
-    padding: 4px;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--border-secondary);
-}
 
 .user-record-item {
     background: var(--bg-card);
@@ -639,10 +622,6 @@ body.dark-mode .form-hint {
     color: var(--dark-text-tertiary);
 }
 
-body.dark-mode .user-records-container {
-    background: var(--dark-bg-secondary);
-    border-color: var(--dark-border-primary);
-}
 
 body.dark-mode .user-record-item {
     background: var(--dark-bg-card);
@@ -734,33 +713,6 @@ body.dark-mode .loading-overlay {
     background: rgba(0, 0, 0, 0.75);
 }
 
-/* ===== 用户记录管理头部 ===== */
-.user-records-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    gap: 15px;
-}
-
-.user-records-header .form-hint {
-    font-size: 13px;
-    color: var(--text-tertiary);
-    flex: 1;
-    min-width: 0;
-}
-
-.user-records-actions {
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
-}
-
-.user-records-actions .btn {
-    padding: 5px 12px;
-    font-size: 12px;
-    white-space: nowrap;
-}
 
 /* ============================================
    14. 响应式
@@ -820,29 +772,6 @@ body.dark-mode .loading-overlay {
         flex-wrap: wrap;
     }
 
-    /* 用户记录管理头部 - 移动端调整 */
-    .user-records-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .user-records-header .form-hint {
-        width: 100%;
-        line-height: 1.6;
-    }
-
-    .user-records-actions {
-        width: 100%;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .user-records-actions .btn {
-        flex: 0 1 auto;
-        padding: 6px 14px;
-        font-size: 12px;
-    }
 
     /* ===== 用户记录列表项 - 移动端优化 ===== */
     .user-record-row {
@@ -913,12 +842,6 @@ body.dark-mode .loading-overlay {
     .page-config .page-container>.button-group .btn {
         padding: 8px 10px;
         font-size: 12px;
-    }
-
-    /* 用户记录管理头部 - 超小屏调整 */
-    .user-records-actions .btn {
-        padding: 5px 10px;
-        font-size: 11px;
     }
 
     /* 用户记录管理 - 超小屏调整 */
@@ -1370,8 +1293,6 @@ body.dark-mode .set-bi:focus-visible {
 .card-content > .form-group-inline,
 .card-content > .font-grid,
 .card-content > .switch-grid,
-.card-content > .user-records-container,
-.card-content > .user-records-header,
 .card-content > .memory-management,
 .card-content > .form-group:only-child,
 .card-content > .form-hint,
@@ -1440,27 +1361,6 @@ body.dark-mode .set-bi:focus-visible {
     background: rgba(114, 139, 71, 0.10);
     border: 1px solid rgba(114, 139, 71, 0.26);
     color: var(--color-primary-link);
-}
-.form-group .hlw-x {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 15px;
-    height: 15px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.10);
-    color: inherit;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: all 0.2s;
-}
-.form-group .hlw-x:hover {
-    background: rgba(0, 0, 0, 0.22);
-    opacity: 1;
 }
 .form-group .hlw-input {
     flex: 1 1 140px;
@@ -1570,12 +1470,9 @@ body.dark-mode .form-group .hlw-chip {
     padding: 8px 12px;
     margin-bottom: 5px;
 }
-.user-records-header {
-    margin-bottom: 10px;
-}
 
 /* ---------- 10. 用户记录列表：宽屏自适应两列（可选增强） ----------
-   JS 渲染时会在 .user-records-container 内包一层 .user-records-list，
+   JS 直接渲染 .user-records-list 容器，
    网格挂在这层上：不影响容器的 max-height 滚动，也不影响空态/加载态。 */
 .user-records-list {
     display: grid;
@@ -2420,26 +2317,6 @@ body.dark-mode .save-bar-text {
     }
 }
 
-/* 内存管理：常驻 / 可清理 两组分隔（2026-11-24） */
-.memory-group + .memory-group {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px dashed rgba(0, 0, 0, 0.12);
-}
-
-.memory-group-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--text-secondary, #6b7a5e);
-    margin-bottom: 8px;
-}
-
-body.dark-mode .memory-group + .memory-group {
-    border-top-color: rgba(255, 255, 255, 0.15);
-}
 
 /* ============================================
    内存管理：概览三格 + 折叠明细（2026-11-24 重设计）
