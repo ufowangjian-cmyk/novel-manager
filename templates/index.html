@@ -877,6 +877,12 @@
         {% endif %}
     </div>
 
+    {# 手机端悬浮至顶/至底（对齐阅读页的跳顶/跳底按钮） #}
+    <div class="home-jump" id="homeJump" hidden>
+        <button type="button" id="homeJumpTop" aria-label="回到最顶">{{ icon('chevrons-up', 'sm') }}</button>
+        <button type="button" id="homeJumpBottom" aria-label="到最底">{{ icon('chevrons-down', 'sm') }}</button>
+    </div>
+
 </div>
 
 
@@ -1028,6 +1034,25 @@ main.js 顶层的 GROUP_META 在脚本加载时就会调用 icon()，
 
         bindListInteractions();
         window.bindListInteractions = bindListInteractions;
+
+        // 手机端悬浮至顶/至底：与阅读页一致，滚动 300px 后出现。
+        // 只在主页模板里初始化，不污染 common.js（其它页面不需要）。
+        (function () {
+            const jump = document.getElementById('homeJump');
+            if (!jump) return;
+            const update = function () {
+                const y = window.scrollY || document.documentElement.scrollTop || 0;
+                jump.hidden = y < 300;
+            };
+            window.addEventListener('scroll', update, { passive: true });
+            update();
+            document.getElementById('homeJumpTop')?.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            document.getElementById('homeJumpBottom')?.addEventListener('click', function () {
+                window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            });
+        })();
     });
 </script>
 {% endblock %}

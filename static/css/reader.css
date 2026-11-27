@@ -1225,12 +1225,11 @@ body.dark-mode .local-image:not(.loaded) {
    颜色走 --reader-* / tokens 变量，跟随 6 套阅读背景主题与深色模式。
    分组时已移除 figure / img 的内联 style，这里不用 !important；
    点「竖向展开」放回内联样式即可还原 w= / align= 参数。 */
+/* 画廊容器不做胶囊：去掉底色/边框/圆角与左右内边距，
+   展开的大图和收紧的网格都直接贴齐正文宽度（手机端不再被两侧空白挤窄）。 */
 .image-gallery {
   margin: 0 0 var(--reader-paragraph-spacing, 0.8rem);
-  padding: 8px 10px 10px;
-  background: var(--color-bg-secondary, rgba(128, 128, 128, 0.12));
-  border: 1px solid var(--reader-border-primary, #ccd8bc);
-  border-radius: 12px;
+  padding: 0;
   text-indent: 0;
 }
 

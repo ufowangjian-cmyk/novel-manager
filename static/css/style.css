@@ -5175,3 +5175,57 @@ th {
         flex-shrink: 0;
     }
 }
+
+/* ============================================
+   手机端主页悬浮至顶/至底（对齐阅读页 11.2 的跳顶/跳底按钮）
+   ------------------------------------------------------------
+   只在 ≤768px 显示：桌面端主页一屏信息密度低，不需要这两个按钮。
+   z-index 故意保持 0（低于 .header 的 1）：按钮在右下角，不能盖住
+   右上角用户菜单展开的抽屉；对静态卡片来说它仍是定位元素，照常浮在上层。
+   bottom 取 148px：滑到页底时手机分页条（约 107px 高 + 10px 间距）
+   正好在按钮下方，不会盖住「下一页」；仍用 env(safe-area-inset-bottom)
+   避开全面屏手势条。
+   ============================================ */
+.home-jump,
+.home-jump[hidden] {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .home-jump {
+        display: flex;
+        position: fixed;
+        right: 12px;
+        bottom: calc(148px + env(safe-area-inset-bottom));
+        z-index: 0;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .home-jump[hidden] {
+        display: none;
+    }
+
+    .home-jump button {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--color-border-primary);
+        border-radius: 50%;
+        background: var(--color-bg-secondary);
+        color: var(--color-text-gray);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        opacity: 0.92;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.15s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .home-jump button:active {
+        opacity: 1;
+        transform: scale(1.06);
+    }
+}
