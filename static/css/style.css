@@ -4585,8 +4585,16 @@ body.dark-mode .btn-nav.btn-back-home:hover {
     box-shadow: 0 -2px 10px var(--opacity-black-10);
 }
 
+/* 区块整体（区块头 + 内容面板）与下方内容的间距：
+   筛选/搜索、每日推荐等区块收在 .tabs-header-wrapper 里，
+   它自己没有 margin，会紧贴下面的筛选提示条 / 小说列表，这里补上留白。
+   整块隐藏时 display:none 会连 margin 一起吃掉，不影响干净书架。 */
+.tabs-header-wrapper {
+    margin-bottom: 25px;
+}
+
 /* 整块隐藏：区块头 + 内容面板一起消失，首页回到干净的书架。
-   （.tabs-header-wrapper.hidden 里还有 margin-bottom，display:none 一并吃掉）
+   （.tabs-header-wrapper.hidden 的 margin-bottom 会随 display:none 一并消失）
    想再打开：点头部右上角「菜单」里的任一区块项。 */
 .tabs-header-wrapper.hidden {
     display: none !important;
