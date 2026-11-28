@@ -2078,6 +2078,21 @@ body.dark-mode .reading-status-btn.is-none:hover {
     gap: 0 8px;
 }
 
+/* 表格里作者单行省略：作者列只有 12%，超长主名 + 马甲用 flex-wrap
+   会折成两三行把行高撑乱。表格内改为单行截断（省略号收尾），
+   完整作者串放在容器的 title 里，悬停可看；移动端卡片与详情页不受影响。 */
+.novel-table td .author-links {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* block 化后 flex gap 失效，马甲与主名的间距改用外边距 */
+.novel-table td .author-links .author-link + .author-link {
+    margin-left: 8px;
+}
+
 /* 详情页作者区是行内排版（前面还有图标），用相邻兄弟间距代替分隔符 */
 .meta-author-link + .meta-author-link {
     margin-left: 8px;
@@ -4875,72 +4890,9 @@ body.dark-mode .user-menu-subitem.active {
     box-shadow: none;
 }
 
-/* ==================== 头像选择器（配置页 → 用户管理 → 编辑） ====================
-   24 个 emoji 网格 + 8 个颜色圆点。底/边框都用半透明灰，
-   深色弹窗和浅色主题下都能看清，不用各写一套。 */
-.av-emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 4px;
-}
-
-.av-pick {
-    aspect-ratio: 1 / 1;
-    width: 100%;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: rgba(128, 128, 128, 0.14);
-    /* 图标走 currentColor，跟随弹窗文字色（深浅主题都对） */
-    color: var(--text-primary, #dbe7cf);
-    font-size: 15px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.av-pick .ic {
-    width: 18px;
-    height: 18px;
-}
-
-.av-pick:hover {
-    background: rgba(128, 128, 128, 0.26);
-}
-
-.av-pick.on {
-    border-color: #7BA05B;
-    background: rgba(123, 160, 91, 0.32);
-}
-
-.av-color-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.av-color {
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.av-color:hover {
-    transform: scale(1.15);
-}
-
-.av-color.on {
-    border-color: #fff;
-    box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
-}
+/* 头像选择器（.av-emoji-grid/.av-pick/.av-color*）已移到 config.css——
+   它们只被配置页的用户编辑弹窗使用，而配置页不加载本文件；
+   留在这里永远不匹配，纯属死样式。 */
 
 /* ============================================
    头部快速搜索（首页书架右上）

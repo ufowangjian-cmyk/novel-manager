@@ -367,6 +367,91 @@
     }
 }
 
+/* 滑入动画的移动端兜底：弹窗高度普遍顶满视口（max-height: calc(100dvh - 40px)），
+   起始帧的 translateY(30px) 会让整个弹窗偏下、底部被切出屏幕——一旦动画没有正常
+   播完（部分手机浏览器的后台恢复/省电状态、系统减弱动效），用户看到的就是
+   「弹窗错位」。桌面视口大、弹窗远没顶满，滑入没有这个问题，保留原效果。 */
+@media (max-width: 768px) {
+    .modal-content {
+        animation: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-content {
+        animation: none;
+    }
+}
+
+/* ==================== 头像选择器（用户编辑弹窗） ====================
+   24 个 emoji 网格 + 8 个颜色圆点。⚠️ 这些类原来放在 style.css，但配置页
+   只加载 config.css —— 弹窗里的 emoji 选择器因此完全没有网格布局，
+   全部堆叠成一团（移动端尤其明显）。样式归位到本文件。
+   底/边框都用半透明灰，深色弹窗和浅色主题下都能看清，不用各写一套。 */
+.av-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.av-pick {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.14);
+    /* 图标走 currentColor，跟随弹窗文字色（深浅主题都对） */
+    color: var(--text-primary, #dbe7cf);
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.av-pick .ic {
+    width: 18px;
+    height: 18px;
+}
+
+.av-pick:hover {
+    background: rgba(128, 128, 128, 0.26);
+}
+
+.av-pick.on {
+    border-color: #7BA05B;
+    background: rgba(123, 160, 91, 0.32);
+}
+
+.av-color-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.av-color {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.av-color:hover {
+    transform: scale(1.15);
+}
+
+.av-color.on {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(123, 160, 91, 0.65);
+}
+
 .modal-header {
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-secondary);
@@ -1979,6 +2064,18 @@ body.dark-mode .save-bar-text {
     row-gap: 3px;
     align-items: center;
     margin-bottom: 14px;
+}
+
+/* 头像组例外已由下面的弹窗通用单列规则覆盖（保留注释说明来龙去脉）：
+   预览 + emoji 网格需要整行宽度，两列布局的 control 列（约 140px）
+   装 8 列 emoji 网格时每格只剩 5px 宽，挤成一团细条。 */
+
+/* 用户编辑弹窗在移动端整体改单列堆叠：两列布局（label 38% | 控件 62%）是为
+   设置页主体表单设计的，编辑弹窗里的长标签（「显示名称 (user_id)」）会被压折行、
+   控件只剩 140px 宽、提示文字又铺满整行——参差错落就是弹窗下半段的错位感。
+   弹窗宽度窄（90% ≈ 400px），直接退回原始的块级流，label/控件/提示依次堆叠。 */
+.modal .form-group {
+    display: block;
 }
 
 .form-group > label {
